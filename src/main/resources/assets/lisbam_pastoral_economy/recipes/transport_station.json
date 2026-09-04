@@ -1,10 +1,15 @@
 {
-  "type": "minecraft:crafting_shapeless",
-  "ingredients": [
-    { "item": "minecraft:compass" },
-    { "item": "minecraft:iron_block" },
-    { "item": "minecraft:redstone" }
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "RIR",
+    "ICI",
+    "RIR"
   ],
+  "key": {
+    "R": { "item": "minecraft:redstone_block" },
+    "I": { "item": "minecraft:iron_block" },
+    "C": { "item": "minecraft:compass" }
+  },
   "result": {
     "item": "lisbam_pastoral_economy:transport_station",
     "count": 1

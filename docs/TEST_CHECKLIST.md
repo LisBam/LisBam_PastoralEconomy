@@ -3,14 +3,22 @@
 ## 构建
 
 - [x] `./gradlew compileJava`、`compileTestJava` — PASS（2026-09-04，临时 Temurin Java 8 `1.8.0_504`）
-- [x] `./gradlew processResources`、`build` — PASS（2026-09-04，含 `reobfJar`、`exportReleaseJar`；release JAR 322,772 bytes，SHA-256 `296b440379f22a0f15990eaf49af31fc5b1272397427d7b0f222e05428290bb2`，`unzip -t` PASS）
+- [x] `./gradlew processResources`、`build` — PASS（2026-09-04，含 `reobfJar`、`exportReleaseJar`；release JAR 324,313 bytes，SHA-256 `5c5dfa7073cec1251675e1f626b9672a9aa0ef388af11bbc505b6e19815ed2c3`，`unzip -t` PASS）
 - [x] Forge 1.12.2 static audit — 0 ERROR；5 条 `packet-thread` WARNING 已审查（通用注册不处理消息；四个 S2C Proxy 桥没有直接修改状态，客户端实际写入均调度至主线程；交通 C2S handler 调度至服务端主线程）。
+
+## 维护：蟹笼专用槽与交通交互
+
+- [x] `crabTrapSelfTest`：0 号槽只接受钓竿、1 号槽只接受合法生肉，2～19 接受任意物品；所有面向公开 20 槽，Hopper 插入遵循同一校验且产出位可取。PASS（2026-09-04，Temurin Java 8）。
+- [x] `transportCoreSelfTest`：移出节点直接删除 PlayerData 映射，NBT 与死亡 Clone 仅保留有效节点；物理世界节点删除和 Packet 往返保持。PASS（2026-09-04，Temurin Java 8）。
+- [x] `transportTravelSelfTest`：村庄候选身份和接入/旅行费用检查点保持不变，确认层只使用已有服务端权威 `CONNECT_VILLAGE` 结算路径。PASS（2026-09-04，Temurin Java 8）。
+- [x] `processResources` 与 release JAR：交通方块配方为 `RIR/ICI/RIR`（R=红石块，I=铁块，C=指南针），双语确认窗口与三坐标显示键已打包。PASS（2026-09-04）。
+- [ ] 游戏内：蟹笼 0/1 槽与各向 Hopper 拒绝错误物品、2～19 可存任意物品、原版 Tooltip；交通配方；村庄确认层余额不足禁用与服务器重新定价；移出/拆除后节点列表立即消失；320×240 下文字、绿色选中行与无 `d0` 显示。NOT RUN：当前环境没有可操作 Forge 客户端。
 
 ## 维护：商人整组、行情书与蟹笼规则
 
 - [x] `merchantCatalogSelfTest`：每条购买目录的组大小严格等于目标物品原版最大堆叠数；所有有限库存按组计，保存的 `remainingBundles` 仍可读取为剩余组数。PASS（2026-09-04，Temurin Java 8）。
 - [x] `marketCoreSelfTest`、`marketPacketSelfTest`：准确追踪并首开预取全部 22 种商人收购商品，16 色羊毛只占共享的一条行情。PASS（2026-09-04，Temurin Java 8）。`processResources` 与 release JAR 资源清单确认无序配方包含 `minecraft:wool` wildcard metadata 且输出 4 根线。
-- [x] `crabTrapSelfTest`：全部 20 槽允许玩家/Hopper 任意存取，功能读取和 2～19 捕捞产出语义不变；基础等待为 2,000～12,000 tick，Lure 每级减少 2,000 tick。PASS（2026-09-04，Temurin Java 8）。
+- [x] `crabTrapSelfTest`：基础等待为 2,000～12,000 tick，Lure 每级减少 2,000 tick；其后续专用槽回归规则见上方维护项。PASS（2026-09-04，Temurin Java 8）。
 - [ ] 游戏内：验证商人的 64/16/1 物品组、所有 22 条行情书选择项、任意颜色羊毛配方、蟹笼手动与 Hopper 存取及 Lure I～III 等待时间。NOT RUN：当前环境没有可操作 Forge 客户端。
 
 ## 第 01 批启动与资源

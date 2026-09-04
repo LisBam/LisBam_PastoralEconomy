@@ -104,9 +104,24 @@ public final class TransportService {
             return;
         }
         PastoralWorldData data = PastoralWorldData.get(world);
-        if (data.getTransportWorldState().removeStation(tile.getStationId(), world.provider.getDimension(), pos)) {
+        TransportWorldState state = data.getTransportWorldState();
+        UUID tileStationId = tile.getStationId();
+        UUID stationId = tileStationId;
+        boolean removed = state.removeStation(stationId, world.provider.getDimension(), pos);
+        TransportStationRecord atPosition = state.getStationAt(world.provider.getDimension(), pos);
+        if (atPosition != null && atPosition.getType() == TransportStationType.SELF_BUILT
+                && state.removeStation(atPosition.getStationId(), world.provider.getDimension(), pos)) {
+            stationId = atPosition.getStationId();
+            removed = true;
+        }
+        if (removed) {
             data.markDirty();
         }
+        removeOnlineNodeReferences(world, tileStationId);
+        if (!stationId.equals(tileStationId)) {
+            removeOnlineNodeReferences(world, stationId);
+        }
+        tile.clearStationId();
     }
 
     public static void openStationGui(EntityPlayerMP player, World world, BlockPos pos, TileTransportStation tile) {
@@ -190,7 +205,7 @@ public final class TransportService {
 
     public static void handleRemove(EntityPlayerMP player, UUID stationId) {
         if (hasOpenTransportStation(player) && stationId != null) {
-            PlayerTransportDataService.deactivateNode(player, stationId);
+            PlayerTransportDataService.removeNode(player, stationId);
         }
         syncOpenStation(player);
     }
@@ -363,21 +378,26 @@ public final class TransportService {
         List<TransportNodeView> nodes = new ArrayList<TransportNodeView>();
         for (PlayerTransportNode node : PlayerTransportDataService.getNodes(player)) {
             TransportStationRecord record = state.getStation(node.getStationId());
-            if (record == null) {
-                nodes.add(new TransportNodeView(node.getStationId(), node.isActive(), node.getAlias(), false,
-                        0, 0, 0, 0, TransportStationType.SELF_BUILT, -1L));
-            } else {
-                BlockPos nodePosition = record.getPosition();
-                boolean isDestination = supported && active && node.isActive()
-                        && !node.getStationId().equals(currentStationId)
-                        && record.getDimension() == OVERWORLD_DIMENSION
-                        && isRecordUsableForNetwork(player.world, record);
-                long travelFee = isDestination
-                        ? TransportCost.travelFee(TransportCost.horizontalDistance(position, nodePosition)) : -1L;
-                nodes.add(new TransportNodeView(node.getStationId(), node.isActive(), node.getAlias(), true,
-                        record.getDimension(), nodePosition.getX(), nodePosition.getY(), nodePosition.getZ(),
-                        record.getType(), travelFee));
+            boolean invalidSelfBuiltRecord = record != null && record.getType() == TransportStationType.SELF_BUILT
+                    && record.getDimension() == player.world.provider.getDimension()
+                    && player.world.isBlockLoaded(record.getPosition()) && !isRecordUsableForNetwork(player.world, record);
+            if (!node.isActive() || record == null || invalidSelfBuiltRecord) {
+                if (invalidSelfBuiltRecord && state.removeStation(record.getStationId(), record.getDimension(), record.getPosition())) {
+                    data.markDirty();
+                }
+                PlayerTransportDataService.removeNode(player, node.getStationId());
+                continue;
             }
+            BlockPos nodePosition = record.getPosition();
+            boolean isDestination = supported && active
+                    && !node.getStationId().equals(currentStationId)
+                    && record.getDimension() == OVERWORLD_DIMENSION
+                    && isRecordUsableForNetwork(player.world, record);
+            long travelFee = isDestination
+                    ? TransportCost.travelFee(TransportCost.horizontalDistance(position, nodePosition)) : -1L;
+            nodes.add(new TransportNodeView(node.getStationId(), true, node.getAlias(), true,
+                    record.getDimension(), nodePosition.getX(), nodePosition.getY(), nodePosition.getZ(),
+                    record.getType(), travelFee));
         }
         VillageTransportCandidate nearestVillage = supported && active && player.world instanceof WorldServer
                 ? VillageTransportService.findNearestUnconnected((WorldServer) player.world, player, position) : null;
@@ -417,6 +437,16 @@ public final class TransportService {
         }
         return world.getBlockState(record.getPosition()).getBlock() == ModBlocks.TRANSPORT_STATION
                 && tile instanceof TileTransportStation && stationId.equals(((TileTransportStation) tile).getStationId());
+    }
+
+    private static void removeOnlineNodeReferences(World world, UUID stationId) {
+        if (world.getMinecraftServer() == null || stationId == null) {
+            return;
+        }
+        for (EntityPlayerMP player : world.getMinecraftServer().getPlayerList().getPlayers()) {
+            PlayerTransportDataService.removeNode(player, stationId);
+            syncOpenStation(player);
+        }
     }
 
     private static TransportStationRecord findNearestActiveStation(EntityPlayerMP player,

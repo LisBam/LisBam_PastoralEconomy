@@ -74,12 +74,27 @@ public final class CrabTrapSelfTest {
         for (EnumFacing side : EnumFacing.values()) {
             assertEquals(20, trap.getSlotsForFace(side).length, "every hopper side exposes all slots");
         }
-        for (int index = 0; index < TileCrabTrap.SLOT_COUNT; index++) {
-            assertTrue(trap.isItemValidForSlot(index, new ItemStack(net.minecraft.init.Blocks.DIRT)), "every slot accepts arbitrary items");
-            assertTrue(trap.canInsertItem(index, new ItemStack(net.minecraft.init.Blocks.DIRT), EnumFacing.NORTH),
-                    "side hopper inserts arbitrary items");
+        ItemStack dirt = new ItemStack(net.minecraft.init.Blocks.DIRT);
+        assertTrue(trap.isItemValidForSlot(TileCrabTrap.ROD_SLOT, new ItemStack(Items.FISHING_ROD)),
+                "rod slot accepts fishing rods");
+        assertFalse(trap.isItemValidForSlot(TileCrabTrap.ROD_SLOT, dirt), "rod slot rejects ordinary storage");
+        assertTrue(trap.isItemValidForSlot(TileCrabTrap.BAIT_SLOT, new ItemStack(Items.BEEF)),
+                "bait slot accepts raw meat");
+        assertFalse(trap.isItemValidForSlot(TileCrabTrap.BAIT_SLOT, new ItemStack(Items.FISH, 1, 0)),
+                "bait slot rejects fishing output");
+        assertFalse(trap.canInsertItem(TileCrabTrap.ROD_SLOT, dirt, EnumFacing.NORTH),
+                "side hopper respects rod-slot validation");
+        assertFalse(trap.canInsertItem(TileCrabTrap.BAIT_SLOT, dirt, EnumFacing.NORTH),
+                "side hopper respects bait-slot validation");
+        assertTrue(trap.canExtractItem(TileCrabTrap.ROD_SLOT, new ItemStack(Items.FISHING_ROD), EnumFacing.DOWN),
+                "rod slot remains extractable");
+        assertTrue(trap.canExtractItem(TileCrabTrap.BAIT_SLOT, new ItemStack(Items.BEEF), EnumFacing.DOWN),
+                "bait slot remains extractable");
+        for (int index = TileCrabTrap.FIRST_HARVEST_SLOT; index < TileCrabTrap.SLOT_COUNT; index++) {
+            assertTrue(trap.isItemValidForSlot(index, dirt), "harvest storage accepts arbitrary items");
+            assertTrue(trap.canInsertItem(index, dirt, EnumFacing.NORTH), "side hopper inserts into harvest storage");
             assertTrue(trap.canExtractItem(index, new ItemStack(net.minecraft.init.Blocks.DIRT), EnumFacing.DOWN),
-                    "bottom hopper extracts arbitrary items");
+                    "bottom hopper extracts storage");
         }
 
         for (int index = TileCrabTrap.FIRST_HARVEST_SLOT; index < TileCrabTrap.SLOT_COUNT; index++) {

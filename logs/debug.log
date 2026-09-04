@@ -1,14 +1,2 @@
-[21:06:10] [main/DEBUG] [FML]: Creating vanilla freeze snapshot
-[21:06:10] [main/DEBUG] [FML]: Vanilla freeze snapshot created
-[21:06:11] [main/WARN] [FML]: Potentially Dangerous alternative prefix `lisbam_pastoral_economy` for name `harvest`, expected `minecraft`. This could be a intended override, but in most cases indicates a broken mod.
-[21:06:11] [main/WARN] [FML]: Potentially Dangerous alternative prefix `lisbam_pastoral_economy` for name `farmland_walker`, expected `minecraft`. This could be a intended override, but in most cases indicates a broken mod.
-[21:06:11] [main/WARN] [FML]: Potentially Dangerous alternative prefix `lisbam_pastoral_economy` for name `pastoral_favor`, expected `minecraft`. This could be a intended override, but in most cases indicates a broken mod.
-[21:06:11] [main/WARN] [FML]: Potentially Dangerous alternative prefix `lisbam_pastoral_economy` for name `fine_cultivation`, expected `minecraft`. This could be a intended override, but in most cases indicates a broken mod.
-[21:06:11] [main/WARN] [FML]: Potentially Dangerous alternative prefix `lisbam_pastoral_economy` for name `felling`, expected `minecraft`. This could be a intended override, but in most cases indicates a broken mod.
-[21:06:11] [main/WARN] [FML]: Potentially Dangerous alternative prefix `lisbam_pastoral_economy` for name `slaughter`, expected `minecraft`. This could be a intended override, but in most cases indicates a broken mod.
-[21:06:11] [main/WARN] [FML]: Potentially Dangerous alternative prefix `lisbam_pastoral_economy` for name `fleetfoot`, expected `minecraft`. This could be a intended override, but in most cases indicates a broken mod.
-[21:06:11] [main/WARN] [FML]: Potentially Dangerous alternative prefix `lisbam_pastoral_economy` for name `night_vision`, expected `minecraft`. This could be a intended override, but in most cases indicates a broken mod.
-Records: 4
-[21:06:07] [main/DEBUG] [io.netty.util.ResourceLeakDetectorFactory]: Loaded default ResourceLeakDetector: io.netty.util.ResourceLeakDetector@3bf7ca37
-[21:06:16] [main/DEBUG] [FML]: Creating vanilla freeze snapshot
-[21:06:16] [main/DEBUG] [FML]: Vanilla freeze snapshot created
+[21:37:39] [main/DEBUG] [FML]: Creating vanilla freeze snapshot
+[21:37:39] [main/DEBUG] [FML]: Vanilla freeze snapshot created

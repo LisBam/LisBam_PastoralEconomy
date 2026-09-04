@@ -37,8 +37,8 @@ public final class GuiMerchantTrade extends GuiScreen implements GuiSlider.ISlid
             "minecraft", "textures/gui/container/generic_54.png");
     private static final int VANILLA_SLOT_U = 7;
     private static final int VANILLA_SLOT_V = 17;
-    /** Vanilla GuiButton's normal light text colour, used across the whole window. */
-    private static final int TEXT_COLOR = 0xFFE0E0E0;
+    /** Vanilla workbench/furnace inventory-title colour for static window text. */
+    private static final int TEXT_COLOR = 0x404040;
 
     private final int merchantEntityId;
     private final int[] sellQuantities = new int[MerchantTradeSnapshot.SELL_COUNT];
