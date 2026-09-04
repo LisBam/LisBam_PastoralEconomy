@@ -1,0 +1,12 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "ingredients": [
+    { "item": "minecraft:compass" },
+    { "item": "minecraft:iron_block" },
+    { "item": "minecraft:redstone" }
+  ],
+  "result": {
+    "item": "lisbam_pastoral_economy:transport_station",
+    "count": 1
+  }
+}

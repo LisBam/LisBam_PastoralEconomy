@@ -1,0 +1,6 @@
+{
+  "parent": "block/cube_all",
+  "textures": {
+    "all": "lisbam_pastoral_economy:blocks/transport_station"
+  }
+}

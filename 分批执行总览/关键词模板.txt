@@ -1,7 +1,0 @@
-使用 `minecraft-forge-1.12.2` Skill。
-
-先阅读并遵守 `AGENTS.md`，然后阅读 `01_工程创建与基础骨架.md` 作为本批原始需求依据，以 `LisBam_PastoralEconomy.md` 作为第 01 批实际实施任务单并完整执行。
-
-执行前先检查当前工程与 Git 状态，严格遵守 Minecraft Forge 1.12.2 / Java 8 版本边界，不要使用现代 Forge API，不要提前实现后续批次内容。
-
-完成后按照 `LisBam_PastoralEconomy.md` 中规定的验收要求进行构建、检查和汇报。第 01 批完成后停止。

@@ -1,0 +1,18 @@
+[
+  {
+    "modid": "lisbam_pastoral_economy",
+    "name": "LisBam_PastoralEconomy",
+    "description": "聆竹の休闲田园经济：面向 Minecraft 1.12.2 的休闲田园经济模组。",
+    "version": "${version}",
+    "mcversion": "${mcversion}",
+    "url": "",
+    "updateUrl": "",
+    "authorList": [
+      "LisBam"
+    ],
+    "credits": "",
+    "logoFile": "assets/lisbam_pastoral_economy/textures/logo.png",
+    "screenshots": [],
+    "dependencies": []
+  }
+]
