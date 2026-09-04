@@ -5,7 +5,9 @@ import net.minecraft.nbt.NBTTagList;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 /** Persisted offer and stock state for exactly one logical merchant and one world day. */
 public final class DailyOfferState {
@@ -24,6 +26,25 @@ public final class DailyOfferState {
         if (worldDay < 0L || sellOffers == null || buyOffers == null
                 || sellOffers.size() != SELL_OFFER_COUNT || buyOffers.size() != BUY_OFFER_COUNT) {
             throw new IllegalArgumentException("Invalid daily merchant offer state.");
+        }
+        Set<String> products = new HashSet<String>();
+        for (DailyOffer offer : buyOffers) {
+            if (offer == null || !offer.isEnabled()) {
+                continue;
+            }
+            TradeCatalogEntry entry = TradeCatalog.get(offer.getCatalogKey());
+            if (!isValidOffer(entry, offer, false)
+                    || !products.add(entry.getProductIdentity(offer.getEnchantmentLevel()))) {
+                throw new IllegalArgumentException("Daily merchant purchase offers must be unique.");
+            }
+        }
+        for (DailyOffer offer : sellOffers) {
+            if (offer != null && offer.isEnabled()) {
+                TradeCatalogEntry entry = TradeCatalog.get(offer.getCatalogKey());
+                if (!isValidOffer(entry, offer, true)) {
+                    throw new IllegalArgumentException("Invalid daily merchant sale offer.");
+                }
+            }
         }
         this.worldDay = worldDay;
         this.sellOffers = new ArrayList<DailyOffer>(sellOffers);
@@ -59,15 +80,38 @@ public final class DailyOfferState {
     }
 
     public static DailyOfferState readFromNBT(NBTTagCompound tag) {
-        if (!tag.hasKey(KEY_DAY)) {
+        if (tag == null || !tag.hasKey(KEY_DAY)) {
             return null;
         }
-        List<DailyOffer> sell = readOffers(tag.getTagList(KEY_SELL, 10), SELL_OFFER_COUNT);
-        List<DailyOffer> buy = readOffers(tag.getTagList(KEY_BUY, 10), BUY_OFFER_COUNT);
-        if (sell == null || buy == null) {
+        try {
+            List<DailyOffer> sell = readOffers(tag.getTagList(KEY_SELL, 10), SELL_OFFER_COUNT);
+            List<DailyOffer> buy = readOffers(tag.getTagList(KEY_BUY, 10), BUY_OFFER_COUNT);
+            if (sell == null || buy == null) {
+                return null;
+            }
+            return new DailyOfferState(tag.getLong(KEY_DAY), sell, buy);
+        } catch (RuntimeException ignored) {
+            // Invalid or pre-item-count states are regenerated on the logical server.
             return null;
         }
-        return new DailyOfferState(tag.getLong(KEY_DAY), sell, buy);
+    }
+
+    private static boolean isValidOffer(TradeCatalogEntry entry, DailyOffer offer, boolean selling) {
+        if (entry == null || (selling
+                ? (entry.getPool() != TradePool.SELL_CORE && entry.getPool() != TradePool.SELL_SECONDARY)
+                : (entry.getPool() != TradePool.BUY_COMMON && entry.getPool() != TradePool.BUY_UNCOMMON
+                && entry.getPool() != TradePool.BUY_RARE && entry.getPool() != TradePool.BUY_TREASURE))) {
+            return false;
+        }
+        if (!offer.isUnlimited() && (offer.getRemainingItems() < 0
+                || offer.getRemainingItems() > entry.getInitialRemainingItems())) {
+            return false;
+        }
+        if (entry.isEnchantment()) {
+            return !selling && offer.getEnchantmentLevel() >= 1
+                    && offer.getEnchantmentLevel() <= entry.getEnchantmentDefinition().getMaxLevel();
+        }
+        return offer.getEnchantmentLevel() == 0;
     }
 
     private static NBTTagList writeOffers(List<DailyOffer> offers) {

@@ -11,7 +11,7 @@ import java.util.HashSet;
 import java.util.Random;
 import java.util.Set;
 
-/** Deterministic regression checks for the batch 08--11 merchant catalog. */
+/** Deterministic regression checks for the item-priced merchant catalog. */
 public final class MerchantCatalogSelfTest {
     private MerchantCatalogSelfTest() {
     }
@@ -36,17 +36,17 @@ public final class MerchantCatalogSelfTest {
         check(TradeCatalog.getPool(TradePool.BUY_TREASURE).size() == 33, "treasure buy pool");
 
         String[][] rareStocks = {
-                {"diamond", "16"}, {"emerald", "16"}, {"slime_ball", "8"}, {"blaze_rod", "16"}, {"ghast_tear", "16"},
-                {"ender_pearl", "16"}, {"wither_skeleton_skull", "4"}, {"shulker_shell", "8"},
-                {"dragon_breath", "16"}, {"sponge", "8"}, {"chainmail_helmet", "8"},
-                {"chainmail_chestplate", "8"}, {"chainmail_leggings", "8"}, {"chainmail_boots", "8"},
-                {"iron_horse_armor", "8"}, {"golden_horse_armor", "8"}, {"saddle", "8"},
-                {"coal_ore", "8"}, {"iron_ore", "8"}, {"gold_ore", "8"}, {"redstone_ore", "8"},
-                {"lapis_ore", "8"}, {"quartz_ore", "8"}, {"experience_bottle", "8"}, {"name_tag", "8"},
-                {"skeleton_skull", "8"}, {"zombie_head", "8"}, {"creeper_head", "8"}
+                {"diamond", "256"}, {"emerald", "256"}, {"slime_ball", "128"}, {"blaze_rod", "256"}, {"ghast_tear", "256"},
+                {"ender_pearl", "64"}, {"wither_skeleton_skull", "64"}, {"shulker_shell", "128"},
+                {"dragon_breath", "256"}, {"sponge", "128"}, {"chainmail_helmet", "2"},
+                {"chainmail_chestplate", "2"}, {"chainmail_leggings", "2"}, {"chainmail_boots", "2"},
+                {"iron_horse_armor", "2"}, {"golden_horse_armor", "2"}, {"saddle", "2"},
+                {"coal_ore", "128"}, {"iron_ore", "128"}, {"gold_ore", "128"}, {"redstone_ore", "128"},
+                {"lapis_ore", "128"}, {"quartz_ore", "128"}, {"experience_bottle", "128"}, {"name_tag", "128"},
+                {"skeleton_skull", "128"}, {"zombie_head", "128"}, {"creeper_head", "128"}
         };
         for (String[] row : rareStocks) {
-            check(find(TradePool.BUY_RARE, row[0]).getInitialRemainingGroups() == Integer.parseInt(row[1]),
+            check(find(TradePool.BUY_RARE, row[0]).getInitialRemainingItems() == Integer.parseInt(row[1]),
                     "rare stock " + row[0]);
         }
         check(find(TradePool.BUY_RARE, "wither_skeleton_skull").createStack(1, 0).getMetadata() == 1,
@@ -64,23 +64,23 @@ public final class MerchantCatalogSelfTest {
         TradeCatalogEntry lava = find(TradePool.BUY_UNCOMMON, "lava_bucket");
         TradeCatalogEntry magma = find(TradePool.BUY_UNCOMMON, "magma_cream");
         TradeCatalogEntry rabbitFoot = find(TradePool.BUY_UNCOMMON, "rabbit_foot_buy");
-        check(gold.getInitialRemainingGroups() == 16 && gold.getGroupSize() == 64, "gold stock");
-        check(lava.getInitialRemainingGroups() == 16 && lava.getGroupSize() == 1, "lava stock");
-        check(magma.getInitialRemainingGroups() == 16 && magma.getGroupSize() == 64, "magma stock");
-        check(rabbitFoot.getInitialRemainingGroups() == 16 && rabbitFoot.getGroupSize() == 64, "rabbit foot stock");
+        check(gold.getInitialRemainingItems() == 256 && gold.getItemStackLimit() == 64, "gold stock");
+        check(lava.getInitialRemainingItems() == 4 && lava.getItemStackLimit() == 1, "lava stock");
+        check(magma.getInitialRemainingItems() == 256 && magma.getItemStackLimit() == 64, "magma stock");
+        check(rabbitFoot.getInitialRemainingItems() == 256 && rabbitFoot.getItemStackLimit() == 64, "rabbit foot stock");
 
         Set<String> keys = new HashSet<String>();
         for (TradePool pool : TradePool.values()) {
             for (TradeCatalogEntry entry : TradeCatalog.getPool(pool)) {
                 check(keys.add(entry.getCatalogKey()), "duplicate catalog key");
                 check(entry.getBasePrice() > 0L, "positive base price");
-                check(entry.getGroupSize() > 0, "positive group size");
-                check(entry.getInitialRemainingGroups() > 0 || entry.isUnlimitedStock(), "valid stock");
+                check(entry.getItemStackLimit() > 0, "positive stack limit");
+                check(entry.getInitialRemainingItems() > 0 || entry.isUnlimitedStock(), "valid stock");
                 ItemStack singleItem = entry.createStack(1, entry.isEnchantment() ? 1 : 0);
-                check(entry.getGroupSize() == singleItem.getMaxStackSize(),
-                        "merchant group must equal the vanilla maximum stack size");
+                check(entry.getItemStackLimit() == singleItem.getMaxStackSize(),
+                        "merchant stack limit must equal vanilla maximum stack size");
                 if (pool == TradePool.BUY_TREASURE) {
-                    check(entry.getInitialRemainingGroups() == 1, "treasure stock is one");
+                    check(entry.getInitialRemainingItems() == 1, "treasure stock is one item");
                     check(Math.abs(entry.getVolatility() - 0.08D) < 0.0000001D, "treasure volatility");
                 }
                 if (pool == TradePool.BUY_RARE) {
@@ -88,9 +88,9 @@ public final class MerchantCatalogSelfTest {
                     check(Math.abs(entry.getVolatility() - 0.18D) < 0.0000001D
                             || Math.abs(entry.getVolatility() - 0.12D) < 0.0000001D, "rare volatility");
                 }
-                ItemStack stack = entry.createStack(entry.getGroupSize(), entry.isEnchantment() ? 1 : 0);
+                ItemStack stack = entry.createStack(entry.getItemStackLimit(), entry.isEnchantment() ? 1 : 0);
                 check(stack != null && !stack.isEmpty() && stack.getItem() != Items.AIR, "item exists");
-                check(stack.getCount() == entry.getGroupSize(), "group output count");
+                check(stack.getCount() == entry.getItemStackLimit(), "stack output count");
                 if (entry.isEnchantment()) {
                     EnchantmentTradeDefinition definition = entry.getEnchantmentDefinition();
                     int[] weights = definition.getWeights();
@@ -124,10 +124,35 @@ public final class MerchantCatalogSelfTest {
         check(harvestDefinition.resolveLevel(new FixedRandom(99)) == 3, "harvest level upper boundary");
         DailyOffer resolved = new DailyOffer(harvest.getCatalogKey(), true, 1, 3);
         DailyOffer restored = DailyOffer.readFromNBT(resolved.writeToNBT());
-        check(restored.getEnchantmentLevel() == 3 && restored.getRemainingGroups() == 1,
+        check(restored.getEnchantmentLevel() == 3 && restored.getRemainingItems() == 1,
                 "resolved enchantment level persistence");
-        NBTTagCompound oldPlaceholder = new DailyOffer("", false, TradeCatalogEntry.UNLIMITED_STOCK).writeToNBT();
-        check(DailyOffer.readFromNBT(oldPlaceholder).getEnchantmentLevel() == 0, "legacy placeholder level");
+        check(resolved.canConsumeItems(1) && resolved.consumeItems(1) && !resolved.canConsumeItems(1),
+                "finite offers consume individual items");
+        check(resolved.getRemainingItems() == 0, "finite offer reaches zero items");
+        try {
+            DailyOffer.readFromNBT(new NBTTagCompound());
+            throw new AssertionError("legacy offer without remainingItems must be rejected");
+        } catch (IllegalArgumentException expected) {
+            // New saves must carry the item-count field; old group-count saves are not migrated.
+        }
+        List<DailyOffer> duplicateBuys = new java.util.ArrayList<DailyOffer>();
+        for (int index = 0; index < DailyOfferState.BUY_OFFER_COUNT; index++) {
+            duplicateBuys.add(new DailyOffer(find(TradePool.BUY_COMMON, "wheat_seeds").getCatalogKey(), true,
+                    TradeCatalogEntry.UNLIMITED_STOCK));
+        }
+        List<DailyOffer> sales = new java.util.ArrayList<DailyOffer>();
+        for (TradeCatalogEntry entry : TradeCatalog.getPool(TradePool.SELL_CORE)) {
+            sales.add(new DailyOffer(entry.getCatalogKey(), true, TradeCatalogEntry.UNLIMITED_STOCK));
+            if (sales.size() == DailyOfferState.SELL_OFFER_COUNT) {
+                break;
+            }
+        }
+        try {
+            new DailyOfferState(0L, sales, duplicateBuys);
+            throw new AssertionError("duplicate daily purchase products must be rejected");
+        } catch (IllegalArgumentException expected) {
+            // Server-side state validation is the final uniqueness guard.
+        }
         MerchantRecord merchantRecord = new MerchantRecord(java.util.UUID.randomUUID(), java.util.UUID.randomUUID(),
                 java.util.UUID.randomUUID());
         check(merchantRecord.updateKnownEntityChunk(-3, 7), "merchant entity chunk first observation");
@@ -135,43 +160,10 @@ public final class MerchantCatalogSelfTest {
         MerchantRecord restoredMerchantRecord = MerchantRecord.readFromNBT(merchantRecord.writeToNBT());
         check(restoredMerchantRecord.hasKnownEntityChunk() && restoredMerchantRecord.getKnownEntityChunkX() == -3
                 && restoredMerchantRecord.getKnownEntityChunkZ() == 7, "merchant entity chunk persistence");
-        verifyLegacySlimeBallMigration();
+        check(find(TradePool.BUY_TREASURE, "nether_star").getProductIdentity(0)
+                        .equals(find(TradePool.BUY_TREASURE, "nether_star").getProductIdentity(0)),
+                "product identity is stable");
         System.out.println("merchantCatalogSelfTest PASS");
-    }
-
-    private static void verifyLegacySlimeBallMigration() {
-        MerchantRecord merchant = new MerchantRecord(java.util.UUID.randomUUID(), java.util.UUID.randomUUID(),
-                java.util.UUID.randomUUID());
-        List<DailyOffer> sell = new java.util.ArrayList<DailyOffer>();
-        for (int index = 0; index < DailyOfferState.SELL_OFFER_COUNT; index++) {
-            sell.add(new DailyOffer(find(TradePool.SELL_CORE, "wheat").getCatalogKey(), true,
-                    TradeCatalogEntry.UNLIMITED_STOCK));
-        }
-        List<DailyOffer> buy = new java.util.ArrayList<DailyOffer>();
-        for (int index = 0; index < 4; index++) {
-            buy.add(new DailyOffer(find(TradePool.BUY_COMMON, "wheat_seeds").getCatalogKey(), true,
-                    TradeCatalogEntry.UNLIMITED_STOCK));
-        }
-        buy.add(new DailyOffer(LisBamPastoralEconomy.MODID + ":merchant/slime_ball", true,
-                TradeCatalogEntry.UNLIMITED_STOCK));
-        buy.add(new DailyOffer(find(TradePool.BUY_UNCOMMON, "gold_ingot").getCatalogKey(), true, 16));
-        buy.add(new DailyOffer(find(TradePool.BUY_UNCOMMON, "lava_bucket").getCatalogKey(), true, 16));
-        buy.add(new DailyOffer(find(TradePool.BUY_RARE, "diamond").getCatalogKey(), true, 16));
-        buy.add(new DailyOffer(find(TradePool.BUY_RARE, "emerald").getCatalogKey(), true, 16));
-        buy.add(new DailyOffer(find(TradePool.BUY_TREASURE, "nether_star").getCatalogKey(), true, 1));
-        merchant.setDailyOfferState(new DailyOfferState(42L, sell, buy));
-
-        check(MerchantOfferService.migrateLegacyUncommonSlimeBallOffer(merchant, merchant.getDailyOfferState()),
-                "legacy uncommon slime ball must migrate");
-        DailyOffer replacement = merchant.getDailyOfferState().getBuyOffer(4);
-        TradeCatalogEntry entry = TradeCatalog.get(replacement.getCatalogKey());
-        check(entry != null && entry.getPool() == TradePool.BUY_UNCOMMON,
-                "legacy slime ball slot must receive an uncommon offer");
-        check(!LisBamPastoralEconomy.MODID.concat(":merchant/slime_ball").equals(replacement.getCatalogKey()),
-                "legacy slime ball must not remain in the uncommon slot");
-        check(merchant.getDailyOfferState().getBuyOffer(7).getCatalogKey()
-                        .equals(find(TradePool.BUY_RARE, "diamond").getCatalogKey()),
-                "legacy migration must preserve rare offers");
     }
 
     private static TradeCatalogEntry find(TradePool pool, String suffix) {

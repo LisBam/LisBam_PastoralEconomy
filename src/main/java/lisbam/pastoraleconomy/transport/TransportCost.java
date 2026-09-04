@@ -4,10 +4,10 @@ import net.minecraft.util.math.BlockPos;
 
 /** Single source for the frozen batch-14 horizontal-distance and fee rules. */
 public final class TransportCost {
-    public static final long BASE_CONNECTION_FEE = 400L;
-    public static final long MINIMUM_CONNECTION_FEE = 10L;
-    public static final long BASE_TRAVEL_FEE = 40L;
-    public static final long MINIMUM_TRAVEL_FEE = 5L;
+    public static final long BASE_CONNECTION_FEE = 4000L;
+    public static final long MINIMUM_CONNECTION_FEE = 100L;
+    public static final long BASE_TRAVEL_FEE = 400L;
+    public static final long MINIMUM_TRAVEL_FEE = 50L;
 
     private TransportCost() {
     }
@@ -34,19 +34,19 @@ public final class TransportCost {
         if (distance < 0L) {
             throw new IllegalArgumentException("Distance cannot be negative.");
         }
-        long roundedToTen = Math.round((BASE_CONNECTION_FEE + 1.20D * (double) distance) / 10.0D) * 10L;
-        return Math.max(MINIMUM_CONNECTION_FEE, roundedToTen);
+        long numerator = BASE_CONNECTION_FEE + 12L * distance;
+        long roundedToHundred = ((numerator + 50L) / 100L) * 100L;
+        return Math.max(MINIMUM_CONNECTION_FEE, roundedToHundred);
     }
 
-    /** Frozen travel rule: round5(40 + 0.12 * D), using exact integer arithmetic. */
+    /** Frozen travel rule: round50(400 + 1.20 * D), using exact integer arithmetic. */
     public static long travelFee(long distance) {
         if (distance < 0L) {
             throw new IllegalArgumentException("Distance cannot be negative.");
         }
-        // (40 + 0.12D) / 5 = (1000 + 3D) / 125.  Add half the
-        // denominator for deterministic non-negative half-up rounding.
-        long numerator = BASE_TRAVEL_FEE * 25L + 3L * distance;
-        long rounded = ((numerator + 62L) / 125L) * 5L;
+        // (400 + 1.20D) / 50 = (4000 + 12D) / 500.
+        long numerator = BASE_TRAVEL_FEE * 10L + 12L * distance;
+        long rounded = ((numerator + 250L) / 500L) * 50L;
         return Math.max(MINIMUM_TRAVEL_FEE, rounded);
     }
 }

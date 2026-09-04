@@ -33,11 +33,11 @@ public final class TransportCoreSelfTest {
 
     private static void verifyCostFormula() {
         long[] distances = new long[] { 0L, 250L, 500L, 1000L, 2000L, 5000L, 10000L };
-        long[] fees = new long[] { 400L, 700L, 1000L, 1600L, 2800L, 6400L, 12400L };
+        long[] fees = new long[] { 4000L, 7000L, 10000L, 16000L, 28000L, 64000L, 124000L };
         for (int index = 0; index < distances.length; index++) {
             require(TransportCost.connectionFee(distances[index]) == fees[index], "frozen fee point " + distances[index]);
         }
-        long[] travelFees = new long[] { 40L, 70L, 100L, 160L, 280L, 640L, 1240L };
+        long[] travelFees = new long[] { 400L, 700L, 1000L, 1600L, 2800L, 6400L, 12400L };
         for (int index = 0; index < distances.length; index++) {
             require(TransportCost.travelFee(distances[index]) == travelFees[index], "travel fee point " + distances[index]);
         }

@@ -180,18 +180,14 @@ public final class MerchantTradeService {
         return true;
     }
 
-    private static boolean buy(EntityPlayerMP player, MerchantRecord record, DailyOffer offer, int groups) {
-        if (offer == null || !offer.isEnabled() || groups <= 0) {
+    private static boolean buy(EntityPlayerMP player, MerchantRecord record, DailyOffer offer, int quantity) {
+        if (offer == null || !offer.isEnabled() || quantity <= 0) {
             return false;
         }
         TradeCatalogEntry entry = TradeCatalog.get(offer.getCatalogKey());
         if (entry == null || (entry.getPool() != TradePool.BUY_COMMON && entry.getPool() != TradePool.BUY_UNCOMMON
                 && entry.getPool() != TradePool.BUY_RARE && entry.getPool() != TradePool.BUY_TREASURE)
-                || !offer.canConsumeGroups(groups)) {
-            return false;
-        }
-        long itemCountLong = (long) entry.getGroupSize() * (long) groups;
-        if (itemCountLong <= 0L || itemCountLong > Integer.MAX_VALUE) {
+                || !offer.canConsumeItems(quantity)) {
             return false;
         }
         String marketKey;
@@ -203,20 +199,19 @@ public final class MerchantTradeService {
         if (marketKey == null) {
             return false;
         }
-        long groupPrice;
+        long unitPrice;
         try {
-            groupPrice = lisbam.pastoraleconomy.market.MarketService.getCurrentPrice(player.world, marketKey);
+            unitPrice = lisbam.pastoraleconomy.market.MarketService.getCurrentPrice(player.world, marketKey);
         } catch (RuntimeException ignored) {
             return false;
         }
-        long totalPrice = multiply(groupPrice, groups);
+        long totalPrice = multiply(unitPrice, quantity);
         if (!canSpend(player, totalPrice)) {
             return false;
         }
-        int itemCount = (int) itemCountLong;
         ItemStack output;
         try {
-            output = entry.createStack(itemCount, offer.getEnchantmentLevel());
+            output = entry.createStack(quantity, offer.getEnchantmentLevel());
         } catch (RuntimeException ignored) {
             return false;
         }
@@ -227,8 +222,8 @@ public final class MerchantTradeService {
         if (!CoinService.trySpend(player, totalPrice)) {
             return false;
         }
-        if (!offer.consumeGroups(groups) || !insert(player.inventory, output)) {
-            offer.restoreGroups(groups);
+        if (!offer.consumeItems(quantity) || !insert(player.inventory, output)) {
+            offer.restoreItems(quantity);
             restoreInventory(player.inventory, before);
             CoinService.addCoins(player, totalPrice);
             return false;
@@ -432,8 +427,8 @@ public final class MerchantTradeService {
                 result.add(new MerchantTradeOfferView(false, "", 0, 0L, null, TradeCatalogEntry.UNLIMITED_STOCK));
                 continue;
             }
-            result.add(new MerchantTradeOfferView(true, entry.getCatalogKey(), entry.getGroupSize(), price, previous,
-                    offer.getRemainingGroups(), offer.getEnchantmentLevel()));
+            result.add(new MerchantTradeOfferView(true, entry.getCatalogKey(), entry.getItemStackLimit(), price, previous,
+                    offer.getRemainingItems(), offer.getEnchantmentLevel()));
         }
         return result;
     }

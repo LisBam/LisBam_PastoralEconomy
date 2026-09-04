@@ -6,10 +6,10 @@
 - [x] `./gradlew processResources`、`build` — PASS（2026-09-05，Temurin Java 8 `1.8.0_504`；含 `reobfJar`、`exportReleaseJar`；release JAR 344,747 bytes，SHA-256 `6be402b55305362b6a7e02b6f4cc1680298e4edb2825a9aaa2a789d341fcbc5a`，`unzip -t` PASS）
 - [x] Forge 1.12.2 static audit — 0 ERROR；5 条 `packet-thread` WARNING 已审查（通用注册不处理消息；四个 S2C Proxy 桥没有直接修改状态，客户端实际写入均调度至主线程；交通 C2S handler 调度至服务端主线程）。
 
-## 维护：链式市场低价保护
+## 维护：链式市场价格边界与动态回归
 
-- [x] 默认链式市场的基础价大于 1 金币商品不会因正常下跌低于 2；1 金币快照下一次推进至少恢复到 2；取整抹掉的正向小波动至少增加 1。PASS：`marketCoreSelfTest`。
-- [x] `moreStableMarketVolatility=true` 仍调用旧独立公式并保留 1 金币下限；配置切换不重算同日快照。PASS：代码审查、市场核心/世界数据自检。
+- [x] 默认链式市场按类别最低/最高倍率 clamp；偏离基础价越远回归概率为 50%/55%/65%/75%/85%；最低/最高边界下一日强制反弹，取整后保留方向。PASS：`marketCoreSelfTest`。
+- [x] `moreStableMarketVolatility=true` 仍调用独立公式但使用新基础价和上下限；配置切换不重算同日快照。PASS：代码审查、市场核心/世界数据自检。
 - [ ] 游戏内跨日和旧存档 1 金币快照的实际曲线观察。NOT RUN：当前环境无法创建可操作 Forge 客户端或进入 Dedicated Server 世界。
 
 ## 维护：链式市场与界面关闭
@@ -39,9 +39,9 @@
 - [x] `processResources` 与 release JAR：交通方块配方为 `RIR/ICI/RIR`（R=红石块，I=铁块，C=指南针），双语确认窗口与三坐标显示键已打包。PASS（2026-09-04）。
 - [ ] 游戏内：蟹笼 0/1 槽与各向 Hopper 拒绝错误物品、2～19 可存任意物品、原版 Tooltip；交通配方；村庄确认层余额不足仍可点击且由服务器重新定价/拒绝；移出/拆除后节点列表立即消失；320×240 下文字、绿色选中行与无 `d0` 显示。NOT RUN：当前环境没有可操作 Forge 客户端。
 
-## 维护：商人整组、行情书与蟹笼规则
+## 维护：商人按件交易、行情书与蟹笼规则
 
-- [x] `merchantCatalogSelfTest`：每条购买目录的组大小严格等于目标物品原版最大堆叠数；所有有限库存按组计，保存的 `remainingBundles` 仍可读取为剩余组数。PASS（2026-09-04，Temurin Java 8）。
+- [x] `merchantCatalogSelfTest`：价格按单个物品；有限库存按 16→4、8→2、4→1 组并以原版堆叠上限换算实际件数，1 组→1 件；`remainingItems` NBT 往返、按件扣减和重复商品拒绝通过。PASS（2026-09-05，Temurin Java 8）。
 - [x] `marketCoreSelfTest`、`marketPacketSelfTest`：准确追踪并首开预取全部 22 种商人收购商品，16 色羊毛只占共享的一条行情。PASS（2026-09-04，Temurin Java 8）。`processResources` 与 release JAR 资源清单确认无序配方包含 `minecraft:wool` wildcard metadata 且输出 4 根线。
 - [x] `crabTrapSelfTest`：基础等待为 2,000～12,000 tick，Lure 每级减少 2,000 tick；其后续专用槽回归规则见上方维护项。PASS（2026-09-04，Temurin Java 8）。
 - [ ] 游戏内：验证商人的 64/16/1 物品组、所有 22 条行情书选择项、任意颜色羊毛配方、蟹笼手动与 Hopper 存取及 Lure I～III 等待时间。NOT RUN：当前环境没有可操作 Forge 客户端。
@@ -81,14 +81,14 @@
 - [ ] 主世界刷怪笼仍可生成怪物；刷怪蛋、命令与模组直接生成不被拦截。NOT RUN：需要可进入的世界。
 - [ ] 已生成的僵尸、骷髅、蜘蛛、末影人、苦力怕及充能苦力怕的索敌、反击、爆炸方块破坏与实体伤害均为 Java 1.12.2 原版行为。NOT RUN：需要可进入的世界。
 - [x] `animalBoneDropSelfTest`：大体型 20% 双骨/50% 单骨边界、小体型 25% 单骨边界、成功基础掉落的 Looting `0..等级` 附加量及失败不被 Looting 变为掉落。PASS：2026-09-04，Temurin Java 8。
-- [x] `merchantCatalogSelfTest`：粘液球位于 28 项稀有池、4 个/组、8 组库存；读取旧当天罕见槽的无限库存粘液球时，只替换该槽位且保留现有稀有商品。PASS：2026-09-04，Temurin Java 8。
+- [x] `merchantCatalogSelfTest`：粘液球位于 28 项稀有池，按 8 组→2 组并以原版堆叠上限换算实际库存；旧组库存 Offer 不迁移，按当前规则重生成。PASS：2026-09-05，Temurin Java 8。
 - [x] `pastoralWorldDataSelfTest`：旧 v1 初始化标记保留，已删除的 `farmHarassment` 字段不再写出。PASS：2026-09-04，Temurin Java 8。
 - [ ] 牛/哞菇/猪/羊/马/驴/骡/羊驼与鸡/兔/狼/豹猫/鹦鹉按表掉落骨头；抢夺与屠宰的顺序、外部强制并存时的组合、非白名单实体均符合内容书。NOT RUN：需要可进入的世界。
 - [ ] Dedicated Server 完整加载新增 common 事件处理器且不加载客户端类。NOT RUN：`timeout 60s ./gradlew runServer` 已进入 Forge/FML 1.12.2 引导与 coremod 阶段，但在模组发现前到达时限；`run/eula.txt` 保持 `eula=false`，未接受 EULA。静态审计为 0 ERROR。
 
 ## 第 04 批世界日市场核心
 
-- [x] `marketCoreSelfTest`：100 次同 key/day 调用一致；新增目录项不参与旧 key 随机；8 类波动与最低价正确；小麦基础价为 5。PASS。
+- [x] `marketCoreSelfTest`：100 次同 key/day 调用一致；同 Item/meta 买卖变体共享随机身份；8 类上下限、动态回归和边界反弹正确；小麦基础价为 50。PASS（2026-09-05）。
 - [x] 市场初始化只写当前真实世界日的 14 条作物点；苹果不进入历史。PASS：自检。
 - [x] 连续 30 日只保留按世界日升序的最近 30 点；第 31 天及更早点不再提供分页或持久化。PASS：`marketCoreSelfTest`。
 - [x] 多日推进逐日承接上一日价格；连续 1,000 日后只保留最近 30 日窗口；当天重复调用不重建，NBT 重载、回拨和返回原日均不重复。PASS：`marketCoreSelfTest`。
@@ -154,7 +154,7 @@
 
 - [ ] 6 收购栏同日稳定；非栏位商品拒绝；主背包/快捷栏数量和 16 色羊毛统计 — NOT RUN：需要可进入的世界
 - [ ] 牛奶桶出售原子返空桶、满背包失败无副作用 — NOT RUN：需要可进入的世界
-- [ ] 普通 4 + 罕见 3、稀有 2 + 珍宝 1、bundle 价格与 Metadata — NOT RUN：需要可进入的世界
+- [ ] 普通 4 + 罕见 3、稀有 2 + 珍宝 1、单件价格与 Metadata — NOT RUN：需要可进入的世界
 - [ ] 有限库存多人共享、重启不恢复、跨日刷新 — NOT RUN：需要 Dedicated Server/多人
 - [x] GUI 每栏数量加减、数量/预计总价显示；服务端数量上限与库存/容量复核 — PASS：代码审查、`compileJava`/`build`
 - [x] 维护：商人 GUI 不暂停单人集成服务端；成功交易同步窗口 0 玩家背包、CoinService 金币缓存和所有打开的同商人快照。PASS：服务端路径代码审查、`compileJava`、`build`。
@@ -167,17 +167,17 @@
 
 ### 静态/目录
 
-- [x] Rare Pool 27 项、Treasure 普通 21 项 + 特殊附魔 12 项：唯一 key、Item/meta、bundle、价格、波动和库存校验 — PASS：`merchantCatalogSelfTest`
+- [x] Rare Pool 28 项、Treasure 普通 21 项 + 特殊附魔 12 项：唯一 key、Item/meta、单件价格、波动和实际库存校验 — PASS：`merchantCatalogSelfTest`
 - [x] 12 张 1.12.2 唱片独立候选，所有基础价 5000、波动 8%、库存 1 — PASS：目录自检
 - [x] 四种原版特殊附魔 + 八种模组附魔真实 Registry 引用、等级上限和权重总和 100% — PASS：目录自检与 `enchantmentSelfTest`
 - [x] 1.12.2 legacy 映射：Skull metadata、Dragon Head、Enchanted Golden Apple、Dry Sponge、矿石方块 — PASS：目录定义与 ItemStack 自检
 
 ### DailyOffer / 交易
 
-- [x] 每日购买结构 Common 4 + Uncommon 3 + Rare 2 + Treasure 1；旧占位迁移只补末尾三栏 — PASS：代码审查、编译
+- [x] 每日购买结构 Common 4 + Uncommon 3 + Rare 2 + Treasure 1；无效/重复 Offer 按当前规则重生成 — PASS：代码审查、编译
 - [x] 多等级附魔先选类型后按权重解析，等级写入 `DailyOffer`，真实 Enchanted Book 输出 — PASS：目录自检、代码审查
 - [x] Rare/Treasure 库存统一共享并复用原子购买、容量模拟、溢出与重复请求防护 — PASS：代码审查、`build`
-- [x] schema v4→v5；重启/重登不重新 Roll 当日附魔等级 — PASS：NBT 字段与迁移路径审查
+- [x] DailyOffer 的 `remainingItems` 与附魔等级 NBT 往返；缺少新字段的旧 Offer 不迁移 — PASS：NBT 字段与读取校验审查
 - [ ] Rare/Treasure 多人最后库存、服务器重启、跨日刷新、旧 GUI 拒绝 — NOT RUN：需要 Dedicated Server/多人世界
 
 ### 构建
@@ -248,12 +248,12 @@
 - [x] 交通节点快照往返保留 `travelFee`；目的地行、悬停提示和前往按钮显示费用，余额不足/路径不可用时前往按钮暗置。PASS：`TransportCoreSelfTest` Packet 往返、`build`。
 - [x] `compileJava`、`processResources`、`build`（含 `test`、`reobfJar`）— PASS：2026-09-04 以 Corretto 11 JDK 兼容构建；项目 source/target Java 8，`GuiMerchantTrade.class` 为 major 52。当前环境无 Java 8 JDK，因此仍需用 Temurin 8 复验。
 - [x] UTF-8 JavaCompile 编码、Forge 1.12.2 strict audit 0 ERROR、成品 JAR 的 GUI 类和 `mcmod.info` — PASS；5 条既有 `packet-thread` WARNING 已审查。
-- [x] 每次 `build` 在 `reobfJar` 后自动执行 `exportReleaseJar`，并覆盖导出 `release/LisBam_PastoralEconomy-0.1.0.jar`。PASS：2026-09-04 构建日志、SHA-256 与 `unzip -t` 完整性检查。
+- [x] 每次 `build` 在 `reobfJar` 后自动执行 `exportReleaseJar`，并导出 `release/LisBam_PastoralEconomy-1.0.jar`。PASS：2026-09-05 构建日志、SHA-256 与 `unzip -t` 完整性检查。
 - [x] UI 文字使用原版 `FontRenderer`；商人的静态交易文字与数量文字使用原版 `GuiButton` 正常浅色，而当前页签和不可成交确认按钮按原版 `GuiButton` 禁用状态显示深色。蟹笼 20 个实际槽和商人物品槽直接裁取原版 `generic_54.png`，蟹笼空白背景也取原版纹理像素；商人/交通面板每帧以单次完整 `demo_background.png` 裁取绘制，避免分片错位且没有手绘槽框/凸起边框。PASS：源码审查、`compileJava`、`build` 与 Forge audit。
 - [x] 交通 GUI 的标签、节点、文本输入和不可用按钮文字与商人 GUI 一样使用原版 `GuiButton` 正常浅色，仍由原版禁用背景与 `enabled` 限制交互。PASS：源码审查、`compileJava`、`build`。
 - [x] 蟹笼、玩家交通站与村庄交通站资源：交通站和蟹笼两张实际 PNG 都是 32×32，村庄模型不再引用 `planks_oak`；玩家交通方块与 ItemBlock 都从无后缀 `tile...transport_station` 显示键得到“交通方块”，不会显示 `.name`。行情书自有绿皮书 32×32 Item PNG；蟹笼配方为铁锭/铁栅栏交错外框和中央陷阱箱。PASS：源码、`processResources`、release JAR 检查。
 - [x] 发行版本 `1.0`：`build.gradle`、处理后的 `mcmod.info` 和 JAR Manifest 的 Specification/Implementation Version 均为 `1.0`；重混淆文件导出为 `release/LisBam_PastoralEconomy-1.0.jar`。PASS：`processResources`、`build`、JAR 检查。
-- [x] 购买有限库存显示实际剩余物品数量（剩余包数 × 每包数），而非包数；不限量保持显示不限量。PASS：`GuiMerchantTrade` 代码审查、双语资源处理与 `build`。
+- [x] 购买有限库存显示 `remainingItems` 实际剩余物品数量，而非包数；不限量保持显示不限量。PASS：`GuiMerchantTrade` 代码审查、双语资源处理与 `build`。
 - [x] `merchantCatalogSelfTest`：村民 2/15 的最低 3 名、16/20/21/35/36 的 `ceil(n/5)` 边界及 100/1000 村民的无上限增长。PASS（2026-09-04，Temurin Java 8）。
 - [x] 蟹笼：0/1 号 GUI Slot、TileEntity 直接写入和所有方向 Hopper 都拒绝错误物品；2～19 号槽允许任意物品；既有存档内错误功能槽物品保留且可取出。PASS：`crabTrapSelfTest`（2026-09-04）和最终 `build`。
 - [x] GUI：蟹笼沿 `GuiContainer` 原版槽位悬停路径显示蟹笼和玩家背包物品 Tooltip；商人与交通全部静态非按钮文字直接使用 `FontRenderer.drawString(..., 4210752)`，不经带阴影的 `drawCenteredString`；交通节点列表鼠标位于列表区域时可逐行滚动，窄屏面板无重叠。PASS：源码审查、`compileJava`、Forge audit 和最终 `build`；实际游戏内鼠标/视觉验收仍见下方 NOT RUN 项。

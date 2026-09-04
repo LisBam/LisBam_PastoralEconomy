@@ -18,7 +18,7 @@ import net.minecraftforge.fml.common.event.FMLPreInitializationEvent;
 public final class LisBamPastoralEconomy {
     public static final String MODID = "lisbam_pastoral_economy";
     public static final String NAME = "LisBam_PastoralEconomy";
-    public static final String VERSION = "0.1.0";
+    public static final String VERSION = "1.0";
     @Mod.Instance(MODID)
     public static LisBamPastoralEconomy INSTANCE;
 

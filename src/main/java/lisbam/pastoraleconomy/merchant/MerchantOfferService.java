@@ -13,7 +13,6 @@ import java.util.Set;
 
 /** Generates one persisted 6 + 10 offer layout per merchant and market day. */
 public final class MerchantOfferService {
-    private static final String SLIME_BALL_CATALOG_KEY = LisBamPastoralEconomy.MODID + ":merchant/slime_ball";
 
     private MerchantOfferService() {
     }
@@ -26,65 +25,63 @@ public final class MerchantOfferService {
         long worldDay = MarketService.getCurrentMarketDay(world);
         DailyOfferState existing = merchant.getDailyOfferState();
         if (existing != null && existing.getWorldDay() == worldDay) {
-            boolean migratedLegacySlimeBall = migrateLegacyUncommonSlimeBallOffer(merchant, existing);
-            existing = merchant.getDailyOfferState();
-            if (hasAdvancedOffers(existing)) {
-                return migratedLegacySlimeBall;
+            if (hasAdvancedOffers(existing) && hasUniqueBuyProducts(existing)) {
+                return false;
             }
-            // v4 -> v5 migration: preserve the existing sell/common/uncommon offers
-            // and only fill the three placeholders introduced by this batch.
-            List<DailyOffer> sell = new ArrayList<DailyOffer>(existing.getSellOffers());
-            List<DailyOffer> buy = new ArrayList<DailyOffer>(existing.getBuyOffers());
-            while (buy.size() > 7) {
-                buy.remove(buy.size() - 1);
-            }
-            appendPoolOffers(merchant, TradePool.BUY_RARE, 2, buy, worldDay);
-            appendPoolOffers(merchant, TradePool.BUY_TREASURE, 1, buy, worldDay);
+            // Invalid or incomplete same-day states are regenerated under the
+            // current item-count and uniqueness rules.
+            List<DailyOffer> sell = new ArrayList<DailyOffer>(DailyOfferState.SELL_OFFER_COUNT);
+            appendPoolOffers(merchant, TradePool.SELL_CORE, 4, sell, worldDay, null);
+            appendPoolOffers(merchant, TradePool.SELL_SECONDARY, 2, sell, worldDay, null);
+            List<DailyOffer> buy = new ArrayList<DailyOffer>(DailyOfferState.BUY_OFFER_COUNT);
+            Set<String> selectedProducts = new HashSet<String>();
+            appendPoolOffers(merchant, TradePool.BUY_COMMON, 4, buy, worldDay, selectedProducts);
+            appendPoolOffers(merchant, TradePool.BUY_UNCOMMON, 3, buy, worldDay, selectedProducts);
+            appendPoolOffers(merchant, TradePool.BUY_RARE, 2, buy, worldDay, selectedProducts);
+            appendPoolOffers(merchant, TradePool.BUY_TREASURE, 1, buy, worldDay, selectedProducts);
             merchant.setDailyOfferState(new DailyOfferState(worldDay, sell, buy));
             return true;
         }
 
         List<DailyOffer> sell = new ArrayList<DailyOffer>(DailyOfferState.SELL_OFFER_COUNT);
-        appendPoolOffers(merchant, TradePool.SELL_CORE, 4, sell, worldDay);
-        appendPoolOffers(merchant, TradePool.SELL_SECONDARY, 2, sell, worldDay);
+        appendPoolOffers(merchant, TradePool.SELL_CORE, 4, sell, worldDay, null);
+        appendPoolOffers(merchant, TradePool.SELL_SECONDARY, 2, sell, worldDay, null);
 
         List<DailyOffer> buy = new ArrayList<DailyOffer>(DailyOfferState.BUY_OFFER_COUNT);
-        appendPoolOffers(merchant, TradePool.BUY_COMMON, 4, buy, worldDay);
-        appendPoolOffers(merchant, TradePool.BUY_UNCOMMON, 3, buy, worldDay);
-        appendPoolOffers(merchant, TradePool.BUY_RARE, 2, buy, worldDay);
-        appendPoolOffers(merchant, TradePool.BUY_TREASURE, 1, buy, worldDay);
+        Set<String> selectedProducts = new HashSet<String>();
+        appendPoolOffers(merchant, TradePool.BUY_COMMON, 4, buy, worldDay, selectedProducts);
+        appendPoolOffers(merchant, TradePool.BUY_UNCOMMON, 3, buy, worldDay, selectedProducts);
+        appendPoolOffers(merchant, TradePool.BUY_RARE, 2, buy, worldDay, selectedProducts);
+        appendPoolOffers(merchant, TradePool.BUY_TREASURE, 1, buy, worldDay, selectedProducts);
         merchant.setDailyOfferState(new DailyOfferState(worldDay, sell, buy));
         return true;
-    }
-
-    /**
-     * Before slime balls moved to BUY_RARE they could be persisted in one of
-     * the three BUY_UNCOMMON slots with unlimited stock. Preserve every other
-     * same-day offer while replacing only that obsolete slot.
-     */
-    static boolean migrateLegacyUncommonSlimeBallOffer(MerchantRecord merchant, DailyOfferState state) {
-        List<DailyOffer> buy = new ArrayList<DailyOffer>(state.getBuyOffers());
-        boolean changed = false;
-        for (int slot = 4; slot <= 6; slot++) {
-            DailyOffer offer = buy.get(slot);
-            if (offer.isEnabled() && SLIME_BALL_CATALOG_KEY.equals(offer.getCatalogKey())) {
-                TradeCatalogEntry replacement = takeNext(merchant, TradePool.BUY_UNCOMMON);
-                buy.set(slot, new DailyOffer(replacement.getCatalogKey(), true,
-                        replacement.getInitialRemainingGroups()));
-                changed = true;
-            }
-        }
-        if (changed) {
-            merchant.setDailyOfferState(new DailyOfferState(state.getWorldDay(),
-                    new ArrayList<DailyOffer>(state.getSellOffers()), buy));
-        }
-        return changed;
     }
 
     private static boolean hasAdvancedOffers(DailyOfferState state) {
         return isOfferFromPool(state.getBuyOffer(7), TradePool.BUY_RARE)
                 && isOfferFromPool(state.getBuyOffer(8), TradePool.BUY_RARE)
                 && isOfferFromPool(state.getBuyOffer(9), TradePool.BUY_TREASURE);
+    }
+
+    private static boolean hasUniqueBuyProducts(DailyOfferState state) {
+        return state != null && productIdentities(state.getBuyOffers()).size() == DailyOfferState.BUY_OFFER_COUNT;
+    }
+
+    private static Set<String> productIdentities(List<DailyOffer> offers) {
+        Set<String> result = new HashSet<String>();
+        if (offers == null) {
+            return result;
+        }
+        for (DailyOffer offer : offers) {
+            if (offer == null || !offer.isEnabled()) {
+                continue;
+            }
+            TradeCatalogEntry entry = TradeCatalog.get(offer.getCatalogKey());
+            if (entry != null) {
+                result.add(entry.getProductIdentity(offer.getEnchantmentLevel()));
+            }
+        }
+        return result;
     }
 
     private static boolean isOfferFromPool(DailyOffer offer, TradePool pool) {
@@ -103,8 +100,10 @@ public final class MerchantOfferService {
     }
 
     private static void appendPoolOffers(MerchantRecord merchant, TradePool pool, int count, List<DailyOffer> output,
-                                         long worldDay) {
-        for (int index = 0; index < count; index++) {
+                                         long worldDay, Set<String> selectedProducts) {
+        int attempts = 0;
+        int maxAttempts = Math.max(32, TradeCatalog.getPool(pool).size() * 4);
+        while (count > 0 && attempts++ < maxAttempts) {
             TradeCatalogEntry entry = takeNext(merchant, pool);
             int level = 0;
             if (entry.isEnchantment()) {
@@ -114,7 +113,15 @@ public final class MerchantOfferService {
                         ^ ((long) entry.getCatalogKey().hashCode() * 0x9E3779B97F4A7C15L);
                 level = entry.resolveEnchantmentLevel(new Random(seed));
             }
-            output.add(new DailyOffer(entry.getCatalogKey(), true, entry.getInitialRemainingGroups(), level));
+            String identity = entry.getProductIdentity(level);
+            if (selectedProducts != null && !selectedProducts.add(identity)) {
+                continue;
+            }
+            output.add(new DailyOffer(entry.getCatalogKey(), true, entry.getInitialRemainingItems(), level));
+            count--;
+        }
+        if (count > 0) {
+            throw new IllegalStateException("Merchant offer pool cannot provide enough unique products: " + pool);
         }
     }
 
