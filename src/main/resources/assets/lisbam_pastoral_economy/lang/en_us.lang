@@ -2,6 +2,7 @@
 # Batch 02 HUD text; the client formats the number with fixed comma grouping.
 hud.lisbam_pastoral_economy.coins=Coins %s
 item.lisbam_pastoral_economy.market_book.name=Market Book
+item.lisbam_pastoral_economy.golden_bone_meal.name=Gleaming Bone Meal
 tile.lisbam_pastoral_economy.crab_trap.name=Crab Trap
 container.lisbam_pastoral_economy.crab_trap=Crab Trap
 gui.lisbam_pastoral_economy.crab_trap.ready=Ready for next round
@@ -78,7 +79,12 @@ gui.lisbam_pastoral_economy.transport.travel_fee=Travel fee: %s coins
 gui.lisbam_pastoral_economy.transport.travel_unavailable=Travel unavailable
 gui.lisbam_pastoral_economy.transport.nearest_village=Nearest village: %s, D=%s, fee=%s
 gui.lisbam_pastoral_economy.transport.confirm_village=Connect nearest village
+gui.lisbam_pastoral_economy.transport.confirm_notice=Distance and fee are finalized by the server
 gui.lisbam_pastoral_economy.transport.village_distance=Distance: %s
 gui.lisbam_pastoral_economy.transport.village_fee=Connection fee: %s coins
 gui.lisbam_pastoral_economy.transport.confirm=Confirm
 gui.lisbam_pastoral_economy.transport.cancel=Cancel
+gui.lisbam_pastoral_economy.transport.confirm_remove=Remove this station?
+gui.lisbam_pastoral_economy.transport.remove_target=Station: %s
+gui.lisbam_pastoral_economy.transport.remove_warning=It must be connected again before use
+gui.lisbam_pastoral_economy.transport.remove_confirm=Remove

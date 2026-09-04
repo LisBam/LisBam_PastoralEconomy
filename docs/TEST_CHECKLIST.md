@@ -231,6 +231,9 @@
 - [x] 购买有限库存显示实际剩余物品数量（剩余包数 × 每包数），而非包数；不限量保持显示不限量。PASS：`GuiMerchantTrade` 代码审查、双语资源处理与 `build`。
 - [x] `merchantCatalogSelfTest`：村民 2/15 的最低 3 名、16/20/21/35/36 的 `ceil(n/5)` 边界及 100/1000 村民的无上限增长。PASS（2026-09-04，Temurin Java 8）。
 - [x] 蟹笼：0/1 号 GUI Slot、TileEntity 直接写入和所有方向 Hopper 都拒绝错误物品；2～19 号槽允许任意物品；既有存档内错误功能槽物品保留且可取出。PASS：`crabTrapSelfTest`（2026-09-04）和最终 `build`。
-- [x] GUI：蟹笼沿 `GuiContainer` 原版槽位悬停路径显示蟹笼和玩家背包物品 Tooltip；商人与交通全部非按钮文字使用 `0x404040`；交通节点列表鼠标位于列表区域时可逐行滚动，窄屏面板无重叠。PASS：源码审查、`compileJava`、Forge audit 和最终 `build`；实际游戏内鼠标/视觉验收仍见下方 NOT RUN 项。
+- [x] GUI：蟹笼沿 `GuiContainer` 原版槽位悬停路径显示蟹笼和玩家背包物品 Tooltip；商人与交通全部静态非按钮文字直接使用 `FontRenderer.drawString(..., 4210752)`，不经带阴影的 `drawCenteredString`；交通节点列表鼠标位于列表区域时可逐行滚动，窄屏面板无重叠。PASS：源码审查、`compileJava`、Forge audit 和最终 `build`；实际游戏内鼠标/视觉验收仍见下方 NOT RUN 项。
+- [x] 维护：交通“我的节点”标题位于第二行动按钮下方；接入最近村庄和移出节点均使用原版背景比例的本地二次确认层。移出只在确认后发送既有 `REMOVE`，服务端验证路径和 Packet 编码未改。PASS：`GuiTransportStation` 控制流/布局审查、`transportCoreSelfTest`、`transportTravelSelfTest`、`compileJava`。
+- [x] 金闪闪的骨粉：稳定注册、模型、16×16 RGBA 图标、双语键和两份无序 JSON 配方齐全；中心作物至多 8 次原版骨粉、同层 5×5 范围及草/花草层路径的分类/边界正确。PASS：`goldenBoneMealSelfTest`、`compileJava`、`processResources`。
+- [ ] 游戏内：金闪闪的骨粉在每类原版作物中心完全成熟、外围作物各一次骨粉、草方块/花 5×5 自然生成、创造模式不消耗、无效目标不消耗；320×240 与常规缩放下确认层无文字重影且“我的节点”不被按钮遮挡。NOT RUN：当前环境无法创建可操作 Forge 客户端窗口。
 - [ ] 游戏内：在 320x240、常规 GUI Scale 和高分辨率下验证所有四种 GUI 的文字、按钮、滚动、物品 Tooltip、蟹笼点击/Shift-click、无虚假顶部格子、商人余额/背包不足深色禁用态和当前页签禁用、交通费用与余额暗置，以及商人连续切换后的默认页。NOT RUN：当前环境无法创建可操作的 Forge 客户端窗口。
 - [ ] 游戏内：交通方块物品/方块名精确为“交通方块”、两种交通站显示简约石质罗盘贴图、蟹笼显示简约木框铁栅贴图、行情书为绿皮书，且蟹笼新配方正确；传送、重进和 Chunk unload/reload 后没有短暂重复商人。NOT RUN：当前环境无法创建可操作的 Forge 客户端窗口。

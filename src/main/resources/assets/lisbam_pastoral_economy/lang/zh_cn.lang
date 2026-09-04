@@ -2,6 +2,7 @@
 # 第 02 批 HUD 文本；数字由客户端使用固定英文逗号格式化。
 hud.lisbam_pastoral_economy.coins=金币 %s
 item.lisbam_pastoral_economy.market_book.name=市场行情书
+item.lisbam_pastoral_economy.golden_bone_meal.name=金闪闪的骨粉
 tile.lisbam_pastoral_economy.crab_trap.name=蟹笼
 container.lisbam_pastoral_economy.crab_trap=蟹笼
 gui.lisbam_pastoral_economy.crab_trap.ready=准备开始下一轮
@@ -79,7 +80,12 @@ gui.lisbam_pastoral_economy.transport.travel_fee=前往费用：%s 金币
 gui.lisbam_pastoral_economy.transport.travel_unavailable=当前不可前往
 gui.lisbam_pastoral_economy.transport.nearest_village=最近村庄：%s，距离 %s，接入费 %s
 gui.lisbam_pastoral_economy.transport.confirm_village=确认接入最近村庄
+gui.lisbam_pastoral_economy.transport.confirm_notice=最终距离与费用以服务端结算为准
 gui.lisbam_pastoral_economy.transport.village_distance=距离：%s
 gui.lisbam_pastoral_economy.transport.village_fee=接入费：%s 金币
 gui.lisbam_pastoral_economy.transport.confirm=确认
 gui.lisbam_pastoral_economy.transport.cancel=取消
+gui.lisbam_pastoral_economy.transport.confirm_remove=确认移出节点
+gui.lisbam_pastoral_economy.transport.remove_target=节点：%s
+gui.lisbam_pastoral_economy.transport.remove_warning=移出后需重新接入才能使用
+gui.lisbam_pastoral_economy.transport.remove_confirm=移出

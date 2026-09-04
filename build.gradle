@@ -194,6 +194,13 @@ task transportTravelSelfTest(type: JavaExec) {
     main = 'lisbam.pastoraleconomy.transport.TransportTravelSelfTest'
 }
 
+task goldenBoneMealSelfTest(type: JavaExec) {
+    group = 'verification'
+    description = 'Runs deterministic golden-bone-meal target and 5x5 bounds checks.'
+    classpath = sourceSets.test.runtimeClasspath
+    main = 'lisbam.pastoraleconomy.agriculture.GoldenBoneMealSelfTest'
+}
+
 publishing {
     publications {
         mavenJava(MavenPublication) {

@@ -38,7 +38,7 @@ public final class GuiMerchantTrade extends GuiScreen implements GuiSlider.ISlid
     private static final int VANILLA_SLOT_U = 7;
     private static final int VANILLA_SLOT_V = 17;
     /** Vanilla workbench/furnace inventory-title colour for static window text. */
-    private static final int TEXT_COLOR = 0x404040;
+    private static final int VANILLA_CONTAINER_TEXT_COLOR = 4210752;
 
     private final int merchantEntityId;
     private final int[] sellQuantities = new int[MerchantTradeSnapshot.SELL_COUNT];
@@ -84,8 +84,8 @@ public final class GuiMerchantTrade extends GuiScreen implements GuiSlider.ISlid
             GuiTextField field = new GuiTextField(index, fontRenderer, layout.fieldX(cardX), controlsY,
                     layout.fieldWidth, 12);
             field.setMaxStringLength(4);
-            field.setTextColor(TEXT_COLOR);
-            field.setDisabledTextColour(TEXT_COLOR);
+            field.setTextColor(VANILLA_CONTAINER_TEXT_COLOR);
+            field.setDisabledTextColour(VANILLA_CONTAINER_TEXT_COLOR);
             field.setText(Integer.toString(quantity));
             quantityFields[index] = field;
 
@@ -200,14 +200,13 @@ public final class GuiMerchantTrade extends GuiScreen implements GuiSlider.ISlid
         MerchantTradeSnapshot snapshot = ClientMerchantTradeState.get();
         String title = getMerchantDisplayName() + " - "
                 + I18n.format("gui.lisbam_pastoral_economy.merchant.title");
-        drawCenteredString(fontRenderer, title, width / 2, layout.panelY + 7, TEXT_COLOR);
+        drawCenteredContainerText(title, width / 2, layout.panelY + 7);
         long balance = snapshot == null ? ClientPlayerState.getCoins() : snapshot.getBalance();
         long day = snapshot == null ? -1L : snapshot.getWorldDay();
-        drawString(fontRenderer, I18n.format("gui.lisbam_pastoral_economy.merchant.day", Long.toString(day)),
-                layout.panelX + 6, layout.panelY + 20, TEXT_COLOR);
+        drawContainerText(I18n.format("gui.lisbam_pastoral_economy.merchant.day", Long.toString(day)),
+                layout.panelX + 6, layout.panelY + 20);
         String coins = I18n.format("gui.lisbam_pastoral_economy.merchant.coins", format(balance));
-        drawString(fontRenderer, coins, layout.panelRight - 6 - fontRenderer.getStringWidth(coins), layout.panelY + 20,
-                TEXT_COLOR);
+        drawContainerText(coins, layout.panelRight - 6 - fontRenderer.getStringWidth(coins), layout.panelY + 20);
 
         for (int index = 0; index < pageOfferCount(); index++) {
             drawOffer(getView(snapshot, index), index);
@@ -237,8 +236,8 @@ public final class GuiMerchantTrade extends GuiScreen implements GuiSlider.ISlid
         int y = layout.cardY(index, buyPage);
         int cardHeight = layout.cardHeight(buyPage);
         if (view == null || !view.isEnabled()) {
-            drawCenteredString(fontRenderer, I18n.format("gui.lisbam_pastoral_economy.merchant.future"),
-                    x + layout.cardWidth / 2, y + (cardHeight - 8) / 2, TEXT_COLOR);
+            drawCenteredContainerText(I18n.format("gui.lisbam_pastoral_economy.merchant.future"),
+                    x + layout.cardWidth / 2, y + (cardHeight - 8) / 2);
             return;
         }
 
@@ -256,15 +255,13 @@ public final class GuiMerchantTrade extends GuiScreen implements GuiSlider.ISlid
             name = entry.getEnchantmentDefinition().getEnchantment().getTranslatedName(view.getEnchantmentLevel());
         }
         int textX = x + 24;
-        drawString(fontRenderer, fontRenderer.trimStringToWidth(name, layout.cardWidth - 28), textX, y + 3,
-                TEXT_COLOR);
+        drawContainerText(fontRenderer.trimStringToWidth(name, layout.cardWidth - 28), textX, y + 3);
         String trend = view.hasPreviousPrice()
                 ? MarketTrend.compare(view.getCurrentPrice(), view.getPreviousPrice()).getSymbol() : "-";
         long total = multiplyForDisplay(view.getCurrentPrice(), getQuantity(index));
         String totalText = I18n.format("gui.lisbam_pastoral_economy.merchant.total", format(total));
         String priceText = format(view.getCurrentPrice()) + " " + trend + "  " + totalText;
-        drawString(fontRenderer, fontRenderer.trimStringToWidth(priceText, layout.cardWidth - 28), textX, y + 13,
-                TEXT_COLOR);
+        drawContainerText(fontRenderer.trimStringToWidth(priceText, layout.cardWidth - 28), textX, y + 13);
         if (cardHeight >= 42) {
             String amount = buyPage
                     ? I18n.format("gui.lisbam_pastoral_economy.merchant.group", Integer.toString(view.getGroupSize()))
@@ -277,8 +274,8 @@ public final class GuiMerchantTrade extends GuiScreen implements GuiSlider.ISlid
                         : I18n.format("gui.lisbam_pastoral_economy.merchant.remaining",
                         Long.toString((long) view.getRemainingGroups() * (long) view.getGroupSize()));
             }
-            drawString(fontRenderer, fontRenderer.trimStringToWidth(amount + (stock.isEmpty() ? "" : "  " + stock),
-                    layout.cardWidth - 28), textX, y + 23, TEXT_COLOR);
+            drawContainerText(fontRenderer.trimStringToWidth(amount + (stock.isEmpty() ? "" : "  " + stock),
+                    layout.cardWidth - 28), textX, y + 23);
         }
     }
 
@@ -471,6 +468,15 @@ public final class GuiMerchantTrade extends GuiScreen implements GuiSlider.ISlid
             return 0L;
         }
         return price * (long) quantity;
+    }
+
+    /** Matches GuiCrafting/GuiFurnace: direct FontRenderer with 4210752 and no shadow pass. */
+    private void drawContainerText(String text, int x, int y) {
+        fontRenderer.drawString(text, x, y, VANILLA_CONTAINER_TEXT_COLOR);
+    }
+
+    private void drawCenteredContainerText(String text, int centerX, int y) {
+        drawContainerText(text, centerX - fontRenderer.getStringWidth(text) / 2, y);
     }
 
     private static String format(long value) {

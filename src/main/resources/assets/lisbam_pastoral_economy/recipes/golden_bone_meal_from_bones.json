@@ -1,0 +1,16 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "ingredients": [
+    { "item": "minecraft:bone" },
+    { "item": "minecraft:rotten_flesh" },
+    { "item": "minecraft:rotten_flesh" },
+    { "item": "minecraft:rotten_flesh" },
+    { "item": "minecraft:glowstone_dust" },
+    { "item": "minecraft:glowstone_dust" },
+    { "item": "minecraft:glowstone_dust" }
+  ],
+  "result": {
+    "item": "lisbam_pastoral_economy:golden_bone_meal",
+    "count": 3
+  }
+}
