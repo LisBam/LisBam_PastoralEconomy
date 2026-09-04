@@ -35,6 +35,7 @@ git status --short
 - 保持已有 registry ID、NBT key、WorldSavedData 名称和 Packet discriminator 的兼容性；如必须变更，先评估旧存档影响并记录迁移策略。
 - Java 功能与对应 lang、模型、贴图、配方等资源一起完成。Common 代码不得加载客户端类。
 - Bug 修复应定位根因，不得以吞异常或仅隐藏症状代替修复。
+- UI 文字必须使用 Minecraft 1.12.2 原版 `FontRenderer`；可见物品槽与容器背景必须直接使用 Minecraft 原版 GUI 纹理或原版 `GuiButton`、`GuiTextField`、`GuiSlider` 控件。禁止用 `drawRect` 手绘或仿制原版槽框、字体和凸起边框。
 
 ## 验证与文档
 

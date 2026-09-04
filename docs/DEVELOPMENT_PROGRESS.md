@@ -393,6 +393,7 @@
 - 商人出售页固定为 3 行 × 2 列的对称卡片布局；购买页依据客户端同步余额限制最大数量，余额不足一个整包时卡片、数量输入、滑条和确认按钮都会暗置，服务端交易复核不变。
 - 交通快照为每个可用目的地由服务端计算并同步 `travelFee`；列表、悬停提示和“前往（费用）”按钮均显示该费用，余额不足、无有效路径或选中当前站时按钮暗置。
 - `build.gradle` 新增 `exportReleaseJar`：作为 `build` 的 finalizer，在 `reobfJar` 后自动把可安装 JAR 复制到稳定的 `release/` 目录；`AGENTS.md` 规定每次更新后都必须构建并核验该产物。
+- 视觉回归修复：移除商人、交通和蟹笼中手绘的仿原版槽框/凸起边框；所有文字继续直接使用 Minecraft `FontRenderer`，商人/交通改为裁取原版 `demo_background.png`，商人和蟹笼的可见物品槽均裁取原版 `generic_54.png`。蟹笼仍只显示真实 20 槽。
 
 验证：
 
@@ -401,6 +402,7 @@
 - `build.gradle` 显式设定 JavaCompile UTF-8 源文件编码，消除 Windows 默认 GBK 对既有中文/趋势符号源文本的编译诊断；没有改变 source/target Java 8。
 - 本轮重新执行 `cmd.exe /C "set JAVA_HOME=C:\\Users\\23107\\.jdks\\corretto-11.0.26&& gradlew.bat compileJava processResources build"` 与 `transportCoreSelfTest`：PASS（前者含 `test`）；后者覆盖 Packet 6 的新增 `travelFee` 往返。生产 class 仍为 major 52。Forge 1.12.2 audit：0 ERROR、5 条既有 packet-thread WARNING。
 - `gradlew.bat build`：PASS，实际执行 `exportReleaseJar`。`release/LisBam_PastoralEconomy-0.1.0.jar` 已导出且 `unzip -t` 完整性检查通过；SHA-256 为 `9a149aae2be3686f28341a64dcc25d314d82b4522cdbcaf9590f659a291d27e4`。
+- 本轮 `gradlew.bat compileJava processResources build`：PASS（含 `reobfJar` 与 `exportReleaseJar`）；Forge 1.12.2 audit 为 0 ERROR、5 条既有 packet-thread WARNING。最新 release JAR 的 `unzip -t` 通过，SHA-256 为 `c80c805a6fa05c412c41170269a1566384da97eb078aa0d9ad303b45148904c3`。
 
 遗留：
 
