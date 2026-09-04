@@ -52,6 +52,7 @@ public final class MerchantTradeService {
         serverPlayer.openGui(LisBamPastoralEconomy.INSTANCE, GuiIds.MERCHANT_TRADE, serverPlayer.world,
                 merchant.getEntityId(), 0, 0);
         if (serverPlayer.openContainer instanceof ContainerMerchantTrade) {
+            merchant.beginTrading(serverPlayer);
             sendSnapshot(serverPlayer);
         }
     }
@@ -105,6 +106,7 @@ public final class MerchantTradeService {
                     : sell(player, record, offers.getSellOffer(request.getSlot()), request.getQuantity());
             if (success) {
                 data.markDirty();
+                syncPlayerInventory(player);
                 syncOpenMerchantViews(player.world, merchant.getMerchantId());
             } else {
                 sendSnapshot(player);
@@ -357,6 +359,15 @@ public final class MerchantTradeService {
                 ModNetwork.CHANNEL.sendTo(new SyncMerchantTradeMessage(snapshot), player);
             }
         }
+    }
+
+    /**
+     * The merchant window deliberately has no inventory slots. Send window 0
+     * explicitly so its server-side inventory mutation reaches the client in
+     * the same transaction tick instead of waiting for the screen to close.
+     */
+    private static void syncPlayerInventory(EntityPlayerMP player) {
+        player.sendContainerToPlayer(player.inventoryContainer);
     }
 
     private static void syncOpenMerchantViews(World world, UUID merchantId) {

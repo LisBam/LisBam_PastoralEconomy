@@ -6,7 +6,13 @@
 
 - `env JAVA_HOME=/tmp/lisbam-jdk8-UlgK66/jdk8u504-b01 PATH=<Temurin-8-bin> ./gradlew build`
 - 日期：2026-09-04
-- 结果：PASS（Forge 14.23.5.2859 / Temurin Java 8 `1.8.0_504`；`build` 包含 `reobfJar` 与 `exportReleaseJar`。`release/LisBam_PastoralEconomy-0.1.0.jar` 为 2,553,820 bytes，SHA-256 `620a6213a4846b807a34aabcaba0f9b14922e591e340727f48e5904dfbdfaeb6`，`unzip -t` PASS。）
+- 结果：PASS（Forge 14.23.5.2859 / Temurin Java 8 `1.8.0_504`；`build` 包含 `reobfJar` 与 `exportReleaseJar`。`release/LisBam_PastoralEconomy-0.1.0.jar` 为 2,556,234 bytes，SHA-256 `881f0c8762af30076a07c0d1bee2db48477c1eddd3072794aa1d9d554ec4569a`，`unzip -t` PASS。）
+
+## 维护：商人交易实时同步、实体行为与字体一致性（2026-09-04）
+
+根因与修复：`GuiMerchantTrade` 继承普通 `GuiScreen` 而未覆写暂停语义，故单人集成服务端在交易窗口打开时暂停；交易 C2S 包及其库存/金币/快照同步都只能在关窗后才运行。并且商人专用 `ContainerMerchantTrade` 不含玩家背包 Slot，交易服务直接变更 `InventoryPlayer` 不会被该 Container 的常规 slot 差量同步捕获。窗口现不暂停游戏；服务端成功结算同一 tick 立即同步窗口 0 玩家背包，CoinService 同步金币，并向所有当前打开该商人的窗口推送新快照。打开窗口时目标商人停止移动，关闭时解除；商人平时注视 8 格内最近玩家，受到玩家实际伤害后避开该攻击者 200 tick。交易界面的标签、卡片、数量和按钮统一为原版 `GuiButton` 正常浅色，不再因不可交易状态加深字体。
+
+验证：Temurin Java 8 `1.8.0_504` 下 `compileJava`、`compileTestJava`、`merchantCatalogSelfTest`、`processResources`、`build` 均 PASS；后者包含 `test`、`reobfJar` 和 `exportReleaseJar`。Forge 1.12.2 strict audit 为 0 ERROR、5 条既有 `packet-thread` WARNING（通用注册器/Proxy 到客户端主线程桥接，未由本次引入）。发布 JAR 非空，`unzip -t` PASS，SHA-256 如上。游戏内单人、多人与 Dedicated Server 交互为 NOT RUN：当前环境无法创建可操作 Forge 客户端窗口，且没有接受 EULA。
 
 ## 维护：市场、经济与商人性能（2026-09-04）
 
