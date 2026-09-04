@@ -29,16 +29,23 @@ public final class GuiMarketBook extends GuiScreen {
     private final List<Long> newerCursors = new ArrayList<Long>();
     private MarketCommodity selectedCommodity = CROPS.get(0);
     private long requestedBeforeExclusiveDay = -1L;
-    private int nextRequestId;
     private int activeRequestId;
     private boolean initialRequestSent;
     private boolean waitingForSnapshot;
     private GuiButton olderButton;
     private GuiButton newerButton;
     private Layout layout;
+    private MarketHistorySnapshot graphSnapshot;
+    private Layout graphLayout;
+    private List<GraphNode> graphNodes = Collections.emptyList();
+    private double graphDisplayMinimum;
+    private double graphDisplayMaximum;
 
     @Override
     public void initGui() {
+        if (!initialRequestSent) {
+            ClientMarketState.beginBookSession();
+        }
         buttonList.clear();
         layout = Layout.create(width, height);
         addCropButtons();
@@ -107,12 +114,7 @@ public final class GuiMarketBook extends GuiScreen {
     }
 
     private int nextRequestId() {
-        if (nextRequestId == Integer.MAX_VALUE) {
-            nextRequestId = 1;
-        } else {
-            nextRequestId++;
-        }
-        return nextRequestId;
+        return ClientMarketState.nextRequestId();
     }
 
     @Override
@@ -122,6 +124,17 @@ public final class GuiMarketBook extends GuiScreen {
             waitingForSnapshot = false;
         }
         updateNavigation(snapshot);
+    }
+
+    @Override
+    public void onGuiClosed() {
+        // A book session owns its display cache. Closing it releases all page
+        // snapshots so the next open is a fresh, bounded server request.
+        ClientMarketState.endBookSession();
+        newerCursors.clear();
+        graphSnapshot = null;
+        graphNodes = Collections.emptyList();
+        super.onGuiClosed();
     }
 
     @Override
@@ -193,6 +206,36 @@ public final class GuiMarketBook extends GuiScreen {
             return Collections.emptyList();
         }
 
+        if (snapshot != graphSnapshot || layout != graphLayout) {
+            rebuildGraphCache(snapshot);
+        }
+
+        drawString(fontRenderer, formatCoins((long) graphDisplayMaximum), graphX + 2, graphY + 2, 0xFFBDB49D);
+        drawString(fontRenderer, formatCoins((long) graphDisplayMinimum), graphX + 2, graphBottom - 10, 0xFFBDB49D);
+
+        GlStateManager.disableTexture2D();
+        GlStateManager.color(0.58F, 0.86F, 0.42F, 1.0F);
+        GL11.glLineWidth(2.0F);
+        GL11.glBegin(GL11.GL_LINE_STRIP);
+        for (GraphNode node : graphNodes) {
+            GL11.glVertex2f(node.x, node.y);
+        }
+        GL11.glEnd();
+        GL11.glLineWidth(1.0F);
+        GlStateManager.enableTexture2D();
+        for (GraphNode node : graphNodes) {
+            drawRect(node.x - 2, node.y - 2, node.x + 3, node.y + 3, 0xFFEAF6C8);
+        }
+
+        drawString(fontRenderer, Long.toString(points.get(0).getWorldDay()), graphX, graphBottom + 12, 0xFFBDB49D);
+        String latestDay = Long.toString(points.get(points.size() - 1).getWorldDay());
+        drawString(fontRenderer, latestDay, graphRight - fontRenderer.getStringWidth(latestDay), graphBottom + 12, 0xFFBDB49D);
+        return graphNodes;
+    }
+
+    /** Rebuilds graph geometry only when a new server snapshot or layout arrives. */
+    private void rebuildGraphCache(MarketHistorySnapshot snapshot) {
+        List<MarketHistoryPoint> points = snapshot.getPoints();
         double minPrice = points.get(0).getPrice();
         double maxPrice = minPrice;
         for (MarketHistoryPoint point : points) {
@@ -201,46 +244,28 @@ public final class GuiMarketBook extends GuiScreen {
         }
         double range = maxPrice - minPrice;
         double padding = range <= 0.0D ? Math.max(1.0D, maxPrice * 0.10D) : Math.max(1.0D, range * 0.10D);
-        double displayMinimum = Math.max(0.0D, minPrice - padding);
-        double displayMaximum = maxPrice + padding;
-        double displayRange = displayMaximum - displayMinimum;
+        graphDisplayMinimum = Math.max(0.0D, minPrice - padding);
+        graphDisplayMaximum = maxPrice + padding;
+        double displayRange = graphDisplayMaximum - graphDisplayMinimum;
         if (displayRange <= 0.0D) {
             displayRange = 1.0D;
         }
 
-        drawString(fontRenderer, formatCoins((long) displayMaximum), graphX + 2, graphY + 2, 0xFFBDB49D);
-        drawString(fontRenderer, formatCoins((long) displayMinimum), graphX + 2, graphBottom - 10, 0xFFBDB49D);
-        int graphWidth = graphRight - graphX;
-        int graphHeight = graphBottom - graphY;
-        List<GraphNode> nodes = new ArrayList<GraphNode>(points.size());
+        int graphWidth = layout.graphRight - layout.graphX;
+        int graphHeight = layout.graphBottom - layout.graphY;
+        List<GraphNode> rebuilt = new ArrayList<GraphNode>(points.size());
         for (int index = 0; index < points.size(); index++) {
             MarketHistoryPoint point = points.get(index);
-            int nodeX = points.size() == 1 ? (graphX + graphRight) / 2
-                    : graphX + Math.round((float) index * (float) graphWidth / (float) (points.size() - 1));
-            int nodeY = graphY + Math.round((float) ((displayMaximum - point.getPrice()) / displayRange)
+            int nodeX = points.size() == 1 ? (layout.graphX + layout.graphRight) / 2
+                    : layout.graphX + Math.round((float) index * (float) graphWidth / (float) (points.size() - 1));
+            int nodeY = layout.graphY + Math.round((float) ((graphDisplayMaximum - point.getPrice()) / displayRange)
                     * (float) graphHeight);
-            nodeY = Math.max(graphY, Math.min(graphBottom, nodeY));
-            nodes.add(new GraphNode(point, nodeX, nodeY));
+            nodeY = Math.max(layout.graphY, Math.min(layout.graphBottom, nodeY));
+            rebuilt.add(new GraphNode(point, nodeX, nodeY));
         }
-
-        GlStateManager.disableTexture2D();
-        GlStateManager.color(0.58F, 0.86F, 0.42F, 1.0F);
-        GL11.glLineWidth(2.0F);
-        GL11.glBegin(GL11.GL_LINE_STRIP);
-        for (GraphNode node : nodes) {
-            GL11.glVertex2f(node.x, node.y);
-        }
-        GL11.glEnd();
-        GL11.glLineWidth(1.0F);
-        GlStateManager.enableTexture2D();
-        for (GraphNode node : nodes) {
-            drawRect(node.x - 2, node.y - 2, node.x + 3, node.y + 3, 0xFFEAF6C8);
-        }
-
-        drawString(fontRenderer, Long.toString(points.get(0).getWorldDay()), graphX, graphBottom + 12, 0xFFBDB49D);
-        String latestDay = Long.toString(points.get(points.size() - 1).getWorldDay());
-        drawString(fontRenderer, latestDay, graphRight - fontRenderer.getStringWidth(latestDay), graphBottom + 12, 0xFFBDB49D);
-        return nodes;
+        graphSnapshot = snapshot;
+        graphLayout = layout;
+        graphNodes = Collections.unmodifiableList(rebuilt);
     }
 
     private void drawPageRange(MarketHistorySnapshot snapshot) {
@@ -335,6 +360,11 @@ public final class GuiMarketBook extends GuiScreen {
         if (newerButton != null) {
             newerButton.enabled = snapshot != null && !waitingForSnapshot && snapshot.hasNewerHistory()
                     && !newerCursors.isEmpty();
+        }
+        for (GuiButton button : buttonList) {
+            if (button.id >= CROP_BUTTON_OFFSET && button.id < CROP_BUTTON_OFFSET + CROPS.size()) {
+                button.enabled = !waitingForSnapshot;
+            }
         }
     }
 

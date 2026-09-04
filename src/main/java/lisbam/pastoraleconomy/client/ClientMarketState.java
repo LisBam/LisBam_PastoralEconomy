@@ -10,11 +10,16 @@ import java.util.Map;
 public final class ClientMarketState {
     private static final Map<WindowKey, MarketHistorySnapshot> SNAPSHOTS =
             new HashMap<WindowKey, MarketHistorySnapshot>();
+    private static boolean acceptingSnapshots = true;
+    private static int lastRequestId;
 
     private ClientMarketState() {
     }
 
     public static void acceptSnapshot(MarketHistorySnapshot snapshot) {
+        if (!acceptingSnapshots) {
+            return;
+        }
         WindowKey key = new WindowKey(snapshot.getCommodityKey(), snapshot.getBeforeExclusiveDay());
         MarketHistorySnapshot existing = SNAPSHOTS.get(key);
         if (existing == null || snapshot.getRequestId() >= existing.getRequestId()) {
@@ -30,6 +35,28 @@ public final class ClientMarketState {
 
     public static void clear() {
         SNAPSHOTS.clear();
+    }
+
+    /** Starts one visible book session and discards every prior display window. */
+    public static void beginBookSession() {
+        acceptingSnapshots = true;
+        clear();
+    }
+
+    /** Stops accepting late packets after the book is closed. */
+    public static void endBookSession() {
+        acceptingSnapshots = false;
+        clear();
+    }
+
+    /** Request ids remain monotonic for the full connection, including reopen cycles. */
+    public static int nextRequestId() {
+        if (lastRequestId == Integer.MAX_VALUE) {
+            lastRequestId = 1;
+        } else {
+            lastRequestId++;
+        }
+        return lastRequestId;
     }
 
     private static final class WindowKey {

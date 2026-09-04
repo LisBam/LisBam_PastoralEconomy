@@ -39,6 +39,7 @@ public final class GuiMerchantTrade extends GuiScreen implements GuiSlider.ISlid
     private final int merchantEntityId;
     private final int[] sellQuantities = new int[MerchantTradeSnapshot.SELL_COUNT];
     private final int[] buyQuantities = new int[MerchantTradeSnapshot.BUY_COUNT];
+    private final int[] sellHeldCounts = new int[MerchantTradeSnapshot.SELL_COUNT];
     private boolean buyPage = ClientMerchantTradeViewState.isBuyPage();
     private int nextRequestId;
     private GuiTextField[] quantityFields = new GuiTextField[0];
@@ -63,6 +64,7 @@ public final class GuiMerchantTrade extends GuiScreen implements GuiSlider.ISlid
         quantityFields = new GuiTextField[count];
         quantitySliders = new GuiSlider[count];
         MerchantTradeSnapshot snapshot = ClientMerchantTradeState.get();
+        refreshSellHeldCounts(snapshot);
         for (int index = 0; index < count; index++) {
             int cardX = layout.cardX(index, buyPage);
             int controlsY = layout.controlsY(index, buyPage);
@@ -121,7 +123,17 @@ public final class GuiMerchantTrade extends GuiScreen implements GuiSlider.ISlid
         for (GuiTextField field : quantityFields) {
             field.updateCursorCounter();
         }
-        updateControls(ClientMerchantTradeState.get());
+        MerchantTradeSnapshot snapshot = ClientMerchantTradeState.get();
+        if (!buyPage) {
+            refreshSellHeldCounts(snapshot);
+        }
+        updateControls(snapshot);
+    }
+
+    @Override
+    public void onGuiClosed() {
+        ClientMerchantTradeState.clear();
+        super.onGuiClosed();
     }
 
     @Override
@@ -232,7 +244,8 @@ public final class GuiMerchantTrade extends GuiScreen implements GuiSlider.ISlid
         if (cardHeight >= 42) {
             String amount = buyPage
                     ? I18n.format("gui.lisbam_pastoral_economy.merchant.bundle", Integer.toString(view.getBundleSize()))
-                    : I18n.format("gui.lisbam_pastoral_economy.merchant.holding", Integer.toString(countHeld(entry)));
+                    : I18n.format("gui.lisbam_pastoral_economy.merchant.holding",
+                    Integer.toString(getSellHeldCount(index, entry)));
             String stock = "";
             if (buyPage) {
                 stock = view.getRemainingBundles() < 0
@@ -339,7 +352,7 @@ public final class GuiMerchantTrade extends GuiScreen implements GuiSlider.ISlid
             return Math.min(stockLimit, affordableLimit);
         }
         TradeCatalogEntry entry = TradeCatalog.get(view.getCatalogKey());
-        return entry == null ? 0 : Math.max(0, Math.min(MAX_QUANTITY, countHeld(entry)));
+        return entry == null ? 0 : Math.max(0, Math.min(MAX_QUANTITY, getSellHeldCount(index, entry)));
     }
 
     private MerchantTradeOfferView getView(MerchantTradeSnapshot snapshot, int slot) {
@@ -401,6 +414,19 @@ public final class GuiMerchantTrade extends GuiScreen implements GuiSlider.ISlid
         return nextRequestId;
     }
 
+    private void refreshSellHeldCounts(MerchantTradeSnapshot snapshot) {
+        for (int index = 0; index < sellHeldCounts.length; index++) {
+            MerchantTradeOfferView view = snapshot == null || index >= snapshot.getSellOffers().size()
+                    ? null : snapshot.getSellOffers().get(index);
+            TradeCatalogEntry entry = view == null || !view.isEnabled() ? null : TradeCatalog.get(view.getCatalogKey());
+            sellHeldCounts[index] = entry == null ? 0 : countHeld(entry);
+        }
+    }
+
+    private int getSellHeldCount(int index, TradeCatalogEntry entry) {
+        return index >= 0 && index < sellHeldCounts.length && entry != null ? sellHeldCounts[index] : 0;
+    }
+
     private int countHeld(TradeCatalogEntry entry) {
         if (mc.player == null) {
             return 0;
@@ -422,7 +448,15 @@ public final class GuiMerchantTrade extends GuiScreen implements GuiSlider.ISlid
     }
 
     private static String format(long value) {
-        return String.format(java.util.Locale.ROOT, "%,d", value);
+        String digits = Long.toString(Math.max(0L, value));
+        StringBuilder formatted = new StringBuilder(digits.length() + digits.length() / 3);
+        for (int index = 0; index < digits.length(); index++) {
+            if (index > 0 && (digits.length() - index) % 3 == 0) {
+                formatted.append(',');
+            }
+            formatted.append(digits.charAt(index));
+        }
+        return formatted.toString();
     }
 
     /** Draw the complete vanilla panel in one operation; never assemble it from texture fragments. */

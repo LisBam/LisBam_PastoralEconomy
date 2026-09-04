@@ -2,9 +2,8 @@
 
 ## 构建
 
-- [x] `./gradlew compileJava` — PASS（2026-09-04，Temurin Java 8 `1.8.0_504`）
-- [x] `./gradlew processResources` — PASS（2026-09-04）
-- [x] `./gradlew build` — PASS（2026-09-04，含 `compileTestJava`、`test`、`reobfJar`）
+- [x] `./gradlew compileJava`、`compileTestJava` — PASS（2026-09-04，临时 Temurin Java 8 `1.8.0_504`）
+- [x] `./gradlew processResources`、`build` — PASS（2026-09-04，含 `reobfJar`、`exportReleaseJar`；release JAR 2,552,264 bytes，SHA-256 `0d5a22726c2713ff8a72934a93b467a84740b11d1a5258c3c664012977d4c116`，`unzip -t` PASS）
 - [x] Forge 1.12.2 static audit — 0 ERROR；5 条 `packet-thread` WARNING 已审查（通用注册不处理消息；四个 S2C Proxy 桥没有直接修改状态，客户端实际写入均调度至主线程；交通 C2S handler 调度至服务端主线程）。
 
 ## 第 01 批启动与资源
@@ -50,8 +49,9 @@
 
 - [x] `marketCoreSelfTest`：100 次同 key/day 调用一致；新增目录项不参与旧 key 随机；8 类波动与最低价正确；小麦基础价为 5。PASS。
 - [x] 市场初始化只写当前真实世界日的 14 条作物点；苹果不进入历史。PASS：自检。
-- [x] 连续 30 日、超过 30 日的最近窗口和更早分页按世界日升序返回且不删除旧点。PASS：自检。
-- [x] 多日推进逐日补齐；当天重复调用不重复历史；NBT 重载保留 current/previous/history；回拨复用旧日并隐藏未来点。PASS：自检。
+- [x] 连续 30 日只保留按世界日升序的最近 30 点；第 31 天及更早点不再提供分页或持久化。PASS：`marketCoreSelfTest`。
+- [x] 多日/一百万日跳跃仅重建最近窗口；当天重复调用不重建，NBT 重载、回拨和返回原日均产生无重复的确定性 current/previous/history。PASS：`marketCoreSelfTest`。
+- [x] v6 市场读入后写为 v7，且不再写 legacy `processedDays`。PASS：`marketCoreSelfTest`。
 - [x] `PastoralWorldData` v2→v3 保留 firstInitializationCompleted 且不伪造 market。PASS：自检。
 - [x] Forge 1.12.2 static audit：0 ERROR；本批无 Client import、Packet 或现代 API。PASS（2 条第 02 批 packet-thread WARNING 已审查）。
 - [ ] Dedicated Server：市场初始化、睡眠、`/time add`、重启、多玩家、维度与存档重载。NOT RUN：本次实际启动到 Srg→Mcp 映射加载，尚未进入模组加载/EULA/世界；未改动 `run/eula.txt`。
@@ -60,14 +60,14 @@
 ## 第 05 批市场行情书与历史 GUI
 
 - [x] `market_book` 具有稳定 registry/unlocalized name；书 + 小麦使用无序 JSON 配方、输出严格为 1；模型引用已确认存在的 1.12.2 原版 `minecraft:items/book_normal`。PASS：编译、`processResources`、成品 Jar 资源检查。
-- [x] Packet 1/2 使用既有 `lb_pastoral` channel、稳定不重排的 discriminator 1/2；商品 key 限制为 128 UTF-8 bytes，历史点计数最大 30；C2S 仅接收 key/游标/请求号，服务端验证 14 种历史作物、非负/非未来游标并调度主线程。PASS：代码审查、Forge audit 与编译。
-- [x] S2C 快照包含当前日、商品 key、窗口游标、今日/可选昨日价、最多 30 个日/价格/真实前一点价格、前后翻页标记；客户端缓存按商品/游标/请求号隔离，连接/断开清空。PASS：代码审查、编译。
+- [x] Packet 1/2 使用既有 `lb_pastoral` channel、稳定不重排的 discriminator 1/2；商品 key 限制为 128 UTF-8 bytes，历史点计数最大 30；C2S 仅接收 key/游标/请求号，服务端验证实际打开的 `ContainerMarketBook`、14 种历史作物、非负/非未来游标并调度主线程，单会话最少间隔 2 tick。PASS：代码审查、Forge audit 与编译。
+- [x] S2C 快照包含当前日、商品 key、窗口游标、今日/可选昨日价、最多 30 个日/价格/真实前一点价格、前后翻页标记；客户端缓存仅在打开书本期间接收，关闭立即清空并拒绝迟到包，连接内请求号不复用。PASS：代码审查、`marketPacketSelfTest`、编译。
 - [x] `marketPacketSelfTest`：合法请求/快照可往返，129-byte key 与 31 点快照被拒绝，首个可见点保留无前日状态，较旧同窗口快照不会替换较新缓存。PASS。
-- [x] 行情书显示查询只经过 `MarketService.getCurrentMarketDayForDisplay` / `getHistorySnapshot` 的不推进读路径；GUI 开关、切换和分页没有任何市场写入调用。PASS：代码审查、市场核心自检回归。
+- [x] 行情书打开/经济实际读取才经 `MarketService` 服务端惰性刷新市场；主世界 tick 不再调用市场服务。关闭书本后没有客户端市场缓存或新请求。PASS：代码审查、市场核心自检回归。
 - [x] 成品 Jar 包含 `GuiMarketBook`、Packet、行情书 Item、模型、配方、语言、`mcmod.info` 与 `pack.mcmeta`。PASS：Jar 检查。
-- [ ] 开发客户端实际进入世界后：获得物品、中文名、模型、无序配方、主/副手无限使用、默认小麦、14 项切换、今日/昨日/趋势、折线、悬停、前后翻页、GUI Scale 和小窗口。NOT RUN：`runClient` 已实际进入 Forge/FML 与 coremod 发现，但本 WSL 环境在本模组加载/窗口创建前终止。
-- [ ] 市场不变性、跨日、存档重载、多人和主世界/下界/末地一致性。NOT RUN：需要可进入测试世界；实现路径均经服务端主世界 `WorldSavedData` 解析，且 GUI 查询使用不推进读路径。
-- [ ] 恶意包（非法商品、负/超大/未来日期、快速切换/翻页、旧回包）端到端。NOT RUN：需要已连接客户端；代码路径已拒绝非法字段、不分配无限集合，并以 key/游标/请求号隔离回包。
+- [ ] 开发客户端实际进入世界后：获得物品、中文名、模型、无序配方、主/副手无限使用、默认小麦、14 项切换、今日/昨日/趋势、折线、悬停、30 天窗口、GUI Scale 和小窗口。NOT RUN：`runClient` 已实际进入 Forge/FML 与 coremod 发现，但本 WSL 环境在本模组加载/窗口创建前终止。
+- [ ] 市场按需初始化、跨日重开、v6 存档首次访问迁移、多人和主世界/下界/末地一致性。NOT RUN：需要可进入测试世界；实现路径均经服务端主世界 `WorldSavedData` 解析，且市场没有后台 tick。
+- [ ] 恶意包（无书本 Container、非法商品、负/超大/未来日期、快速切换、低于 2 tick 间隔、关书后的迟到回包）端到端。NOT RUN：需要已连接客户端；代码路径已验证 Container、边界、限速和会话缓存。
 - [ ] Dedicated Server 完整加载、玩家连接、GUI 请求和无客户端类加载错误。NOT RUN：`runServer` 已实际进入 Forge/FML Server 与 coremod 阶段，但未完成模组加载；`run/eula.txt` 保持 `false`，未接受 EULA。
 
 ## 第 06、07 批附魔农业与工具战斗
@@ -99,6 +99,7 @@
 - [ ] Overworld 旧 VillageCollection、2 名村民门槛、128/64/160 去重、保存重启不重复 — NOT RUN：需要可进入的世界
 - [ ] 每有效村庄恰好一个安全站点、12 格搜索、不覆盖箱子/门/农田/TileEntity、异常恢复 — NOT RUN：需要可进入的世界
 - [ ] 商人 3～8 目标人数、人口变化收敛、死亡补足、>32 格归位、无自然 despawn — NOT RUN：需要可进入的世界
+- [ ] 商人离站后最多每 20 tick 重算一次返航路径，仍能回到站点；高实体数下维护不会重复扫描 merchant 实体。NOT RUN：需要可进入的世界；代码审查确认单次索引扫描。
 - [ ] MerchantRecord/Offer/库存重启、Chunk unload/reload 不复制或刷新 — NOT RUN：需要 Dedicated Server/世界
 
 ### Sell / Buy / GUI
@@ -145,6 +146,7 @@
 - [ ] 无竿无饵、Lure I/II/III、Luck 0/I/II/III 的真实长样本、钓竿耐久和无经验球。NOT RUN：待可进入世界；等待/权重/loot table 调用由自检与代码审查覆盖。
 - [ ] 五种肉、四种鱼拒绝、严格 ×0.50（奇数向上）、每成功结果约 50% 消耗。NOT RUN：待可进入世界；物品资格与取整自检通过。
 - [ ] 水环境暂停/恢复、满仓 pending 同一结果、保存退出/重启和 Chunk unload/reload。NOT RUN：待可进入世界/服务器；TileEntity NBT 往返自检通过。
+- [ ] 蟹笼运行中倒计时逐 tick 准确；非正常保存/退出最多回退 19 tick，且大量加载蟹笼不每 tick 标脏。NOT RUN：需要可进入服务器与保存检查；代码审查确认 20 tick 持久化节流。
 - [ ] 上/侧 Hopper 仅入肉、下 Hopper 仅出 18 收获槽，以及完整箱子→Hopper→蟹笼→Hopper→箱子的长时间流水线。NOT RUN：待可进入世界；`ISidedInventory` 面向规则自检通过。
 - [ ] 两玩家/Hopper 并发和 Dedicated Server 无客户端类加载错误。NOT RUN：`runServer` 实际进入 Forge/FML/coremod 引导与 mods 扫描，但在本模组加载前停止，未到 EULA/世界阶段；静态 audit 无客户端类泄漏。
 - [ ] `runClient`：NOT RUN：实际进入 Forge/FML/coremod 引导与 mods 扫描，但本 WSL 环境在本模组加载和窗口创建前停止，无法手测模型或 GUI。

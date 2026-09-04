@@ -4,6 +4,7 @@ import lisbam.pastoraleconomy.LisBamPastoralEconomy;
 import lisbam.pastoraleconomy.market.MarketCatalog;
 import lisbam.pastoraleconomy.market.MarketCommodity;
 import lisbam.pastoraleconomy.market.MarketHistoryPoint;
+import lisbam.pastoraleconomy.market.MarketPriceSnapshot;
 import lisbam.pastoraleconomy.market.MarketPriceGenerator;
 import lisbam.pastoraleconomy.merchant.MerchantWorldState;
 import lisbam.pastoraleconomy.transport.TransportWorldState;
@@ -23,9 +24,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
-import java.util.NavigableSet;
 import java.util.TreeMap;
-import java.util.TreeSet;
 
 /**
  * One world-shared root for this save. All future world economy data accesses
@@ -33,8 +32,10 @@ import java.util.TreeSet;
  */
 public final class PastoralWorldData extends WorldSavedData {
     public static final String DATA_NAME = LisBamPastoralEconomy.MODID + "_world_data";
-    public static final int DATA_VERSION = 6;
+    public static final int DATA_VERSION = 7;
     public static final long MARKET_DAY_TICKS = 24000L;
+    /** The market book has one 30-day window, so older points must never grow the save. */
+    public static final int MARKET_HISTORY_RETENTION_DAYS = 30;
     public static final long FARM_HARASSMENT_WINDOW_TICKS = 6000L;
     public static final int FARM_HARASSMENT_MAXIMUM = 6;
     public static final int FARM_HARASSMENT_RADIUS = 32;
@@ -53,7 +54,6 @@ public final class PastoralWorldData extends WorldSavedData {
     private static final String KEY_MARKET_INITIALIZED = "initialized";
     private static final String KEY_MARKET_SEED = "seed";
     private static final String KEY_FIRST_MARKET_DAY = "firstDay";
-    private static final String KEY_PROCESSED_DAYS = "processedDays";
     private static final String KEY_DAY = "day";
     private static final String KEY_CURRENT_SNAPSHOT = "currentSnapshot";
     private static final String KEY_PREVIOUS_SNAPSHOT = "previousSnapshot";
@@ -74,9 +74,10 @@ public final class PastoralWorldData extends WorldSavedData {
     private long previousMarketDay = -1L;
     private final Map<String, Long> currentMarketPrices = new LinkedHashMap<String, Long>();
     private final Map<String, Long> previousMarketPrices = new LinkedHashMap<String, Long>();
-    private final NavigableSet<Long> processedMarketDays = new TreeSet<Long>();
     private final Map<String, NavigableMap<Long, Long>> cropPriceHistory =
             new LinkedHashMap<String, NavigableMap<Long, Long>>();
+    /** Runtime-only marker. Loaded v3-v6 data is normalized on its first market access. */
+    private long cropHistoryWindowDay = Long.MIN_VALUE;
     /** Batch 08--10 world-owned village, station, merchant, offer, and stock state. */
     private final MerchantWorldState merchantWorldState = new MerchantWorldState();
     /** Batch 14 world-owned physical transport-node registry. */
@@ -146,8 +147,9 @@ public final class PastoralWorldData extends WorldSavedData {
     }
 
     /**
-     * Server-side market transition. New forward days are filled sequentially;
-     * a time rollback never deletes or duplicates persisted crop history.
+     * Server-side market transition. Prices are deterministic from the stable
+     * market seed, so a time jump never needs to iterate every skipped day.
+     * Only the visible 30-day crop window is materialized and persisted.
      */
     public synchronized void ensureMarketDay(long worldDay, long authoritativeWorldSeed) {
         if (!marketInitialized) {
@@ -157,61 +159,34 @@ public final class PastoralWorldData extends WorldSavedData {
             setCurrentSnapshot(worldDay, Collections.<String, Long>emptyMap());
             previousMarketDay = -1L;
             previousMarketPrices.clear();
-            processedMarketDays.add(worldDay);
-            recordCropHistory(worldDay, currentMarketPrices);
+            rebuildCropHistoryWindow(worldDay);
             markDirty();
             return;
         }
 
         if (worldDay == currentMarketDay) {
-            if (fillMissingCurrentPrices()) {
+            boolean changed = fillMissingCurrentPrices();
+            if (cropHistoryWindowDay != worldDay) {
+                rebuildCropHistoryWindow(worldDay);
+                changed = true;
+            }
+            if (changed) {
                 markDirty();
             }
             return;
         }
 
-        long greatestProcessedDay = processedMarketDays.isEmpty() ? firstMarketDay : processedMarketDays.last();
-        if (worldDay > greatestProcessedDay) {
-            long nextDay = greatestProcessedDay + 1L;
-            while (nextDay <= worldDay) {
-                previousMarketDay = nextDay - 1L;
-                previousMarketPrices.clear();
-                if (currentMarketDay == previousMarketDay) {
-                    previousMarketPrices.putAll(currentMarketPrices);
-                } else if (processedMarketDays.contains(previousMarketDay)) {
-                    previousMarketPrices.putAll(createSnapshot(previousMarketDay, Collections.<String, Long>emptyMap()));
-                } else {
-                    previousMarketDay = -1L;
-                }
-                setCurrentSnapshot(nextDay, Collections.<String, Long>emptyMap());
-                processedMarketDays.add(nextDay);
-                recordCropHistory(nextDay, currentMarketPrices);
-                if (nextDay == Long.MAX_VALUE) {
-                    break;
-                }
-                nextDay++;
-            }
-            markDirty();
-            return;
-        }
-
-        if (processedMarketDays.contains(worldDay)) {
-            setCurrentSnapshot(worldDay, Collections.<String, Long>emptyMap());
-            previousMarketPrices.clear();
-            if (processedMarketDays.contains(worldDay - 1L)) {
-                previousMarketDay = worldDay - 1L;
-                previousMarketPrices.putAll(createSnapshot(previousMarketDay, Collections.<String, Long>emptyMap()));
-            } else {
-                previousMarketDay = -1L;
-            }
-            markDirty();
-            return;
-        }
-
-        // A rollback before market activation is viewable but must not invent pre-install history.
         setCurrentSnapshot(worldDay, Collections.<String, Long>emptyMap());
-        previousMarketDay = -1L;
         previousMarketPrices.clear();
+        if (worldDay > firstMarketDay) {
+            previousMarketDay = worldDay - 1L;
+            previousMarketPrices.putAll(createSnapshot(previousMarketDay, Collections.<String, Long>emptyMap()));
+        } else {
+            // A rollback before market activation is viewable but must not
+            // invent pre-install history.
+            previousMarketDay = -1L;
+        }
+        rebuildCropHistoryWindow(worldDay);
         markDirty();
     }
 
@@ -233,6 +208,13 @@ public final class PastoralWorldData extends WorldSavedData {
 
     public synchronized boolean hasPreviousMarketSnapshot() {
         return previousMarketDay >= 0L;
+    }
+
+    /** One immutable price view avoids repeated WorldSavedData lookups per merchant GUI snapshot. */
+    public synchronized MarketPriceSnapshot createMarketPriceSnapshot() {
+        return new MarketPriceSnapshot(currentMarketDay,
+                new LinkedHashMap<String, Long>(currentMarketPrices),
+                new LinkedHashMap<String, Long>(previousMarketPrices));
     }
 
     public synchronized List<MarketHistoryPoint> getCropHistory(String key, long visibleThroughDay, int limit,
@@ -259,7 +241,8 @@ public final class PastoralWorldData extends WorldSavedData {
         }
         List<Long> days = new ArrayList<Long>();
         Iterator<Long> descending = visible.descendingKeySet().iterator();
-        while (descending.hasNext() && days.size() < limit) {
+        int effectiveLimit = Math.min(limit, MARKET_HISTORY_RETENTION_DAYS);
+        while (descending.hasNext() && days.size() < effectiveLimit) {
             days.add(descending.next());
         }
         Collections.reverse(days);
@@ -429,16 +412,25 @@ public final class PastoralWorldData extends WorldSavedData {
         return snapshot;
     }
 
-    private void recordCropHistory(long day, Map<String, Long> prices) {
+    private void rebuildCropHistoryWindow(long worldDay) {
+        cropPriceHistory.clear();
+        cropHistoryWindowDay = worldDay;
+        if (worldDay < firstMarketDay) {
+            return;
+        }
+        long retentionOffset = MARKET_HISTORY_RETENTION_DAYS - 1L;
+        long earliestRetainedDay = worldDay < Long.MIN_VALUE + retentionOffset
+                ? Long.MIN_VALUE : worldDay - retentionOffset;
+        long firstVisibleDay = Math.max(firstMarketDay, earliestRetainedDay);
         for (MarketCommodity commodity : MarketCatalog.getHistoryTracked()) {
-            NavigableMap<Long, Long> history = cropPriceHistory.get(commodity.getKey());
-            if (history == null) {
-                history = new TreeMap<Long, Long>();
-                cropPriceHistory.put(commodity.getKey(), history);
+            NavigableMap<Long, Long> history = new TreeMap<Long, Long>();
+            for (long historyDay = firstVisibleDay; historyDay <= worldDay; historyDay++) {
+                history.put(historyDay, MarketPriceGenerator.calculatePrice(marketSeed, historyDay, commodity));
+                if (historyDay == Long.MAX_VALUE) {
+                    break;
+                }
             }
-            if (!history.containsKey(day)) {
-                history.put(day, prices.get(commodity.getKey()));
-            }
+            cropPriceHistory.put(commodity.getKey(), history);
         }
     }
 
@@ -450,8 +442,8 @@ public final class PastoralWorldData extends WorldSavedData {
         previousMarketDay = -1L;
         currentMarketPrices.clear();
         previousMarketPrices.clear();
-        processedMarketDays.clear();
         cropPriceHistory.clear();
+        cropHistoryWindowDay = Long.MIN_VALUE;
     }
 
     private NBTTagCompound writeMarket() {
@@ -462,23 +454,12 @@ public final class PastoralWorldData extends WorldSavedData {
         }
         market.setLong(KEY_MARKET_SEED, marketSeed);
         market.setLong(KEY_FIRST_MARKET_DAY, firstMarketDay);
-        market.setTag(KEY_PROCESSED_DAYS, writeProcessedDays());
         market.setTag(KEY_CURRENT_SNAPSHOT, writeSnapshot(currentMarketDay, currentMarketPrices));
         if (previousMarketDay >= 0L) {
             market.setTag(KEY_PREVIOUS_SNAPSHOT, writeSnapshot(previousMarketDay, previousMarketPrices));
         }
         market.setTag(KEY_CROP_HISTORIES, writeCropHistories());
         return market;
-    }
-
-    private NBTTagList writeProcessedDays() {
-        NBTTagList days = new NBTTagList();
-        for (Long day : processedMarketDays) {
-            NBTTagCompound entry = new NBTTagCompound();
-            entry.setLong(KEY_DAY, day.longValue());
-            days.appendTag(entry);
-        }
-        return days;
     }
 
     private NBTTagCompound writeSnapshot(long day, Map<String, Long> prices) {
@@ -520,18 +501,15 @@ public final class PastoralWorldData extends WorldSavedData {
         }
         marketSeed = market.getLong(KEY_MARKET_SEED);
         firstMarketDay = market.getLong(KEY_FIRST_MARKET_DAY);
-        readProcessedDays(market.getTagList(KEY_PROCESSED_DAYS, 10));
         readSnapshot(market.getCompoundTag(KEY_CURRENT_SNAPSHOT), currentMarketPrices, true);
         if (market.hasKey(KEY_PREVIOUS_SNAPSHOT, 10)) {
             readSnapshot(market.getCompoundTag(KEY_PREVIOUS_SNAPSHOT), previousMarketPrices, false);
         }
         readCropHistories(market.getTagList(KEY_CROP_HISTORIES, 10));
-    }
-
-    private void readProcessedDays(NBTTagList serializedDays) {
-        for (int index = 0; index < serializedDays.tagCount(); index++) {
-            processedMarketDays.add(serializedDays.getCompoundTagAt(index).getLong(KEY_DAY));
-        }
+        // v3-v6 saves may carry unbounded history. Retain no more than the
+        // newest thirty entries while the first on-demand market access
+        // deterministically rebuilds the exact current-day window.
+        cropHistoryWindowDay = Long.MIN_VALUE;
     }
 
     private void readSnapshot(NBTTagCompound snapshot, Map<String, Long> target, boolean current) {
@@ -546,7 +524,7 @@ public final class PastoralWorldData extends WorldSavedData {
             NBTTagCompound value = values.getCompoundTagAt(index);
             String key = value.getString(KEY_PRICE_KEY);
             long price = value.getLong(KEY_PRICE_VALUE);
-            if (!key.isEmpty() && price > 0L) {
+            if (!key.isEmpty() && price > 0L && MarketCatalog.get(key) != null) {
                 target.put(key, price);
             }
         }
@@ -559,6 +537,9 @@ public final class PastoralWorldData extends WorldSavedData {
             if (key.isEmpty()) {
                 continue;
             }
+            if (MarketCatalog.get(key) == null || !MarketCatalog.get(key).isHistoryTracked()) {
+                continue;
+            }
             NavigableMap<Long, Long> history = new TreeMap<Long, Long>();
             NBTTagList points = serializedHistory.getTagList(KEY_HISTORY_POINTS, 10);
             for (int pointIndex = 0; pointIndex < points.tagCount(); pointIndex++) {
@@ -566,6 +547,9 @@ public final class PastoralWorldData extends WorldSavedData {
                 long price = point.getLong(KEY_PRICE_VALUE);
                 if (price > 0L) {
                     history.put(point.getLong(KEY_DAY), price);
+                    while (history.size() > MARKET_HISTORY_RETENTION_DAYS) {
+                        history.pollFirstEntry();
+                    }
                 }
             }
             cropPriceHistory.put(key, history);
