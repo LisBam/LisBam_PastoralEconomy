@@ -11,9 +11,9 @@ import java.util.function.IntSupplier;
  * GAMEPLAY_FISHING loot table by {@link lisbam.pastoraleconomy.tile.TileCrabTrap}.
  */
 public final class CrabTrapRules {
-    public static final int MIN_BASE_WAIT_TICKS = 100;
-    public static final int MAX_BASE_WAIT_TICKS = 600;
-    public static final int LURE_REDUCTION_TICKS = 100;
+    public static final int MIN_BASE_WAIT_TICKS = 2000;
+    public static final int MAX_BASE_WAIT_TICKS = 12000;
+    public static final int LURE_REDUCTION_TICKS = 2000;
     public static final int MAX_FISHING_ENCHANTMENT_LEVEL = 3;
 
     private CrabTrapRules() {
@@ -48,7 +48,7 @@ public final class CrabTrapRules {
         do {
             int base = baseWaitSupplier.getAsInt();
             if (base < MIN_BASE_WAIT_TICKS || base > MAX_BASE_WAIT_TICKS) {
-                throw new IllegalArgumentException("Crab trap base wait must be between 100 and 600 ticks.");
+                throw new IllegalArgumentException("Crab trap base wait must be between 2000 and 12000 ticks.");
             }
             adjusted = base - clampedLure * LURE_REDUCTION_TICKS;
         } while (adjusted <= 0);

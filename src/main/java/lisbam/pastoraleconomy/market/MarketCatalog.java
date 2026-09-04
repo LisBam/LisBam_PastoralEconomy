@@ -14,7 +14,7 @@ import java.util.Map;
 
 /**
  * The single frozen market directory. Keys name an economic price definition,
- * so a unit sell price and a later merchant purchase bundle can coexist for
+ * so a unit sell price and a later merchant purchase group can coexist for
  * the same Minecraft Item without confusing either transaction direction.
  */
 public final class MarketCatalog {
@@ -36,8 +36,8 @@ public final class MarketCatalog {
                 tracked.add(commodity);
             }
         }
-        if (tracked.size() != 14) {
-            throw new IllegalStateException("The market must track exactly fourteen crop histories.");
+        if (tracked.size() != 22) {
+            throw new IllegalStateException("The market must track every one of the twenty-two merchant sell goods.");
         }
         HISTORY_TRACKED = Collections.unmodifiableList(tracked);
     }
@@ -70,19 +70,19 @@ public final class MarketCatalog {
         add(definitions, "sell/crop/cocoa_beans", Items.DYE, 3, 5, CommodityCategory.SECONDARY_AGRICULTURE_LIVESTOCK, true);
         add(definitions, "sell/crop/red_mushroom", block(Blocks.RED_MUSHROOM), 0, 5, CommodityCategory.SECONDARY_AGRICULTURE_LIVESTOCK, true);
         add(definitions, "sell/crop/brown_mushroom", block(Blocks.BROWN_MUSHROOM), 0, 5, CommodityCategory.SECONDARY_AGRICULTURE_LIVESTOCK, true);
-        add(definitions, "sell/agriculture/apple", Items.APPLE, 0, 10, CommodityCategory.SECONDARY_AGRICULTURE_LIVESTOCK, false);
-        add(definitions, "sell/livestock/egg", Items.EGG, 0, 6, CommodityCategory.SECONDARY_AGRICULTURE_LIVESTOCK, false);
-        add(definitions, "sell/livestock/feather", Items.FEATHER, 0, 5, CommodityCategory.SECONDARY_AGRICULTURE_LIVESTOCK, false);
-        add(definitions, "sell/livestock/leather", Items.LEATHER, 0, 12, CommodityCategory.SECONDARY_AGRICULTURE_LIVESTOCK, false);
-        add(definitions, "sell/livestock/rabbit_hide", Items.RABBIT_HIDE, 0, 6, CommodityCategory.SECONDARY_AGRICULTURE_LIVESTOCK, false);
-        add(definitions, "sell/livestock/rabbit_foot", Items.RABBIT_FOOT, 0, 20, CommodityCategory.SECONDARY_AGRICULTURE_LIVESTOCK, false);
+        add(definitions, "sell/agriculture/apple", Items.APPLE, 0, 10, CommodityCategory.SECONDARY_AGRICULTURE_LIVESTOCK, true);
+        add(definitions, "sell/livestock/egg", Items.EGG, 0, 6, CommodityCategory.SECONDARY_AGRICULTURE_LIVESTOCK, true);
+        add(definitions, "sell/livestock/feather", Items.FEATHER, 0, 5, CommodityCategory.SECONDARY_AGRICULTURE_LIVESTOCK, true);
+        add(definitions, "sell/livestock/leather", Items.LEATHER, 0, 12, CommodityCategory.SECONDARY_AGRICULTURE_LIVESTOCK, true);
+        add(definitions, "sell/livestock/rabbit_hide", Items.RABBIT_HIDE, 0, 6, CommodityCategory.SECONDARY_AGRICULTURE_LIVESTOCK, true);
+        add(definitions, "sell/livestock/rabbit_foot", Items.RABBIT_FOOT, 0, 20, CommodityCategory.SECONDARY_AGRICULTURE_LIVESTOCK, true);
         add(definitions, "sell/crop/nether_wart", Items.NETHER_WART, 0, 8, CommodityCategory.SECONDARY_AGRICULTURE_LIVESTOCK, true);
         add(definitions, "sell/crop/chorus_fruit", Items.CHORUS_FRUIT, 0, 8, CommodityCategory.SECONDARY_AGRICULTURE_LIVESTOCK, true);
-        add(definitions, "sell/livestock/milk_bucket", Items.MILK_BUCKET, 0, 20, CommodityCategory.SECONDARY_AGRICULTURE_LIVESTOCK, false);
+        add(definitions, "sell/livestock/milk_bucket", Items.MILK_BUCKET, 0, 20, CommodityCategory.SECONDARY_AGRICULTURE_LIVESTOCK, true);
         // Merchant offers treat all 16 wool metadata values as one logical good,
         // so it needs one shared frozen unit price rather than sixteen rolls.
         add(definitions, "sell/livestock/wool", block(Blocks.WOOL), 0, 8,
-                CommodityCategory.SECONDARY_AGRICULTURE_LIVESTOCK, false, "minecraft:wool@any_color");
+                CommodityCategory.SECONDARY_AGRICULTURE_LIVESTOCK, true, "minecraft:wool@any_color");
         for (int metadata = 0; metadata < 16; metadata++) {
             add(definitions, "sell/livestock/wool_" + metadata, block(Blocks.WOOL), metadata, 8,
                     CommodityCategory.SECONDARY_AGRICULTURE_LIVESTOCK, false);

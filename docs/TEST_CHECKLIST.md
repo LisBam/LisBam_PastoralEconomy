@@ -3,8 +3,15 @@
 ## 构建
 
 - [x] `./gradlew compileJava`、`compileTestJava` — PASS（2026-09-04，临时 Temurin Java 8 `1.8.0_504`）
-- [x] `./gradlew processResources`、`build` — PASS（2026-09-04，含 `reobfJar`、`exportReleaseJar`；release JAR 2,552,264 bytes，SHA-256 `0d5a22726c2713ff8a72934a93b467a84740b11d1a5258c3c664012977d4c116`，`unzip -t` PASS）
+- [x] `./gradlew processResources`、`build` — PASS（2026-09-04，含 `reobfJar`、`exportReleaseJar`；release JAR 322,772 bytes，SHA-256 `296b440379f22a0f15990eaf49af31fc5b1272397427d7b0f222e05428290bb2`，`unzip -t` PASS）
 - [x] Forge 1.12.2 static audit — 0 ERROR；5 条 `packet-thread` WARNING 已审查（通用注册不处理消息；四个 S2C Proxy 桥没有直接修改状态，客户端实际写入均调度至主线程；交通 C2S handler 调度至服务端主线程）。
+
+## 维护：商人整组、行情书与蟹笼规则
+
+- [x] `merchantCatalogSelfTest`：每条购买目录的组大小严格等于目标物品原版最大堆叠数；所有有限库存按组计，保存的 `remainingBundles` 仍可读取为剩余组数。PASS（2026-09-04，Temurin Java 8）。
+- [x] `marketCoreSelfTest`、`marketPacketSelfTest`：准确追踪并首开预取全部 22 种商人收购商品，16 色羊毛只占共享的一条行情。PASS（2026-09-04，Temurin Java 8）。`processResources` 与 release JAR 资源清单确认无序配方包含 `minecraft:wool` wildcard metadata 且输出 4 根线。
+- [x] `crabTrapSelfTest`：全部 20 槽允许玩家/Hopper 任意存取，功能读取和 2～19 捕捞产出语义不变；基础等待为 2,000～12,000 tick，Lure 每级减少 2,000 tick。PASS（2026-09-04，Temurin Java 8）。
+- [ ] 游戏内：验证商人的 64/16/1 物品组、所有 22 条行情书选择项、任意颜色羊毛配方、蟹笼手动与 Hopper 存取及 Lure I～III 等待时间。NOT RUN：当前环境没有可操作 Forge 客户端。
 
 ## 第 01 批启动与资源
 

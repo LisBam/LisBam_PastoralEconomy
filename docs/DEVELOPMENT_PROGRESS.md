@@ -4,9 +4,17 @@
 
 最近成功构建：
 
-- `env JAVA_HOME=/tmp/lbpe-jdk8 "PATH=/tmp/lbpe-jdk8/bin:$PATH" ./gradlew build`
+- `env JAVA_HOME=/tmp/lbpe-jdk8 PATH=/tmp/lbpe-jdk8/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin ./gradlew --console=plain build`
 - 日期：2026-09-04
-- 结果：PASS（Forge 14.23.5.2859 / Temurin Java 8 `1.8.0_504`；`build` 包含 `reobfJar` 与 `exportReleaseJar`。`release/LisBam_PastoralEconomy-1.0.jar` 为 335,340 bytes，SHA-256 `98de865d634ddfbdc1d25e54c72349cff2531f32e4cd1cf214819771075d0690`，`unzip -t` PASS。）
+- 结果：PASS（Forge 14.23.5.2859 / Temurin Java 8 `1.8.0_504`；`build` 包含 `reobfJar` 与 `exportReleaseJar`。`release/LisBam_PastoralEconomy-1.0.jar` 为 322,772 bytes，SHA-256 `296b440379f22a0f15990eaf49af31fc5b1272397427d7b0f222e05428290bb2`，`unzip -t` PASS。）
+
+## 维护：商人整组、行情书与蟹笼规则（2026-09-04）
+
+实现：商人购买单位统一为目标物品的 Java 1.12.2 原版最大堆叠数；删除 `TradeCatalog` 中会再次引入自定义小包的固定数量字段，购买 GUI 与同步视图均使用“组”。所有 22 种实际可出售给商人的逻辑商品均进入行情书的最近 30 日历史，16 色羊毛保留为一条共享曲线。羊毛转线 JSON 配方接受全部羊毛 metadata。蟹笼成为可任意存取的 20 槽普通容器，全部方向 Hopper 都可访问全部槽位；0/1 仍仅作为钓竿/饵料读取位，2～19 仍为捕捞输出位。每轮等待调整为 100～600 秒，饵钓每级减少 100 秒。
+
+兼容性与影响：保留 `remainingBundles` NBT key 以兼容旧 Offer，但其数值现在表示剩余原版整组；已有当天 Offer 自加载起按新组大小发放，跨日重新生成。旧市场数据首次访问会重建完整的 22 商品历史窗口。蟹笼既有库存、pending loot 与倒计时均可读取；下一次抽取使用新等待范围。
+
+验证：严格 Forge 1.12.2 审计为 0 ERROR、5 条既有 `packet-thread` WARNING；`compileJava`、`processResources`、`merchantCatalogSelfTest`、`marketCoreSelfTest`、`marketPacketSelfTest`、`crabTrapSelfTest` 和最终 `build` 均 PASS。release JAR 为 322,772 bytes、SHA-256 `296b440379f22a0f15990eaf49af31fc5b1272397427d7b0f222e05428290bb2`，`unzip -t` 通过并确认含任意羊毛配方、行情书/蟹笼/商人相关类与双语资源。游戏内和 Dedicated Server 未运行：当前环境没有可操作 Forge 客户端，且未接受服务器 EULA。
 
 ## 维护：主世界敌对生成、动物骨头、配方与粘液球（2026-09-04）
 

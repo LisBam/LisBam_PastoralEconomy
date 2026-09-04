@@ -57,6 +57,22 @@ release/LisBam_PastoralEconomy-<version>.jar
 
 `build.gradle` 的 `exportReleaseJar` 已作为 `build` 的 finalizer 自动执行；完成时仍须检查该文件真实存在、非空，并在最终报告中说明导出结果。不得把开发环境的未重混淆 JAR 当作 release 成品。
 
+### Forge 1.12.2 JDK 8 构建关键词
+
+当用户说出 `FORGE1122_JDK8_BUILD_EXPORT`、"用 JDK 8 构建并导出 JAR"，或构建窗口报告缺少 JDK/JAVA_HOME 时，必须先按以下规则处理，不能只因默认 `java` 不在 PATH 就声称无法导出：
+
+1. 定位一个可执行的 **JDK 8**（不是仅有 JRE），优先检查工作区临时 Temurin 8 路径 `/tmp/lbpe-jdk8`；该路径不存在时，检查 `/tmp/lisbam-jdk8-UlgK66/jdk8u504-b01`，或搜索其他本机 JDK 8 安装。先以 `"$JDK8_HOME/bin/java" -version` 确认版本为 `1.8`。
+2. 显式使用该 JDK 调用项目 Wrapper，避免继承宿主默认 Java：
+
+```bash
+JDK8_HOME=/tmp/lbpe-jdk8
+env JAVA_HOME="$JDK8_HOME" PATH="$JDK8_HOME/bin:$PATH" ./gradlew compileJava processResources build
+```
+
+3. `build` 成功后检查 `release/LisBam_PastoralEconomy-<version>.jar` 存在且非空，并运行 `unzip -t`。`build` 的 `exportReleaseJar` finalizer 会在 `reobfJar` 后复制可安装 JAR；不得直接拿 `build/libs` 中重混淆前的开发 JAR 交付。
+
+若没有任何可用 JDK 8，报告实际检查过的路径和第一个 Gradle 错误；不要将 JDK 11+ 当作 Forge 1.12.2 的替代，也不要在未经用户允许时下载或安装 JDK。
+
 完成后仅更新真实变化对应的长期文档：
 
 - `MOD_ARCHITECTURE.md`：实际架构。

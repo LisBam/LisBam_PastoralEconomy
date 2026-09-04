@@ -40,18 +40,18 @@ public final class CrabTrapSelfTest {
     }
 
     private static void testWaitRulesAndRedraw() {
-        assertEquals(100, CrabTrapRules.rollRoundWaitTicks(0, false, () -> 100), "base minimum");
-        assertEquals(600, CrabTrapRules.rollRoundWaitTicks(0, false, () -> 600), "base maximum");
-        assertEquals(200, CrabTrapRules.rollRoundWaitTicks(1, false, () -> 300), "Lure I reduction");
-        assertEquals(200, CrabTrapRules.rollRoundWaitTicks(2, false, () -> 400), "Lure II reduction");
-        assertEquals(200, CrabTrapRules.rollRoundWaitTicks(3, false, () -> 500), "Lure III reduction");
-        final int[] draws = new int[] { 100, 400 };
+        assertEquals(2000, CrabTrapRules.rollRoundWaitTicks(0, false, () -> 2000), "base minimum");
+        assertEquals(12000, CrabTrapRules.rollRoundWaitTicks(0, false, () -> 12000), "base maximum");
+        assertEquals(2000, CrabTrapRules.rollRoundWaitTicks(1, false, () -> 4000), "Lure I reduction");
+        assertEquals(2000, CrabTrapRules.rollRoundWaitTicks(2, false, () -> 6000), "Lure II reduction");
+        assertEquals(2000, CrabTrapRules.rollRoundWaitTicks(3, false, () -> 8000), "Lure III reduction");
+        final int[] draws = new int[] { 2000, 8000 };
         final int[] cursor = new int[] { 0 };
-        assertEquals(300, CrabTrapRules.rollRoundWaitTicks(1, false, () -> draws[cursor[0]++]),
+        assertEquals(6000, CrabTrapRules.rollRoundWaitTicks(1, false, () -> draws[cursor[0]++]),
                 "zero adjusted Lure wait must redraw instead of clamp");
-        assertEquals(51, CrabTrapRules.rollRoundWaitTicks(0, true, () -> 101),
+        assertEquals(1001, CrabTrapRules.rollRoundWaitTicks(0, true, () -> 2001),
                 "bait must ceiling-divide odd waits by two");
-        assertEquals(100, CrabTrapRules.rollRoundWaitTicks(1, true, () -> 300),
+        assertEquals(1000, CrabTrapRules.rollRoundWaitTicks(1, true, () -> 4000),
                 "bait applies only after Lure adjustment");
     }
 
@@ -71,21 +71,16 @@ public final class CrabTrapSelfTest {
     private static void testInventorySidesAndCapacity() {
         TileCrabTrap trap = new TileCrabTrap();
         assertEquals(20, trap.getSizeInventory(), "total slots");
-        assertEquals(1, trap.getSlotsForFace(EnumFacing.UP).length, "top hopper input slots");
-        assertEquals(TileCrabTrap.BAIT_SLOT, trap.getSlotsForFace(EnumFacing.UP)[0], "top input is bait only");
-        assertEquals(18, trap.getSlotsForFace(EnumFacing.DOWN).length, "bottom hopper output slots");
-        assertTrue(trap.canInsertItem(TileCrabTrap.BAIT_SLOT, new ItemStack(Items.BEEF), EnumFacing.NORTH),
-                "side hopper accepts raw meat bait");
-        assertFalse(trap.canInsertItem(TileCrabTrap.ROD_SLOT, new ItemStack(Items.FISHING_ROD), EnumFacing.UP),
-                "hopper cannot insert rod");
-        assertFalse(trap.canInsertItem(TileCrabTrap.BAIT_SLOT, new ItemStack(Items.FISH, 1, 0), EnumFacing.UP),
-                "hopper cannot insert caught fish as bait");
-        assertTrue(trap.canExtractItem(TileCrabTrap.FIRST_HARVEST_SLOT, new ItemStack(Items.FISH), EnumFacing.DOWN),
-                "bottom hopper extracts harvest");
-        assertFalse(trap.canExtractItem(TileCrabTrap.BAIT_SLOT, new ItemStack(Items.BEEF), EnumFacing.DOWN),
-                "bottom hopper cannot extract bait");
-        assertFalse(trap.canExtractItem(TileCrabTrap.ROD_SLOT, new ItemStack(Items.FISHING_ROD), EnumFacing.DOWN),
-                "bottom hopper cannot extract rod");
+        for (EnumFacing side : EnumFacing.values()) {
+            assertEquals(20, trap.getSlotsForFace(side).length, "every hopper side exposes all slots");
+        }
+        for (int index = 0; index < TileCrabTrap.SLOT_COUNT; index++) {
+            assertTrue(trap.isItemValidForSlot(index, new ItemStack(net.minecraft.init.Blocks.DIRT)), "every slot accepts arbitrary items");
+            assertTrue(trap.canInsertItem(index, new ItemStack(net.minecraft.init.Blocks.DIRT), EnumFacing.NORTH),
+                    "side hopper inserts arbitrary items");
+            assertTrue(trap.canExtractItem(index, new ItemStack(net.minecraft.init.Blocks.DIRT), EnumFacing.DOWN),
+                    "bottom hopper extracts arbitrary items");
+        }
 
         for (int index = TileCrabTrap.FIRST_HARVEST_SLOT; index < TileCrabTrap.SLOT_COUNT; index++) {
             trap.setInventorySlotContents(index, new ItemStack(Items.BONE, 64));

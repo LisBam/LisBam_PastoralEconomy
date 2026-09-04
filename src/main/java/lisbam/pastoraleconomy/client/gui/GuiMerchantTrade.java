@@ -267,15 +267,15 @@ public final class GuiMerchantTrade extends GuiScreen implements GuiSlider.ISlid
                 TEXT_COLOR);
         if (cardHeight >= 42) {
             String amount = buyPage
-                    ? I18n.format("gui.lisbam_pastoral_economy.merchant.bundle", Integer.toString(view.getBundleSize()))
+                    ? I18n.format("gui.lisbam_pastoral_economy.merchant.group", Integer.toString(view.getGroupSize()))
                     : I18n.format("gui.lisbam_pastoral_economy.merchant.holding",
                     Integer.toString(getSellHeldCount(index, entry)));
             String stock = "";
             if (buyPage) {
-                stock = view.getRemainingBundles() < 0
+                stock = view.getRemainingGroups() < 0
                         ? I18n.format("gui.lisbam_pastoral_economy.merchant.unlimited")
                         : I18n.format("gui.lisbam_pastoral_economy.merchant.remaining",
-                        Long.toString((long) view.getRemainingBundles() * (long) view.getBundleSize()));
+                        Long.toString((long) view.getRemainingGroups() * (long) view.getGroupSize()));
             }
             drawString(fontRenderer, fontRenderer.trimStringToWidth(amount + (stock.isEmpty() ? "" : "  " + stock),
                     layout.cardWidth - 28), textX, y + 23, TEXT_COLOR);
@@ -368,7 +368,7 @@ public final class GuiMerchantTrade extends GuiScreen implements GuiSlider.ISlid
             return 0;
         }
         if (buyPage) {
-            int stock = view.getRemainingBundles();
+            int stock = view.getRemainingGroups();
             int stockLimit = stock < 0 ? MAX_QUANTITY : Math.max(0, Math.min(MAX_QUANTITY, stock));
             MerchantTradeSnapshot snapshot = ClientMerchantTradeState.get();
             long balance = snapshot == null ? ClientPlayerState.getCoins() : snapshot.getBalance();

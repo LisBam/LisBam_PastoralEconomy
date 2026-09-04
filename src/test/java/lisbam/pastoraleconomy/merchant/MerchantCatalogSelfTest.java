@@ -46,7 +46,7 @@ public final class MerchantCatalogSelfTest {
                 {"skeleton_skull", "8"}, {"zombie_head", "8"}, {"creeper_head", "8"}
         };
         for (String[] row : rareStocks) {
-            check(find(TradePool.BUY_RARE, row[0]).getInitialRemainingBundles() == Integer.parseInt(row[1]),
+            check(find(TradePool.BUY_RARE, row[0]).getInitialRemainingGroups() == Integer.parseInt(row[1]),
                     "rare stock " + row[0]);
         }
         check(find(TradePool.BUY_RARE, "wither_skeleton_skull").createStack(1, 0).getMetadata() == 1,
@@ -64,20 +64,23 @@ public final class MerchantCatalogSelfTest {
         TradeCatalogEntry lava = find(TradePool.BUY_UNCOMMON, "lava_bucket");
         TradeCatalogEntry magma = find(TradePool.BUY_UNCOMMON, "magma_cream");
         TradeCatalogEntry rabbitFoot = find(TradePool.BUY_UNCOMMON, "rabbit_foot_buy");
-        check(gold.getInitialRemainingBundles() == 16 && gold.getBundleSize() == 4, "gold stock");
-        check(lava.getInitialRemainingBundles() == 16 && lava.getBundleSize() == 1, "lava stock");
-        check(magma.getInitialRemainingBundles() == 16 && magma.getBundleSize() == 4, "magma stock");
-        check(rabbitFoot.getInitialRemainingBundles() == 16 && rabbitFoot.getBundleSize() == 1, "rabbit foot stock");
+        check(gold.getInitialRemainingGroups() == 16 && gold.getGroupSize() == 64, "gold stock");
+        check(lava.getInitialRemainingGroups() == 16 && lava.getGroupSize() == 1, "lava stock");
+        check(magma.getInitialRemainingGroups() == 16 && magma.getGroupSize() == 64, "magma stock");
+        check(rabbitFoot.getInitialRemainingGroups() == 16 && rabbitFoot.getGroupSize() == 64, "rabbit foot stock");
 
         Set<String> keys = new HashSet<String>();
         for (TradePool pool : TradePool.values()) {
             for (TradeCatalogEntry entry : TradeCatalog.getPool(pool)) {
                 check(keys.add(entry.getCatalogKey()), "duplicate catalog key");
                 check(entry.getBasePrice() > 0L, "positive base price");
-                check(entry.getBundleSize() > 0, "positive bundle size");
-                check(entry.getInitialRemainingBundles() > 0 || entry.isUnlimitedStock(), "valid stock");
+                check(entry.getGroupSize() > 0, "positive group size");
+                check(entry.getInitialRemainingGroups() > 0 || entry.isUnlimitedStock(), "valid stock");
+                ItemStack singleItem = entry.createStack(1, entry.isEnchantment() ? 1 : 0);
+                check(entry.getGroupSize() == singleItem.getMaxStackSize(),
+                        "merchant group must equal the vanilla maximum stack size");
                 if (pool == TradePool.BUY_TREASURE) {
-                    check(entry.getInitialRemainingBundles() == 1, "treasure stock is one");
+                    check(entry.getInitialRemainingGroups() == 1, "treasure stock is one");
                     check(Math.abs(entry.getVolatility() - 0.08D) < 0.0000001D, "treasure volatility");
                 }
                 if (pool == TradePool.BUY_RARE) {
@@ -85,9 +88,9 @@ public final class MerchantCatalogSelfTest {
                     check(Math.abs(entry.getVolatility() - 0.18D) < 0.0000001D
                             || Math.abs(entry.getVolatility() - 0.12D) < 0.0000001D, "rare volatility");
                 }
-                ItemStack stack = entry.createStack(entry.getBundleSize(), entry.isEnchantment() ? 1 : 0);
+                ItemStack stack = entry.createStack(entry.getGroupSize(), entry.isEnchantment() ? 1 : 0);
                 check(stack != null && !stack.isEmpty() && stack.getItem() != Items.AIR, "item exists");
-                check(stack.getCount() == entry.getBundleSize(), "bundle output count");
+                check(stack.getCount() == entry.getGroupSize(), "group output count");
                 if (entry.isEnchantment()) {
                     EnchantmentTradeDefinition definition = entry.getEnchantmentDefinition();
                     int[] weights = definition.getWeights();
@@ -121,7 +124,7 @@ public final class MerchantCatalogSelfTest {
         check(harvestDefinition.resolveLevel(new FixedRandom(99)) == 3, "harvest level upper boundary");
         DailyOffer resolved = new DailyOffer(harvest.getCatalogKey(), true, 1, 3);
         DailyOffer restored = DailyOffer.readFromNBT(resolved.writeToNBT());
-        check(restored.getEnchantmentLevel() == 3 && restored.getRemainingBundles() == 1,
+        check(restored.getEnchantmentLevel() == 3 && restored.getRemainingGroups() == 1,
                 "resolved enchantment level persistence");
         NBTTagCompound oldPlaceholder = new DailyOffer("", false, TradeCatalogEntry.UNLIMITED_STOCK).writeToNBT();
         check(DailyOffer.readFromNBT(oldPlaceholder).getEnchantmentLevel() == 0, "legacy placeholder level");

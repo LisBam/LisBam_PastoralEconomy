@@ -1,6 +1,5 @@
 package lisbam.pastoraleconomy.gui;
 
-import lisbam.pastoraleconomy.crabtrap.CrabTrapRules;
 import lisbam.pastoraleconomy.tile.TileCrabTrap;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.InventoryPlayer;
@@ -9,7 +8,7 @@ import net.minecraft.inventory.IContainerListener;
 import net.minecraft.inventory.Slot;
 import net.minecraft.item.ItemStack;
 
-/** Authoritative 20-slot crab-trap inventory container with safe shift-clicking. */
+/** Authoritative general 20-slot crab-trap container with safe shift-clicking. */
 public final class ContainerCrabTrap extends Container {
     private static final int TRAP_SLOT_COUNT = TileCrabTrap.SLOT_COUNT;
     private static final int PLAYER_FIRST_SLOT = TRAP_SLOT_COUNT;
@@ -22,13 +21,13 @@ public final class ContainerCrabTrap extends Container {
 
     public ContainerCrabTrap(InventoryPlayer playerInventory, TileCrabTrap trap) {
         this.trap = trap;
-        addSlotToContainer(new RodSlot(trap, TileCrabTrap.ROD_SLOT, 26, 19));
-        addSlotToContainer(new BaitSlot(trap, TileCrabTrap.BAIT_SLOT, 62, 19));
+        addSlotToContainer(new Slot(trap, TileCrabTrap.ROD_SLOT, 26, 19));
+        addSlotToContainer(new Slot(trap, TileCrabTrap.BAIT_SLOT, 62, 19));
 
         for (int row = 0; row < 2; row++) {
             for (int column = 0; column < 9; column++) {
                 int slot = TileCrabTrap.FIRST_HARVEST_SLOT + row * 9 + column;
-                addSlotToContainer(new HarvestSlot(trap, slot, 8 + column * 18, 54 + row * 18));
+                addSlotToContainer(new Slot(trap, slot, 8 + column * 18, 54 + row * 18));
             }
         }
 
@@ -91,19 +90,7 @@ public final class ContainerCrabTrap extends Container {
             if (!mergeItemStack(source, PLAYER_FIRST_SLOT, PLAYER_LAST_SLOT, true)) {
                 return ItemStack.EMPTY;
             }
-        } else if (CrabTrapRules.isFishingRod(source)) {
-            if (!mergeItemStack(source, TileCrabTrap.ROD_SLOT, TileCrabTrap.ROD_SLOT + 1, false)) {
-                return ItemStack.EMPTY;
-            }
-        } else if (CrabTrapRules.isRawMeatBait(source)) {
-            if (!mergeItemStack(source, TileCrabTrap.BAIT_SLOT, TileCrabTrap.BAIT_SLOT + 1, false)) {
-                return ItemStack.EMPTY;
-            }
-        } else if (index < PLAYER_MAIN_END) {
-            if (!mergeItemStack(source, PLAYER_MAIN_END, PLAYER_LAST_SLOT, false)) {
-                return ItemStack.EMPTY;
-            }
-        } else if (!mergeItemStack(source, PLAYER_FIRST_SLOT, PLAYER_MAIN_END, false)) {
+        } else if (!mergeItemStack(source, 0, TRAP_SLOT_COUNT, false)) {
             return ItemStack.EMPTY;
         }
 
@@ -119,41 +106,4 @@ public final class ContainerCrabTrap extends Container {
         return result;
     }
 
-    private static final class RodSlot extends Slot {
-        private RodSlot(TileCrabTrap inventory, int index, int x, int y) {
-            super(inventory, index, x, y);
-        }
-
-        @Override
-        public boolean isItemValid(ItemStack stack) {
-            return CrabTrapRules.isFishingRod(stack);
-        }
-
-        @Override
-        public int getSlotStackLimit() {
-            return 1;
-        }
-    }
-
-    private static final class BaitSlot extends Slot {
-        private BaitSlot(TileCrabTrap inventory, int index, int x, int y) {
-            super(inventory, index, x, y);
-        }
-
-        @Override
-        public boolean isItemValid(ItemStack stack) {
-            return CrabTrapRules.isRawMeatBait(stack);
-        }
-    }
-
-    private static final class HarvestSlot extends Slot {
-        private HarvestSlot(TileCrabTrap inventory, int index, int x, int y) {
-            super(inventory, index, x, y);
-        }
-
-        @Override
-        public boolean isItemValid(ItemStack stack) {
-            return false;
-        }
-    }
 }

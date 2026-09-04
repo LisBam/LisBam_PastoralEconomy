@@ -70,7 +70,7 @@ public final class MerchantOfferService {
             if (offer.isEnabled() && SLIME_BALL_CATALOG_KEY.equals(offer.getCatalogKey())) {
                 TradeCatalogEntry replacement = takeNext(merchant, TradePool.BUY_UNCOMMON);
                 buy.set(slot, new DailyOffer(replacement.getCatalogKey(), true,
-                        replacement.getInitialRemainingBundles()));
+                        replacement.getInitialRemainingGroups()));
                 changed = true;
             }
         }
@@ -114,7 +114,7 @@ public final class MerchantOfferService {
                         ^ ((long) entry.getCatalogKey().hashCode() * 0x9E3779B97F4A7C15L);
                 level = entry.resolveEnchantmentLevel(new Random(seed));
             }
-            output.add(new DailyOffer(entry.getCatalogKey(), true, entry.getInitialRemainingBundles(), level));
+            output.add(new DailyOffer(entry.getCatalogKey(), true, entry.getInitialRemainingGroups(), level));
         }
     }
 
