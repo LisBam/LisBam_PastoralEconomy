@@ -1,17 +1,24 @@
 package lisbam.pastoraleconomy.entity;
 
+import com.google.common.base.Predicate;
 import lisbam.pastoraleconomy.merchant.MerchantTradeService;
 import lisbam.pastoraleconomy.merchant.StationRole;
+import net.minecraft.entity.Entity;
 import net.minecraft.entity.SharedMonsterAttributes;
+import net.minecraft.entity.ai.EntityAIAvoidEntity;
 import net.minecraft.entity.ai.EntityAIMoveTowardsRestriction;
+import net.minecraft.entity.ai.EntityAIWatchClosest;
 import net.minecraft.entity.ai.EntityAIWanderAvoidWater;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.util.DamageSource;
 import net.minecraft.util.EnumHand;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 import net.minecraft.entity.EntityCreature;
 
+import java.util.HashSet;
+import java.util.Set;
 import java.util.UUID;
 
 /** A non-hostile, persistent humanoid whose logical identity lives in MerchantRecord. */
@@ -25,6 +32,9 @@ public final class EntityMerchant extends EntityCreature {
     private static final int HOME_RADIUS = 12;
     private static final int RETURN_DISTANCE = 32;
     private static final int RETURN_REPATH_INTERVAL_TICKS = 20;
+    private static final int FLEE_DURATION_TICKS = 200;
+    private static final float FLEE_DISTANCE = 12.0F;
+    private static final float PLAYER_LOOK_DISTANCE = 8.0F;
 
     private UUID merchantId;
     private UUID villageId;
@@ -32,6 +42,10 @@ public final class EntityMerchant extends EntityCreature {
     private BlockPos stationPosition;
     /** Runtime-only pathfinding throttle; station identity remains fully persisted above. */
     private int nextReturnPathTick;
+    /** Runtime-only open-trade ownership; it must never affect entity NBT or persistence. */
+    private final Set<UUID> tradingPlayerIds = new HashSet<UUID>();
+    private UUID fleeingPlayerId;
+    private int fleeUntilTick;
 
     public EntityMerchant(World worldIn) {
         super(worldIn);
@@ -43,8 +57,15 @@ public final class EntityMerchant extends EntityCreature {
 
     @Override
     protected void initEntityAI() {
+        tasks.addTask(1, new EntityAIAvoidEntity<EntityPlayer>(this, EntityPlayer.class, new Predicate<EntityPlayer>() {
+            @Override
+            public boolean apply(EntityPlayer player) {
+                return shouldFleeFrom(player);
+            }
+        }, FLEE_DISTANCE, 0.8D, 1.2D));
         tasks.addTask(5, new EntityAIMoveTowardsRestriction(this, 0.5D));
         tasks.addTask(6, new EntityAIWanderAvoidWater(this, 0.5D));
+        tasks.addTask(7, new EntityAIWatchClosest(this, EntityPlayer.class, PLAYER_LOOK_DISTANCE));
     }
 
     @Override
@@ -76,10 +97,67 @@ public final class EntityMerchant extends EntityCreature {
     public UUID getStationId() { return stationId; }
     public boolean hasValidBinding() { return merchantId != null && villageId != null && stationId != null && stationPosition != null; }
 
+    /** Freezes only this merchant while one or more server-authorized trade windows are open. */
+    public void beginTrading(EntityPlayer player) {
+        if (!world.isRemote && player != null) {
+            tradingPlayerIds.add(player.getUniqueID());
+            stopMovement();
+        }
+    }
+
+    /** Called from the matching server Container close lifecycle. */
+    public void endTrading(EntityPlayer player) {
+        if (!world.isRemote && player != null) {
+            tradingPlayerIds.remove(player.getUniqueID());
+        }
+    }
+
+    private boolean isTrading() {
+        return !tradingPlayerIds.isEmpty();
+    }
+
+    private boolean shouldFleeFrom(EntityPlayer player) {
+        if (isTrading() || player == null || fleeingPlayerId == null || ticksExisted >= fleeUntilTick) {
+            return false;
+        }
+        return fleeingPlayerId.equals(player.getUniqueID());
+    }
+
+    @Override
+    public boolean attackEntityFrom(DamageSource source, float amount) {
+        boolean damaged = super.attackEntityFrom(source, amount);
+        if (damaged && !world.isRemote) {
+            Entity attacker = source.getTrueSource();
+            if (attacker instanceof EntityPlayer) {
+                fleeingPlayerId = attacker.getUniqueID();
+                fleeUntilTick = ticksExisted + FLEE_DURATION_TICKS;
+                getNavigator().clearPath();
+            }
+        }
+        return damaged;
+    }
+
+    @Override
+    protected void updateAITasks() {
+        if (isTrading()) {
+            stopMovement();
+            return;
+        }
+        super.updateAITasks();
+    }
+
     @Override
     public void onLivingUpdate() {
         super.onLivingUpdate();
-        if (world.isRemote || stationPosition == null) {
+        if (world.isRemote) {
+            return;
+        }
+        if (isTrading()) {
+            stopMovement();
+            lookAtNearestPlayer();
+            return;
+        }
+        if (stationPosition == null || isFleeing()) {
             return;
         }
         if (getDistanceSq(stationPosition.getX() + 0.5D, stationPosition.getY() + 1.0D,
@@ -99,6 +177,29 @@ public final class EntityMerchant extends EntityCreature {
                 setPosition(standing.getX() + 0.5D, standing.getY(), standing.getZ() + 0.5D);
             }
         }
+    }
+
+    private boolean isFleeing() {
+        if (fleeingPlayerId != null && ticksExisted < fleeUntilTick) {
+            return true;
+        }
+        fleeingPlayerId = null;
+        return false;
+    }
+
+    private void lookAtNearestPlayer() {
+        EntityPlayer nearest = world.getClosestPlayerToEntity(this, PLAYER_LOOK_DISTANCE);
+        if (nearest != null) {
+            getLookHelper().setLookPositionWithEntity(nearest, 10.0F, getVerticalFaceSpeed());
+        }
+    }
+
+    private void stopMovement() {
+        getNavigator().clearPath();
+        setMoveForward(0.0F);
+        setMoveStrafing(0.0F);
+        motionX = 0.0D;
+        motionZ = 0.0D;
     }
 
     @Override

@@ -44,5 +44,9 @@ public final class ContainerMerchantTrade extends Container {
     public void onContainerClosed(EntityPlayer playerIn) {
         super.onContainerClosed(playerIn);
         committing = false;
+        Entity entity = playerIn.world.getEntityByID(entityId);
+        if (entity instanceof EntityMerchant && merchantId.equals(((EntityMerchant) entity).getMerchantId())) {
+            ((EntityMerchant) entity).endTrading(playerIn);
+        }
     }
 }

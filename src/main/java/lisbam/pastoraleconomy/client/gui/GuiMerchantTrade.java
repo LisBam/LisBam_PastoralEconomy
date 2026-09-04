@@ -35,6 +35,8 @@ public final class GuiMerchantTrade extends GuiScreen implements GuiSlider.ISlid
             "minecraft", "textures/gui/container/generic_54.png");
     private static final int VANILLA_SLOT_U = 7;
     private static final int VANILLA_SLOT_V = 17;
+    /** Vanilla GuiButton's normal light text colour, used across the whole window. */
+    private static final int TEXT_COLOR = 0xFFE0E0E0;
 
     private final int merchantEntityId;
     private final int[] sellQuantities = new int[MerchantTradeSnapshot.SELL_COUNT];
@@ -80,6 +82,8 @@ public final class GuiMerchantTrade extends GuiScreen implements GuiSlider.ISlid
             GuiTextField field = new GuiTextField(index, fontRenderer, layout.fieldX(cardX), controlsY,
                     layout.fieldWidth, 12);
             field.setMaxStringLength(4);
+            field.setTextColor(TEXT_COLOR);
+            field.setDisabledTextColour(TEXT_COLOR);
             field.setText(Integer.toString(quantity));
             quantityFields[index] = field;
 
@@ -128,6 +132,12 @@ public final class GuiMerchantTrade extends GuiScreen implements GuiSlider.ISlid
             refreshSellHeldCounts(snapshot);
         }
         updateControls(snapshot);
+    }
+
+    /** Trading must continue to tick in a single-player integrated server. */
+    @Override
+    public boolean doesGuiPauseGame() {
+        return false;
     }
 
     @Override
@@ -188,14 +198,14 @@ public final class GuiMerchantTrade extends GuiScreen implements GuiSlider.ISlid
         MerchantTradeSnapshot snapshot = ClientMerchantTradeState.get();
         String title = I18n.format("entity.lisbam_pastoral_economy.merchant.name") + " - "
                 + I18n.format("gui.lisbam_pastoral_economy.merchant.title");
-        drawCenteredString(fontRenderer, title, width / 2, layout.panelY + 7, 0xFF404040);
+        drawCenteredString(fontRenderer, title, width / 2, layout.panelY + 7, TEXT_COLOR);
         long balance = snapshot == null ? ClientPlayerState.getCoins() : snapshot.getBalance();
         long day = snapshot == null ? -1L : snapshot.getWorldDay();
         drawString(fontRenderer, I18n.format("gui.lisbam_pastoral_economy.merchant.day", Long.toString(day)),
-                layout.panelX + 6, layout.panelY + 20, 0xFF404040);
+                layout.panelX + 6, layout.panelY + 20, TEXT_COLOR);
         String coins = I18n.format("gui.lisbam_pastoral_economy.merchant.coins", format(balance));
         drawString(fontRenderer, coins, layout.panelRight - 6 - fontRenderer.getStringWidth(coins), layout.panelY + 20,
-                0xFF404040);
+                TEXT_COLOR);
 
         for (int index = 0; index < pageOfferCount(); index++) {
             drawOffer(getView(snapshot, index), index);
@@ -211,10 +221,9 @@ public final class GuiMerchantTrade extends GuiScreen implements GuiSlider.ISlid
         int x = layout.cardX(index, buyPage);
         int y = layout.cardY(index, buyPage);
         int cardHeight = layout.cardHeight(buyPage);
-        boolean tradable = isTradable(view, index);
         if (view == null || !view.isEnabled()) {
             drawCenteredString(fontRenderer, I18n.format("gui.lisbam_pastoral_economy.merchant.future"),
-                    x + layout.cardWidth / 2, y + (cardHeight - 8) / 2, 0xFFA0A0A0);
+                    x + layout.cardWidth / 2, y + (cardHeight - 8) / 2, TEXT_COLOR);
             return;
         }
 
@@ -232,15 +241,15 @@ public final class GuiMerchantTrade extends GuiScreen implements GuiSlider.ISlid
             name = entry.getEnchantmentDefinition().getEnchantment().getTranslatedName(view.getEnchantmentLevel());
         }
         int textX = x + 24;
-        int textColor = tradable ? 0xFF404040 : 0xFFA0A0A0;
-        drawString(fontRenderer, fontRenderer.trimStringToWidth(name, layout.cardWidth - 28), textX, y + 3, textColor);
+        drawString(fontRenderer, fontRenderer.trimStringToWidth(name, layout.cardWidth - 28), textX, y + 3,
+                TEXT_COLOR);
         String trend = view.hasPreviousPrice()
                 ? MarketTrend.compare(view.getCurrentPrice(), view.getPreviousPrice()).getSymbol() : "-";
         long total = multiplyForDisplay(view.getCurrentPrice(), getQuantity(index));
         String totalText = I18n.format("gui.lisbam_pastoral_economy.merchant.total", format(total));
         String priceText = format(view.getCurrentPrice()) + " " + trend + "  " + totalText;
         drawString(fontRenderer, fontRenderer.trimStringToWidth(priceText, layout.cardWidth - 28), textX, y + 13,
-                textColor);
+                TEXT_COLOR);
         if (cardHeight >= 42) {
             String amount = buyPage
                     ? I18n.format("gui.lisbam_pastoral_economy.merchant.bundle", Integer.toString(view.getBundleSize()))
@@ -254,7 +263,7 @@ public final class GuiMerchantTrade extends GuiScreen implements GuiSlider.ISlid
                         Long.toString((long) view.getRemainingBundles() * (long) view.getBundleSize()));
             }
             drawString(fontRenderer, fontRenderer.trimStringToWidth(amount + (stock.isEmpty() ? "" : "  " + stock),
-                    layout.cardWidth - 28), textX, y + 23, textColor);
+                    layout.cardWidth - 28), textX, y + 23, TEXT_COLOR);
         }
     }
 
@@ -276,8 +285,10 @@ public final class GuiMerchantTrade extends GuiScreen implements GuiSlider.ISlid
     }
 
     private void updateControls(MerchantTradeSnapshot snapshot) {
-        setButtonEnabled(BUTTON_SELL_PAGE, buyPage);
-        setButtonEnabled(BUTTON_BUY_PAGE, !buyPage);
+        // Keep every label in the same white GuiButton colour. The click handler
+        // still performs the local tradeability check before any request is sent.
+        setButtonEnabled(BUTTON_SELL_PAGE, true);
+        setButtonEnabled(BUTTON_BUY_PAGE, true);
         for (int index = 0; index < quantityFields.length; index++) {
             MerchantTradeOfferView view = getView(snapshot, index);
             int quantity = clampQuantity(index, getQuantity(index), view);
@@ -291,7 +302,7 @@ public final class GuiMerchantTrade extends GuiScreen implements GuiSlider.ISlid
                 quantityFields[index].setFocused(false);
             }
             quantityFields[index].setEnabled(tradable);
-            setButtonEnabled(BUTTON_CONFIRM_OFFSET + index, tradable);
+            setButtonEnabled(BUTTON_CONFIRM_OFFSET + index, true);
         }
     }
 

@@ -243,3 +243,11 @@
 原因：实机症状表明，在小麦首包成功后再走 C2S 切换路径仍会导致界面长期读取。既然一个打开会话本来就只需要 14×30 个有界价格点，把这些数据随首次请求准备完可移除每次按钮点击的容器状态、网络时序和限流依赖；约 14 个小型 S2C 包仅在打开时产生，之后零网络开销。
 
 影响：没有新 Packet、discriminator、NBT、WorldSavedData 或价格规则。首开会比只读小麦多一次有界的 14 作物/30 天准备和传输，关闭时仍清空；后备请求仍使用 DEC-030 的合并限流，防止不完整或异常网络情况下的请求风暴。
+
+## DEC-032 商人实时交易、运行时行为与文字颜色
+
+决定：`GuiMerchantTrade#doesGuiPauseGame` 固定返回 `false`。成功交易后，`MerchantTradeService` 除了保留 `CoinService` 的金币同步和既有 Packet 4 商人快照外，立即调用 `EntityPlayerMP#sendContainerToPlayer(player.inventoryContainer)` 同步窗口 0 的完整玩家背包。`ContainerMerchantTrade` 打开/关闭时分别在 `EntityMerchant` 登记/移除交易者；有交易者时停止导航和水平移动。商人常规 AI 使用 8 格玩家注视，实际受到玩家伤害后仅避开该玩家 200 tick。`GuiMerchantTrade` 的标签、卡片和不可交易文字采用原版 `GuiButton` 正常浅色；页签和确认按钮保持可见的正常字体，操作路径继续本地预检并由服务端权威复核。
+
+原因：普通 `GuiScreen` 会暂停单人集成服务端，使 C2S 交易包、库存修改和 S2C 快照只能在关闭窗口后处理。商人 Container 有意不放玩家背包 Slot，因此常规 `openContainer.detectAndSendChanges()` 不会观察到交易服务直接改动的 `InventoryPlayer`；显式发送 `inventoryContainer` 才能让客户端在同一事务 tick 收到物品变化。交易者和受击逃跑均是实体当前生命周期行为，不应污染稳定商人身份或世界存档。此前为禁用状态选用深灰色会造成同一面板字体不一致。
+
+兼容性与影响：没有新增或变更 Packet discriminator、NBT key、WorldSavedData、Capability、registry ID 或经济数值。玩家物品、金币、库存和价格仍只在逻辑服务端校验及修改；客户端只接收同步和发起请求。交易者集合、逃跑目标和倒计时随实体卸载/重启自然丢弃，下一次实体加载不会残留冻结或仇恨。

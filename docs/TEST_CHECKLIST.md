@@ -100,6 +100,7 @@
 - [ ] 每有效村庄恰好一个安全站点、12 格搜索、不覆盖箱子/门/农田/TileEntity、异常恢复 — NOT RUN：需要可进入的世界
 - [ ] 商人 3～8 目标人数、人口变化收敛、死亡补足、>32 格归位、无自然 despawn — NOT RUN：需要可进入的世界
 - [ ] 商人离站后最多每 20 tick 重算一次返航路径，仍能回到站点；高实体数下维护不会重复扫描 merchant 实体。NOT RUN：需要可进入的世界；代码审查确认单次索引扫描。
+- [ ] 商人靠近玩家时面向最近的 8 格内玩家；打开有效交易窗口期间原地站住，关闭后恢复常规 AI；实际受该玩家伤害后避开其 200 tick。NOT RUN：需要可进入的世界。
 - [ ] MerchantRecord/Offer/库存重启、Chunk unload/reload 不复制或刷新 — NOT RUN：需要 Dedicated Server/世界
 
 ### Sell / Buy / GUI
@@ -109,6 +110,9 @@
 - [ ] 普通 4 + 罕见 3、稀有 2 + 珍宝 1、bundle 价格与 Metadata — NOT RUN：需要可进入的世界
 - [ ] 有限库存多人共享、重启不恢复、跨日刷新 — NOT RUN：需要 Dedicated Server/多人
 - [x] GUI 每栏数量加减、数量/预计总价显示；服务端数量上限与库存/容量复核 — PASS：代码审查、`compileJava`/`build`
+- [x] 维护：商人 GUI 不暂停单人集成服务端；成功交易同步窗口 0 玩家背包、CoinService 金币缓存和所有打开的同商人快照。PASS：服务端路径代码审查、`compileJava`、`build`。
+- [x] 维护：商人标签、交易卡、禁用数量输入和按钮使用原版 `GuiButton` 的正常浅色，点击仍在本地与服务端重新校验。PASS：`GuiMerchantTrade` 代码审查、`compileJava`、`build`。
+- [ ] 游戏内：单人和多人连续买卖后，不关闭窗口即可立即看到背包、金币、价格/库存、持有量更新；交易窗口保持世界运行。NOT RUN：当前环境无法创建可操作的 Forge 客户端窗口。
 - [ ] 背包完整容量模拟、溢出、重复 Packet、旧 GUI 跨日拒绝 — NOT RUN：需要客户端/服务器连接
 - [ ] Dedicated Server 无客户端类加载错误 — NOT RUN：当前环境未接受 EULA；静态审查通过
 
@@ -193,11 +197,11 @@
 - [x] 商人/行情书图标调用原版 `renderToolTip`；蟹笼继承 `GuiContainer` 原版 Slot 悬停提示。PASS：代码审查与编译。
 - [x] 蟹笼只显示 2 个输入槽、18 个收获槽和原版玩家背包槽；不存在没有 Container Slot 的顶部空格，状态文字不与槽框重叠。PASS：Container/GUI 坐标审查与编译。
 - [x] 交通站操作区在 320x240 最小缩放中不越界；节点文字截断后可悬停读取完整坐标/状态。PASS：布局代码审查与编译。
-- [x] 商人出售页按 3 × 2 对称卡片排版；购买余额不足一整包时卡片、滑条、输入框与确认按钮暗置。PASS：客户端布局/数量上限代码审查与编译；服务端仍会复核余额、库存和价格。
+- [x] 商人出售页按 3 × 2 对称卡片排版；购买余额不足一整包时数量输入和滑条限制范围但保持浅色字体，确认操作仍由客户端与服务端复核。PASS：客户端布局/数量上限代码审查与编译。
 - [x] 交通节点快照往返保留 `travelFee`；目的地行、悬停提示和前往按钮显示费用，余额不足/路径不可用时前往按钮暗置。PASS：`TransportCoreSelfTest` Packet 往返、`build`。
 - [x] `compileJava`、`processResources`、`build`（含 `test`、`reobfJar`）— PASS：2026-09-04 以 Corretto 11 JDK 兼容构建；项目 source/target Java 8，`GuiMerchantTrade.class` 为 major 52。当前环境无 Java 8 JDK，因此仍需用 Temurin 8 复验。
 - [x] UTF-8 JavaCompile 编码、Forge 1.12.2 strict audit 0 ERROR、成品 JAR 的 GUI 类和 `mcmod.info` — PASS；5 条既有 `packet-thread` WARNING 已审查。
 - [x] 每次 `build` 在 `reobfJar` 后自动执行 `exportReleaseJar`，并覆盖导出 `release/LisBam_PastoralEconomy-0.1.0.jar`。PASS：2026-09-04 构建日志、SHA-256 与 `unzip -t` 完整性检查。
-- [x] UI 文字使用原版 `FontRenderer` 的标准深灰色；蟹笼 20 个实际槽和商人物品槽直接裁取原版 `generic_54.png`，蟹笼空白背景也取原版纹理像素；商人/交通面板每帧以单次完整 `demo_background.png` 裁取绘制，避免分片错位且没有手绘槽框/凸起边框。PASS：源码审查、`compileJava`、`build` 与 Forge audit。
+- [x] UI 文字使用原版 `FontRenderer`；商人所有可见交易文字统一使用原版 `GuiButton` 正常浅色。蟹笼 20 个实际槽和商人物品槽直接裁取原版 `generic_54.png`，蟹笼空白背景也取原版纹理像素；商人/交通面板每帧以单次完整 `demo_background.png` 裁取绘制，避免分片错位且没有手绘槽框/凸起边框。PASS：源码审查、`compileJava`、`build` 与 Forge audit。
 - [x] 购买有限库存显示实际剩余物品数量（剩余包数 × 每包数），而非包数；不限量保持显示不限量。PASS：`GuiMerchantTrade` 代码审查、双语资源处理与 `build`。
 - [ ] 游戏内：在 320x240、常规 GUI Scale 和高分辨率下验证所有四种 GUI 的文字、按钮、滚动、物品 Tooltip、蟹笼点击/Shift-click、无虚假顶部格子、商人余额暗置/3×2 出售页、交通费用与余额暗置，以及商人连续切换后的默认页。NOT RUN：当前环境无法创建可操作的 Forge 客户端窗口。

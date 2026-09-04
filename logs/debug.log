@@ -1,19 +1,10 @@
-[17:12:46] [main/DEBUG] [io.netty.util.internal.logging.InternalLoggerFactory]: Using SLF4J as the default logging framework
-[17:12:46] [main/DEBUG] [io.netty.util.internal.PlatformDependent]: -Dio.netty.noUnsafe: false
-[17:12:46] [main/DEBUG] [io.netty.util.internal.PlatformDependent0]: sun.misc.Unsafe.theUnsafe: available
-[17:12:46] [main/DEBUG] [io.netty.util.internal.PlatformDependent0]: sun.misc.Unsafe.copyMemory: available
-[17:12:46] [main/DEBUG] [io.netty.util.internal.PlatformDependent0]: java.nio.Buffer.address: available
-[17:12:46] [main/DEBUG] [io.netty.util.internal.PlatformDependent0]: direct buffer constructor: available
-[17:12:46] [main/DEBUG] [io.netty.util.internal.PlatformDependent0]: java.nio.Bits.unaligned: available, true
-[17:12:46] [main/DEBUG] [io.netty.util.internal.PlatformDependent0]: java.nio.DirectByteBuffer.<init>(long, int): available
-[17:12:46] [main/DEBUG] [io.netty.util.internal.Cleaner0]: java.nio.ByteBuffer.cleaner(): available
-[17:12:46] [main/DEBUG] [io.netty.util.internal.PlatformDependent]: Java version: 8
-[17:12:46] [main/DEBUG] [io.netty.util.internal.PlatformDependent]: sun.misc.Unsafe: available
-[17:12:46] [main/DEBUG] [io.netty.util.internal.PlatformDependent]: -Dio.netty.tmpdir: /tmp (java.io.tmpdir)
-[17:12:46] [main/DEBUG] [io.netty.util.internal.PlatformDependent]: -Dio.netty.bitMode: 64 (sun.arch.data.model)
-[17:12:46] [main/DEBUG] [io.netty.util.internal.PlatformDependent]: -Dio.netty.noPreferDirect: false
-[17:12:46] [main/DEBUG] [io.netty.util.internal.PlatformDependent]: io.netty.maxDirectMemory: 3629645824 bytes
-[17:12:46] [main/DEBUG] [io.netty.buffer.AbstractByteBuf]: -Dio.netty.buffer.bytebuf.checkAccessible: true
-[17:12:46] [main/DEBUG] [io.netty.util.ResourceLeakDetector]: -Dio.netty.leakDetection.level: simple
-[17:12:46] [main/DEBUG] [io.netty.util.ResourceLeakDetector]: -Dio.netty.leakDetection.maxRecords: 4
-[17:12:46] [main/DEBUG] [io.netty.util.ResourceLeakDetectorFactory]: Loaded default ResourceLeakDetector: io.netty.util.ResourceLeakDetector@55fe41ea
+[17:30:53] [main/DEBUG] [FML]: Creating vanilla freeze snapshot
+[17:30:53] [main/DEBUG] [FML]: Vanilla freeze snapshot created
+[17:30:53] [main/WARN] [FML]: Potentially Dangerous alternative prefix `lisbam_pastoral_economy` for name `harvest`, expected `minecraft`. This could be a intended override, but in most cases indicates a broken mod.
+[17:30:53] [main/WARN] [FML]: Potentially Dangerous alternative prefix `lisbam_pastoral_economy` for name `farmland_walker`, expected `minecraft`. This could be a intended override, but in most cases indicates a broken mod.
+[17:30:53] [main/WARN] [FML]: Potentially Dangerous alternative prefix `lisbam_pastoral_economy` for name `pastoral_favor`, expected `minecraft`. This could be a intended override, but in most cases indicates a broken mod.
+[17:30:53] [main/WARN] [FML]: Potentially Dangerous alternative prefix `lisbam_pastoral_economy` for name `fine_cultivation`, expected `minecraft`. This could be a intended override, but in most cases indicates a broken mod.
+[17:30:53] [main/WARN] [FML]: Potentially Dangerous alternative prefix `lisbam_pastoral_economy` for name `felling`, expected `minecraft`. This could be a intended override, but in most cases indicates a broken mod.
+[17:30:53] [main/WARN] [FML]: Potentially Dangerous alternative prefix `lisbam_pastoral_economy` for name `slaughter`, expected `minecraft`. This could be a intended override, but in most cases indicates a broken mod.
+[17:30:53] [main/WARN] [FML]: Potentially Dangerous alternative prefix `lisbam_pastoral_economy` for name `fleetfoot`, expected `minecraft`. This could be a intended override, but in most cases indicates a broken mod.
+[17:30:53] [main/WARN] [FML]: Potentially Dangerous alternative prefix `lisbam_pastoral_economy` for name `night_vision`, expected `minecraft`. This could be a intended override, but in most cases indicates a broken mod.
