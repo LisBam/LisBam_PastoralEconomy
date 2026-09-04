@@ -1,0 +1,26 @@
+package lisbam.pastoraleconomy.item;
+
+import lisbam.pastoraleconomy.block.ModBlocks;
+import net.minecraft.item.ItemBlock;
+
+/** Stable item allocation point; registration remains in RegistrationHandler. */
+public final class ModItems {
+    public static final ItemMarketBook MARKET_BOOK = new ItemMarketBook();
+    public static final ItemBlock CRAB_TRAP_ITEM = createCrabTrapItem();
+    public static final ItemBlock TRANSPORT_STATION_ITEM = createTransportStationItem();
+
+    private ModItems() {
+    }
+
+    private static ItemBlock createCrabTrapItem() {
+        ItemBlock item = new ItemBlock(ModBlocks.CRAB_TRAP);
+        item.setRegistryName(ModBlocks.CRAB_TRAP.getRegistryName());
+        return item;
+    }
+
+    private static ItemBlock createTransportStationItem() {
+        ItemBlock item = new ItemBlock(ModBlocks.TRANSPORT_STATION);
+        item.setRegistryName(ModBlocks.TRANSPORT_STATION.getRegistryName());
+        return item;
+    }
+}

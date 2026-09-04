@@ -1,0 +1,12 @@
+{
+  "generator": "minecraft-forge-1-12-2/scripts/bootstrap_from_mdk.py",
+  "minecraft": "1.12.2",
+  "forgegradle_family": "fg3",
+  "modid": "lisbam_pastoral_economy",
+  "package": "lisbam.pastoraleconomy",
+  "main_class": "lisbam.pastoraleconomy.LisBamPastoralEconomy",
+  "version": "0.1.0",
+  "mdk_source": "/tmp/forge-1.12.2-14.23.5.2859-mdk.zip",
+  "mdk_sha256": "52992d8bd80f3517891019d4e1e07c081d6b09c4117313c36c8beed8746527db",
+  "policy": "The MDK wrapper and Forge/ForgeGradle coordinates are preserved unless project identity/resource expansion requires an edit."
+}
