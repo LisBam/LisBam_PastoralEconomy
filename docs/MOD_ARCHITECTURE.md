@@ -2,6 +2,8 @@
 
 当前实际完成批次：第 15 批（交通旅行与村庄解锁）。
 
+当前发行版本：`1.0`（Minecraft Forge 1.12.2 / 14.23.5.2859，Java 8）。
+
 ## 已实现
 
 - 主入口：`lisbam.pastoraleconomy.LisBamPastoralEconomy`，负责模组身份、生命周期调度与基础日志。
