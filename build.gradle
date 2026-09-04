@@ -104,6 +104,19 @@ jar {
 // ForgeGradle 3 reobfuscates the distributable jar after the normal jar task.
 jar.finalizedBy('reobfJar')
 
+// Keep the ready-to-install artifact in one stable location.  This task runs
+// after reobfuscation, so release never receives the development-name jar.
+task exportReleaseJar(type: Copy) {
+    group = 'distribution'
+    description = 'Copies the reobfuscated distributable jar into release/.'
+    dependsOn 'reobfJar'
+    from "$buildDir/libs"
+    include "${archivesBaseName}-${version}.jar"
+    into "$projectDir/release"
+}
+
+build.finalizedBy('exportReleaseJar')
+
 task marketCoreSelfTest(type: JavaExec) {
     group = 'verification'
     description = 'Runs the standalone deterministic market-core self-test.'
