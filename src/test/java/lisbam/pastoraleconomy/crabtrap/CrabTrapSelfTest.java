@@ -1,8 +1,10 @@
 package lisbam.pastoraleconomy.crabtrap;
 
 import lisbam.pastoraleconomy.tile.TileCrabTrap;
+import lisbam.pastoraleconomy.gui.ContainerCrabTrap;
 import net.minecraft.init.Bootstrap;
 import net.minecraft.init.Items;
+import net.minecraft.entity.player.InventoryPlayer;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.util.EnumFacing;
@@ -86,6 +88,23 @@ public final class CrabTrapSelfTest {
                 "side hopper respects rod-slot validation");
         assertFalse(trap.canInsertItem(TileCrabTrap.BAIT_SLOT, dirt, EnumFacing.NORTH),
                 "side hopper respects bait-slot validation");
+        ContainerCrabTrap container = new ContainerCrabTrap(new InventoryPlayer(null), trap);
+        assertFalse(container.inventorySlots.get(TileCrabTrap.ROD_SLOT).isItemValid(dirt),
+                "GUI rod slot rejects ordinary storage");
+        assertFalse(container.inventorySlots.get(TileCrabTrap.BAIT_SLOT).isItemValid(dirt),
+                "GUI bait slot rejects ordinary storage");
+        assertTrue(container.inventorySlots.get(TileCrabTrap.ROD_SLOT).isItemValid(new ItemStack(Items.FISHING_ROD)),
+                "GUI rod slot accepts fishing rods");
+        assertTrue(container.inventorySlots.get(TileCrabTrap.BAIT_SLOT).isItemValid(new ItemStack(Items.BEEF)),
+                "GUI bait slot accepts raw meat");
+        trap.setInventorySlotContents(TileCrabTrap.ROD_SLOT, dirt);
+        trap.setInventorySlotContents(TileCrabTrap.BAIT_SLOT, dirt);
+        assertTrue(trap.getStackInSlot(TileCrabTrap.ROD_SLOT).isEmpty(), "direct rod insert rejects ordinary storage");
+        assertTrue(trap.getStackInSlot(TileCrabTrap.BAIT_SLOT).isEmpty(), "direct bait insert rejects ordinary storage");
+        trap.setInventorySlotContents(TileCrabTrap.FIRST_HARVEST_SLOT, dirt);
+        assertTrue(trap.getStackInSlot(TileCrabTrap.FIRST_HARVEST_SLOT).getItem() == dirt.getItem(),
+                "direct harvest storage accepts arbitrary items");
+        trap.setInventorySlotContents(TileCrabTrap.FIRST_HARVEST_SLOT, ItemStack.EMPTY);
         assertTrue(trap.canExtractItem(TileCrabTrap.ROD_SLOT, new ItemStack(Items.FISHING_ROD), EnumFacing.DOWN),
                 "rod slot remains extractable");
         assertTrue(trap.canExtractItem(TileCrabTrap.BAIT_SLOT, new ItemStack(Items.BEEF), EnumFacing.DOWN),
@@ -118,6 +137,16 @@ public final class CrabTrapSelfTest {
         assertEquals(7, restored.getStackInSlot(TileCrabTrap.BAIT_SLOT).getCount(), "bait NBT round trip");
         assertEquals(3, restored.getStackInSlot(TileCrabTrap.FIRST_HARVEST_SLOT).getMetadata(), "fish metadata NBT round trip");
         assertEquals(10, restored.getStackInSlot(TileCrabTrap.FIRST_HARVEST_SLOT).getCount(), "harvest count NBT round trip");
+
+        NBTTagCompound legacyRodSlot = serialized.getTagList("inventory", 10).getCompoundTagAt(0);
+        new ItemStack(net.minecraft.init.Blocks.DIRT).writeToNBT(legacyRodSlot);
+        legacyRodSlot.setByte("slot", (byte) TileCrabTrap.ROD_SLOT);
+        TileCrabTrap legacyRestored = new TileCrabTrap();
+        legacyRestored.readFromNBT(serialized);
+        assertTrue(legacyRestored.getStackInSlot(TileCrabTrap.ROD_SLOT).getItem() == net.minecraft.item.Item.getItemFromBlock(
+                net.minecraft.init.Blocks.DIRT), "legacy invalid functional-slot item remains removable after load");
+        assertFalse(legacyRestored.removeStackFromSlot(TileCrabTrap.ROD_SLOT).isEmpty(),
+                "legacy invalid functional-slot item can be removed after load");
 
         NBTTagCompound pendingTag = new NBTTagCompound();
         new ItemStack(Items.DYE, 10, 0).writeToNBT(pendingTag);

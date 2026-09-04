@@ -7,13 +7,13 @@ import lisbam.pastoraleconomy.transport.TransportAction;
 import lisbam.pastoraleconomy.transport.TransportNodeView;
 import lisbam.pastoraleconomy.transport.TransportStateSnapshot;
 import lisbam.pastoraleconomy.transport.VillageTransportCandidate;
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiButton;
 import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.client.gui.GuiTextField;
 import net.minecraft.client.resources.I18n;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.ResourceLocation;
+import org.lwjgl.input.Mouse;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -35,8 +35,6 @@ public final class GuiTransportStation extends GuiScreen {
             "minecraft", "textures/gui/demo_background.png");
     /** Vanilla workbench/furnace inventory-title colour for static window text. */
     private static final int TEXT_COLOR = 0x404040;
-    /** Keep actual GuiButton labels at their normal vanilla light colour. */
-    private static final int BUTTON_TEXT_COLOR = 0xFFE0E0E0;
 
     private final BlockPos stationPosition;
     private GuiTextField renameField;
@@ -54,29 +52,29 @@ public final class GuiTransportStation extends GuiScreen {
     public void initGui() {
         buttonList.clear();
         layout = Layout.create(width, height);
-        buttonList.add(new LightTextButton(BUTTON_CONNECT, layout.connectX, layout.actionRowOneY, layout.connectWidth, 18,
+        buttonList.add(new GuiButton(BUTTON_CONNECT, layout.connectX, layout.actionRowOneY, layout.connectWidth, 18,
                 I18n.format("gui.lisbam_pastoral_economy.transport.connect")));
-        buttonList.add(new LightTextButton(BUTTON_REFRESH, layout.refreshX, layout.actionRowOneY, layout.refreshWidth, 18,
+        buttonList.add(new GuiButton(BUTTON_REFRESH, layout.refreshX, layout.actionRowOneY, layout.refreshWidth, 18,
                 I18n.format("gui.lisbam_pastoral_economy.transport.refresh")));
-        buttonList.add(new LightTextButton(BUTTON_TRAVEL, layout.travelX, layout.actionRowOneY, layout.travelWidth, 18,
+        buttonList.add(new GuiButton(BUTTON_TRAVEL, layout.travelX, layout.actionRowOneY, layout.travelWidth, 18,
                 I18n.format("gui.lisbam_pastoral_economy.transport.travel")));
-        buttonList.add(new LightTextButton(BUTTON_CONNECT_VILLAGE, layout.contentX, layout.actionRowTwoY,
+        buttonList.add(new GuiButton(BUTTON_CONNECT_VILLAGE, layout.contentX, layout.actionRowTwoY,
                 layout.contentRight - layout.contentX, 18,
                 I18n.format("gui.lisbam_pastoral_economy.transport.connect_village")));
-        buttonList.add(new LightTextButton(BUTTON_PREVIOUS, layout.previousX, layout.listY - 16, 30, 14, "<"));
-        buttonList.add(new LightTextButton(BUTTON_NEXT, layout.nextX, layout.listY - 16, 30, 14, ">"));
-        buttonList.add(new LightTextButton(BUTTON_REMOVE, layout.contentX, layout.footerY, 82, 18,
+        buttonList.add(new GuiButton(BUTTON_PREVIOUS, layout.previousX, layout.listY - 16, 30, 14, "<"));
+        buttonList.add(new GuiButton(BUTTON_NEXT, layout.nextX, layout.listY - 16, 30, 14, ">"));
+        buttonList.add(new GuiButton(BUTTON_REMOVE, layout.contentX, layout.footerY, 82, 18,
                 I18n.format("gui.lisbam_pastoral_economy.transport.remove")));
-        buttonList.add(new LightTextButton(BUTTON_RENAME, layout.renameX, layout.footerY, 74, 18,
+        buttonList.add(new GuiButton(BUTTON_RENAME, layout.renameX, layout.footerY, 74, 18,
                 I18n.format("gui.lisbam_pastoral_economy.transport.rename")));
         renameField = new GuiTextField(0, fontRenderer, layout.renameFieldX, layout.footerY + 2,
                 layout.renameFieldWidth, 14);
         renameField.setMaxStringLength(96);
         renameField.setTextColor(TEXT_COLOR);
         renameField.setDisabledTextColour(TEXT_COLOR);
-        buttonList.add(new LightTextButton(BUTTON_CONFIRM_VILLAGE, layout.dialogConfirmX, layout.dialogButtonY,
+        buttonList.add(new GuiButton(BUTTON_CONFIRM_VILLAGE, layout.dialogConfirmX, layout.dialogButtonY,
                 layout.dialogButtonWidth, 18, I18n.format("gui.lisbam_pastoral_economy.transport.confirm")));
-        buttonList.add(new LightTextButton(BUTTON_CANCEL_VILLAGE, layout.dialogCancelX, layout.dialogButtonY,
+        buttonList.add(new GuiButton(BUTTON_CANCEL_VILLAGE, layout.dialogCancelX, layout.dialogButtonY,
                 layout.dialogButtonWidth, 18, I18n.format("gui.lisbam_pastoral_economy.transport.cancel")));
         updateControls(currentSnapshot());
         requestVillageCandidate(currentSnapshot());
@@ -162,6 +160,31 @@ public final class GuiTransportStation extends GuiScreen {
     }
 
     @Override
+    public void handleMouseInput() throws java.io.IOException {
+        super.handleMouseInput();
+        if (villageConfirmationOpen || layout == null) {
+            return;
+        }
+        int wheelDelta = Mouse.getEventDWheel();
+        if (wheelDelta == 0) {
+            return;
+        }
+        int mouseX = Mouse.getEventX() * width / mc.displayWidth;
+        int mouseY = height - Mouse.getEventY() * height / mc.displayHeight - 1;
+        if (mouseX < layout.contentX || mouseX >= layout.contentRight || mouseY < layout.listY
+                || mouseY >= layout.footerY - 4) {
+            return;
+        }
+        TransportStateSnapshot snapshot = currentSnapshot();
+        if (snapshot == null) {
+            return;
+        }
+        int direction = wheelDelta > 0 ? -1 : 1;
+        scrollOffset = Math.max(0, Math.min(maxScroll(snapshot.getNodes()), scrollOffset + direction));
+        updateControls(snapshot);
+    }
+
+    @Override
     protected void keyTyped(char typedChar, int keyCode) throws java.io.IOException {
         if (villageConfirmationOpen) {
             return;
@@ -242,11 +265,11 @@ public final class GuiTransportStation extends GuiScreen {
                     ? I18n.format("gui.lisbam_pastoral_economy.transport.travel_fee", format(node.getTravelFee())) : "";
             int feeWidth = fee.isEmpty() ? 0 : fontRenderer.getStringWidth(fee);
             int textWidth = layout.contentRight - layout.contentX - feeWidth - (feeWidth == 0 ? 0 : 6);
-            int color = index == selectedIndex ? 0xFF55AA55 : TEXT_COLOR;
-            drawString(fontRenderer, fontRenderer.trimStringToWidth(node.getAlias() + "  " + location,
-                    Math.max(1, textWidth)), layout.contentX, y, color);
+            String prefix = index == selectedIndex ? "> " : "  ";
+            drawString(fontRenderer, fontRenderer.trimStringToWidth(prefix + node.getAlias() + "  " + location,
+                    Math.max(1, textWidth)), layout.contentX, y, TEXT_COLOR);
             if (!fee.isEmpty()) {
-                drawString(fontRenderer, fee, layout.contentRight - feeWidth, y, color);
+                drawString(fontRenderer, fee, layout.contentRight - feeWidth, y, TEXT_COLOR);
             }
         }
     }
@@ -423,23 +446,7 @@ public final class GuiTransportStation extends GuiScreen {
                 right - left, bottom - top, 256.0F, 256.0F);
     }
 
-    /** Retains vanilla button behaviour while drawing labels in the standard light button colour. */
-    private static final class LightTextButton extends GuiButton {
-        private LightTextButton(int buttonId, int x, int y, int width, int height, String text) {
-            super(buttonId, x, y, width, height, text);
-        }
-
-        @Override
-        public void drawButton(Minecraft minecraft, int mouseX, int mouseY, float partialTicks) {
-            super.drawButton(minecraft, mouseX, mouseY, partialTicks);
-            if (visible) {
-                drawCenteredString(minecraft.fontRenderer, displayString, x + width / 2, y + (height - 8) / 2,
-                        BUTTON_TEXT_COLOR);
-            }
-        }
-    }
-
-    /** All action controls fit inside even Minecraft's 320x240 scaled screen. */
+    /** All controls fit inside Minecraft's 320x240 scaled screen without oversized empty space. */
     private static final class Layout {
         private final int panelX;
         private final int panelY;
@@ -506,8 +513,11 @@ public final class GuiTransportStation extends GuiScreen {
         }
 
         private static Layout create(int screenWidth, int screenHeight) {
-            int panelWidth = Math.max(1, Math.min(520, screenWidth - 12));
-            int panelHeight = Math.max(1, Math.min(300, screenHeight - 12));
+            int availableWidth = Math.max(1, screenWidth - 12);
+            int availableHeight = Math.max(1, screenHeight - 12);
+            int panelWidth = Math.min(400, availableWidth);
+            int preferredHeight = Math.max(206, panelWidth * 166 / 248);
+            int panelHeight = Math.min(availableHeight, preferredHeight);
             return new Layout((screenWidth - panelWidth) / 2, (screenHeight - panelHeight) / 2, panelWidth, panelHeight);
         }
     }

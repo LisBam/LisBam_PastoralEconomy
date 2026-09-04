@@ -335,6 +335,18 @@ public final class TileCrabTrap extends TileEntity implements ISidedInventory, I
         if (!isValidSlot(index)) {
             return;
         }
+        if (stack != null && !stack.isEmpty() && !isItemValidForSlot(index, stack)) {
+            return;
+        }
+        setStoredStack(index, stack);
+        markDirty();
+    }
+
+    /**
+     * Loads already-saved inventory verbatim so old worlds can retrieve items
+     * that were placed in functional slots before their validation was fixed.
+     */
+    private void setStoredStack(int index, ItemStack stack) {
         if (stack == null || stack.isEmpty()) {
             inventory.set(index, ItemStack.EMPTY);
         } else {
@@ -342,7 +354,6 @@ public final class TileCrabTrap extends TileEntity implements ISidedInventory, I
             copy.setCount(Math.min(copy.getCount(), Math.min(getInventoryStackLimit(), copy.getMaxStackSize())));
             inventory.set(index, copy);
         }
-        markDirty();
     }
 
     @Override
@@ -466,7 +477,7 @@ public final class TileCrabTrap extends TileEntity implements ISidedInventory, I
             if (isValidSlot(slot)) {
                 ItemStack stack = new ItemStack(stackTag);
                 if (!stack.isEmpty()) {
-                    inventory.set(slot, stack);
+                    setStoredStack(slot, stack);
                 }
             }
         }
