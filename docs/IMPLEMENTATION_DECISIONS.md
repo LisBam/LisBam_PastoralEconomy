@@ -201,3 +201,13 @@
 原因：整体拉伸 `demo_background` 会把原版边缘缩放成非整数像素，且颜色与偏黄文字组合会让原版 `FontRenderer` 看起来像不同字体；蟹笼手填背景与原版纹理明度不同，容易被误认为贴图错位。库存上限以包保存是服务端内部实现，玩家应看到可购买的真实物品数。
 
 影响：这是纯客户端渲染与本地化调整；不改变交易库存扣减、每包交易数量、槽位坐标、Packet、存档或任何服务端权威规则。
+
+## DEC-027 回退不稳定的 demo 背景九宫格
+
+原决定：DEC-026 将 `demo_background.png` 拆分为九宫格，以保留面板边缘。
+
+修改原因：游戏内实际验证显示该分片路径会产生大量错位图块；编译、静态审计和压缩包检查无法覆盖渲染状态下的 UV/批次问题，因此该方案不具备可接受的稳定性。
+
+新决定：`GuiMerchantTrade` 与 `GuiTransportStation` 每帧只使用一次 `drawScaledCustomSizeModalRect`，从原版 `demo_background.png` 完整裁取 248×166 区域绘制响应式面板。继续使用原版 `FontRenderer`、`GuiButton`、`GuiTextField`、`GuiSlider` 与原版物品槽裁切，不再对 `demo_background` 做任何分片组合。
+
+数据兼容影响：无。纯客户端视觉修复；不改变 Packet、Container、TileEntity、NBT、库存、金币或交通数据。
