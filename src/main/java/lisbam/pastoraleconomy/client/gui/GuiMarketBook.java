@@ -131,6 +131,14 @@ public final class GuiMarketBook extends GuiScreen {
     }
 
     @Override
+    protected void keyTyped(char typedChar, int keyCode) throws java.io.IOException {
+        if (ModGuiInput.closeWithInventoryKey(mc, keyCode)) {
+            return;
+        }
+        super.keyTyped(typedChar, keyCode);
+    }
+
+    @Override
     public void onGuiClosed() {
         // A book session owns its display cache. Closing it releases all page
         // snapshots so the next open is a fresh, bounded server request.

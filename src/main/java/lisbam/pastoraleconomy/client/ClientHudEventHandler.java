@@ -13,7 +13,8 @@ import net.minecraftforge.fml.relauncher.Side;
 /** Physical-client HUD and connection cache lifecycle only. */
 @Mod.EventBusSubscriber(modid = LisBamPastoralEconomy.MODID, value = Side.CLIENT)
 public final class ClientHudEventHandler {
-    private static final int HUD_MARGIN = 4;
+    /** Leave a clear scaled-pixel gutter for other top-right overlays. */
+    private static final int HUD_MARGIN = 12;
     private static final int HUD_COLOR = 0xFFFFFF;
 
     private ClientHudEventHandler() {

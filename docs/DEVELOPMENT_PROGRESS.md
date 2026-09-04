@@ -4,9 +4,17 @@
 
 最近成功构建：
 
-- `env JAVA_HOME=/tmp/lbpe-jdk8 PATH=/tmp/lbpe-jdk8/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin ./gradlew --console=plain build`
+- `JDK8_HOME=/tmp/lbpe-jdk8; env JAVA_HOME="$JDK8_HOME" PATH="$JDK8_HOME/bin:$PATH" ./gradlew compileJava processResources build`
 - 日期：2026-09-04
-- 结果：PASS（Forge 14.23.5.2859 / Temurin Java 8 `1.8.0_504`；`build` 包含 `reobfJar` 与 `exportReleaseJar`。`release/LisBam_PastoralEconomy-1.0.jar` 为 337,961 bytes，SHA-256 `42939b2030bf05d8895e8a48ee76693f019322a5904fb00c9699013877b654c0`，`unzip -t` PASS。）
+- 结果：PASS（Forge 14.23.5.2859 / Temurin Java 8 `1.8.0_504`；`build` 包含 `reobfJar` 与 `exportReleaseJar`。`release/LisBam_PastoralEconomy-1.0.jar` 为 344,635 bytes，SHA-256 `34ddca6a5f64e5e71eadecb36ffd8293d949874c60d9d6a8c99fb321462ff775`，`unzip -t` PASS。）
+
+## 维护：链式市场波动、设置与界面输入（2026-09-04）
+
+实现：默认市场首次初始化使用冻结基础价，之后 `PastoralWorldData` 按每一遗漏世界日以昨日持久化快照推进；`MarketPriceGenerator` 对低于基础价的价格以 65% 概率上涨、对高于基础价的价格以 65% 概率下跌，单日步长为原类别波动率的 25%～100%。因此市场只有回归倾向、没有固定百分比均价带。新增 common `ModSettings` 和物理客户端 Mod List 配置界面：`market.moreStableMarketVolatility=false` 为新默认，`true` 完整恢复旧的独立三角分布。配置切换只在未来跨日读取，绝不重新生成同日或已保存的历史价格；v7 `PastoralWorldData` 的现有当前/昨日快照和 30 日收购历史直接保留，无 NBT、WorldSavedData、Packet 或 registry 迁移。
+
+商人、行情书、交通站和交通确认界面均把原版“打开背包”按键（默认 E、遵从改键）映射到 `EntityPlayerSP#closeScreen`，使服务端 Container 同步关闭；蟹笼仍使用原版 `GuiContainer` 的已有行为。商人数量输入改为白字；金币 HUD 页边距从 4 增至 12 个 scaled pixels。交通“接入最近村庄”的确认按钮不再根据客户端余额禁用，点击总会发送现有请求；`TransportService` 继续在服务端重新查找候选、重算费用并原子检查余额，失败只同步状态且不扣款。
+
+验证：Temurin Java 8 `1.8.0_504` 下 `check_toolchain.py` 为 0 issue；`compileJava`、`compileTestJava`、`marketCoreSelfTest`、`marketPacketSelfTest`、`transportCoreSelfTest`、`transportTravelSelfTest` 与最终 `compileJava processResources build` 均 PASS。严格 Forge 1.12.2 audit 为 0 ERROR、5 条既有 `packet-thread` WARNING；正式重混淆 JAR 已导出为 `release/LisBam_PastoralEconomy-1.0.jar`（344,635 bytes，SHA-256 `34ddca6a5f64e5e71eadecb36ffd8293d949874c60d9d6a8c99fb321462ff775`，`unzip -t` PASS）。游戏内 E 关闭、HUD 位置、配置 UI、默认/稳定模式跨日及余额不足确认仍需可操作客户端或 Dedicated Server，当前为 NOT RUN。
 
 ## 维护：原版确认、蟹笼 Tooltip 与金闪闪骨粉兼容（2026-09-04）
 

@@ -1,6 +1,7 @@
 package lisbam.pastoraleconomy.proxy;
 
 import lisbam.pastoraleconomy.LisBamPastoralEconomy;
+import lisbam.pastoraleconomy.config.ModSettings;
 import lisbam.pastoraleconomy.data.player.PlayerDataCapability;
 import lisbam.pastoraleconomy.entity.ModEntities;
 import lisbam.pastoraleconomy.gui.ModGuiHandler;
@@ -18,6 +19,7 @@ import net.minecraftforge.fml.common.event.FMLPreInitializationEvent;
 
 public class CommonProxy {
     public void preInit(FMLPreInitializationEvent event) {
+        ModSettings.initialize(event.getSuggestedConfigurationFile());
         PlayerDataCapability.register();
         ModEntities.register();
         ModNetwork.initialize();

@@ -70,12 +70,27 @@ public final class MarketCoreSelfTest {
             require(high <= Math.round(1000L * (1.0D + category.getVolatility())),
                     "all volatility groups must stay inside their frozen upper range");
         }
+
+        long restoringDown = MarketPriceGenerator.calculateChainedPrice(100L, CommodityCategory.CORE_CROPS,
+                135L, 0.0D, 0.5D);
+        long escapingUp = MarketPriceGenerator.calculateChainedPrice(100L, CommodityCategory.CORE_CROPS,
+                135L, 0.90D, 0.5D);
+        require(restoringDown < 135L && escapingUp > 135L,
+                "above-base chained prices must favour, but not force, a restoring down move");
+        long chained = 135L;
+        for (int index = 0; index < 6; index++) {
+            chained = MarketPriceGenerator.calculateChainedPrice(100L, CommodityCategory.CORE_CROPS,
+                    chained, 0.99D, 0.999999999D);
+        }
+        require(chained > 135L,
+                "chained prices must not retain the legacy fixed 135-percent ceiling");
     }
 
     private static void verifyWorldDataProgressionAndHistory() {
         PastoralWorldData data = new PastoralWorldData();
         data.ensureMarketDay(10L, 12345L);
         long dayTenPrice = price(data, WHEAT);
+        require(dayTenPrice == 5L, "a new chained market must start at the frozen base price");
         require(!data.hasPreviousMarketSnapshot(), "the first market day must not invent yesterday");
         assertHistoryDays(data, 10L, 10L, 1);
 
@@ -101,12 +116,12 @@ public final class MarketCoreSelfTest {
         List<MarketHistoryPoint> older = data.getCropHistory(WHEAT, 45L, 30, Long.valueOf(16L));
         require(older.isEmpty(), "older-than-thirty history must be discarded instead of growing indefinitely");
 
-        data.ensureMarketDay(1000000L, 12345L);
-        recentThirty = data.getCropHistory(WHEAT, 1000000L, 100, null);
+        data.ensureMarketDay(1000L, 12345L);
+        recentThirty = data.getCropHistory(WHEAT, 1000L, 100, null);
         require(recentThirty.size() == PastoralWorldData.MARKET_HISTORY_RETENTION_DAYS
-                        && recentThirty.get(0).getWorldDay() == 999971L
-                        && recentThirty.get(29).getWorldDay() == 1000000L,
-                "large time jumps must build one bounded recent window without processing every skipped day");
+                        && recentThirty.get(0).getWorldDay() == 971L
+                        && recentThirty.get(29).getWorldDay() == 1000L,
+                "chained day advancement must retain exactly the newest thirty daily prices");
     }
 
     private static void verifySaveReloadRollbackAndMigration() {
@@ -131,7 +146,7 @@ public final class MarketCoreSelfTest {
         v6.setInteger("dataVersion", 6);
         PastoralWorldData migratedV6 = new PastoralWorldData();
         migratedV6.readFromNBT(v6);
-        migratedV6.ensureMarketDay(1000000L, 12345L);
+        migratedV6.ensureMarketDay(1000L, 12345L);
         NBTTagCompound migratedV6Nbt = migratedV6.writeToNBT(new NBTTagCompound());
         require(migratedV6Nbt.getInteger("dataVersion") == PastoralWorldData.DATA_VERSION,
                 "v6 worlds must migrate to the bounded market schema");

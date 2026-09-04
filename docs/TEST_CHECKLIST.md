@@ -2,9 +2,19 @@
 
 ## 构建
 
-- [x] `./gradlew compileJava`、`compileTestJava` — PASS（2026-09-04，临时 Temurin Java 8 `1.8.0_504`）
-- [x] `./gradlew processResources`、`build` — PASS（2026-09-04，Temurin Java 8 `1.8.0_504`；含 `reobfJar`、`exportReleaseJar`；release JAR 337,961 bytes，SHA-256 `42939b2030bf05d8895e8a48ee76693f019322a5904fb00c9699013877b654c0`，`unzip -t` PASS）
+- [x] `./gradlew compileJava`、`compileTestJava` — PASS（2026-09-04，Temurin Java 8 `1.8.0_504`）
+- [x] `./gradlew processResources`、`build` — PASS（2026-09-04，Temurin Java 8 `1.8.0_504`；含 `reobfJar`、`exportReleaseJar`；release JAR 344,635 bytes，SHA-256 `34ddca6a5f64e5e71eadecb36ffd8293d949874c60d9d6a8c99fb321462ff775`，`unzip -t` PASS）
 - [x] Forge 1.12.2 static audit — 0 ERROR；5 条 `packet-thread` WARNING 已审查（通用注册不处理消息；四个 S2C Proxy 桥没有直接修改状态，客户端实际写入均调度至主线程；交通 C2S handler 调度至服务端主线程）。
+
+## 维护：链式市场与界面关闭
+
+- [x] `marketCoreSelfTest`：新市场首日为基础价；高/低于基础价时回归方向概率并非强制；连续链式上行可越过旧 135% 上限；最近 30 日裁剪、保存重载、回拨及 v6→v7 读取路径通过。PASS（2026-09-04，Temurin Java 8 `1.8.0_504`）。
+- [x] `marketPacketSelfTest`、`transportCoreSelfTest`、`transportTravelSelfTest`：行情协议边界/缓存、交通费用和服务端确认路径保持。PASS（2026-09-04，Temurin Java 8 `1.8.0_504`）。
+- [x] Forge 1.12.2 strict audit：0 ERROR；5 条既有 `packet-thread` WARNING 已审查。`ModSettings` 只在 common 使用 `Configuration`，配置 GUI/事件处理器均隔离在 `client` 包。PASS（2026-09-04）。
+- [x] 源码审查：同日 `ensureMarketDay` 仅保留现有快照/补损坏缺项，设置未创建价格重算、C2S 或 NBT 路径；交通接入无余额时仍发送既有 C2S 请求，服务端 `CoinService.canAfford/trySpend` 继续拒绝且同步。PASS。
+- [ ] 游戏内：默认 E（及改键后的背包键）分别关闭商人、行情书、交通站与交通确认层，并使商人 `endTrading` 执行；蟹笼原版关闭行为不回归。NOT RUN：当前环境没有可操作 Forge 客户端。
+- [ ] 游戏内：右上角金币与其他右上 HUD 共同显示时保留 12 个 scaled-pixel 页边距；商人数量框白字；Mod List 设置、默认链式跨日、启用旧稳定模式的跨日和同日开关不刷新价格。NOT RUN：当前环境没有可操作 Forge 客户端/Dedicated Server。
+- [ ] 游戏内：余额不足时“接入最近村庄”主按钮与原版确认“是”按钮可点击；服务端重算候选/费用后拒绝请求、不扣金币且刷新快照。NOT RUN：需要客户端/服务端连接。
 
 ## 维护：原版确认、Tooltip、羊毛显示与骨粉入口
 
@@ -21,7 +31,7 @@
 - [x] `transportCoreSelfTest`：移出节点直接删除 PlayerData 映射，NBT 与死亡 Clone 仅保留有效节点；物理世界节点删除和 Packet 往返保持。PASS（2026-09-04，Temurin Java 8）。
 - [x] `transportTravelSelfTest`：村庄候选身份和接入/旅行费用检查点保持不变，确认层只使用已有服务端权威 `CONNECT_VILLAGE` 结算路径。PASS（2026-09-04，Temurin Java 8）。
 - [x] `processResources` 与 release JAR：交通方块配方为 `RIR/ICI/RIR`（R=红石块，I=铁块，C=指南针），双语确认窗口与三坐标显示键已打包。PASS（2026-09-04）。
-- [ ] 游戏内：蟹笼 0/1 槽与各向 Hopper 拒绝错误物品、2～19 可存任意物品、原版 Tooltip；交通配方；村庄确认层余额不足禁用与服务器重新定价；移出/拆除后节点列表立即消失；320×240 下文字、绿色选中行与无 `d0` 显示。NOT RUN：当前环境没有可操作 Forge 客户端。
+- [ ] 游戏内：蟹笼 0/1 槽与各向 Hopper 拒绝错误物品、2～19 可存任意物品、原版 Tooltip；交通配方；村庄确认层余额不足仍可点击且由服务器重新定价/拒绝；移出/拆除后节点列表立即消失；320×240 下文字、绿色选中行与无 `d0` 显示。NOT RUN：当前环境没有可操作 Forge 客户端。
 
 ## 维护：商人整组、行情书与蟹笼规则
 
@@ -75,7 +85,7 @@
 - [x] `marketCoreSelfTest`：100 次同 key/day 调用一致；新增目录项不参与旧 key 随机；8 类波动与最低价正确；小麦基础价为 5。PASS。
 - [x] 市场初始化只写当前真实世界日的 14 条作物点；苹果不进入历史。PASS：自检。
 - [x] 连续 30 日只保留按世界日升序的最近 30 点；第 31 天及更早点不再提供分页或持久化。PASS：`marketCoreSelfTest`。
-- [x] 多日/一百万日跳跃仅重建最近窗口；当天重复调用不重建，NBT 重载、回拨和返回原日均产生无重复的确定性 current/previous/history。PASS：`marketCoreSelfTest`。
+- [x] 多日推进逐日承接上一日价格；连续 1,000 日后只保留最近 30 日窗口；当天重复调用不重建，NBT 重载、回拨和返回原日均不重复。PASS：`marketCoreSelfTest`。
 - [x] v6 市场读入后写为 v7，且不再写 legacy `processedDays`。PASS：`marketCoreSelfTest`。
 - [x] `PastoralWorldData` v2→v3 保留 firstInitializationCompleted 且不伪造 market。PASS：自检。
 - [x] Forge 1.12.2 static audit：0 ERROR；本批无 Client import、Packet 或现代 API。PASS（2 条第 02 批 packet-thread WARNING 已审查）。

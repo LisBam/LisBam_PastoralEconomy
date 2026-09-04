@@ -331,3 +331,19 @@
 原因：`GuiContainer#drawScreen` 不会自行调用 Tooltip 渲染；原版 `GuiChest` 的显式补充调用才使普通背包式容器出现物品说明。缩放 `demo_background` 的确认层无法同时保证原版比例和文字对比，直接采用 `GuiYesNo` 才能严格复用原版底图、字体和按钮。羊毛商品逻辑接受全部 metadata，不能因显示名称而更改其匹配或行情身份。物品若只重写方块使用，便会缺少白色染料和发射器两条原版入口；临时白色 `ItemDye` 与无玩家 `applyBonemeal` 继续经过 Forge 1.12.2 骨粉 hook，失败的发射器路径交回原版默认抛出行为。
 
 兼容性与影响：不新增或改变 registry ID、Packet、NBT、Capability 或 `PastoralWorldData`。确认可见性、节点绿色和羊毛显示名均为客户端暂态；羊和方块的最终修改仍在逻辑服务端发生。已有存档中的物品、蟹笼库存、商人 Offer、市场 key 与交通节点无需迁移。
+
+## DEC-042 链式市场与可切换旧稳定模式
+
+决定：市场默认不再按“基础价 × 当日独立倍率”生成。新市场的首个价格为 `MarketCommodity.basePrice`；每个后续世界日以该商品上一日的保存价格为输入，步长为类别波动率的 `25%～100%`。当前价低于基础价时 65% 概率上涨，高于基础价时 65% 概率下跌，恰好相等时方向各半；结果只以 `max(1, round(...))` 保护非正价格，并在正向 `long` 溢出时饱和。由此保留基础价的回归倾向，但不建立固定均价线或固定百分比上下界。`market.moreStableMarketVolatility` 默认 `false`；启用时逐日改用原有的 marketSeed/worldDay/key 独立三角分布公式。
+
+`PastoralWorldData` 沿用 v7 的 market NBT 结构：当前与昨日完整快照仍是唯一权威前驱状态，22 条收购曲线仍最多保存 30 点。加载旧世界时直接采用其已保存快照/曲线；同一世界日的 `ensureMarketDay` 只补齐损坏缺项，绝不按当前配置重算完整快照。因此开关设置、重登、打开行情书或打开商人界面都不能刷新价格。为保持每日链式关系，按需发现跨日会逐日推进；普通前进时每一天都立即写入并裁剪收购历史。时间回拨仍优先恢复保留的收购曲线，其他非书本商品按旧确定性后备公式恢复，这是管理员异常时间操作的兼容路径而非可刷价的普通界面路径。
+
+设置存于 Forge 1.12.2 `Configuration`，common `preInit` 在服务端读取；Mod List 仅以物理客户端 `IModGuiFactory` 暴露编辑界面，不增加 C2S 配置包。远端多人以服务器配置为准。没有新增 Packet discriminator、NBT key、WorldSavedData 名称、Capability、registry ID 或数据版本迁移。
+
+## DEC-043 原版背包键关闭与村庄确认可点性
+
+决定：自定义 `GuiScreen` 统一检查 `GameSettings.keyBindInventory.isActiveAndMatches(keyCode)`，匹配时调用 `EntityPlayerSP#closeScreen`；这尊重 E 的改键并让服务端 `Container#onContainerClosed` 正常收尾。商人数量框的常态/禁用字色均为 `0xFFFFFF`，金币 HUD 采用 12 个 scaled pixels 页边距。交通最近村庄的主按钮与 `GuiYesNo` “是”按钮不再用客户端金币缓存禁用；确认点击无余额短路，仍只发送原有 `CONNECT_VILLAGE` 请求。
+
+原因：普通 `GuiScreen` 默认仅用 Escape 关闭，按 E 会被文本框吞掉或无响应；直接 `displayGuiScreen(null)` 不能明确保证槽位容器关闭包。交通费用显示只是快照，客户端在延迟/余额变动下不应成为操作最终否决者。`TransportService#handleConnectVillage` 已经在逻辑服务端重新定位村庄、重算费用并经 `CoinService` 原子检查余额，故允许点击不会改变资金或解锁权威。
+
+兼容性与影响：没有新增网络、存档或注册结构。打开背包键只关闭 UI；余额不足的接入请求仍被服务端拒绝且同步最新状态，不扣除金币。
