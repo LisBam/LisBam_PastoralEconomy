@@ -86,7 +86,7 @@
 
 原因：1.12.2 的 `EntityPlayer#openGui` 需要服务端 Container 才会向远端客户端发送 OpenGui，不应在 Common GUI Handler 直接引用 `GuiScreen`。市场历史无限增长，不能传输整个 WorldSavedData 或客户端提供价格/数量。以商品 key + 游标 + 请求号识别窗口，能在快速切换商品和分页时阻止迟到 S2C 回包覆盖当前界面。
 
-影响：市场仍只由主世界 END Tick 的 `MarketService.tick` 推进；行情书所有显示查询均不会初始化或推进市场，因此不会生成新价格、历史、交易或金币变化。客户端缓存只在内存中存在且连接生命周期清空。三维度请求通过 `MarketService` → `PastoralWorldData.get(World)` 解析到主世界根，因而读取同一行情。模型有意引用原版 `minecraft:items/book_normal`，避免无必要地复制 Minecraft 位图资源。
+影响：市场维护与显示查询的后续性能语义由 DEC-028～031 覆盖；客户端缓存只在内存中存在且连接生命周期清空。三维度请求通过 `MarketService` → `PastoralWorldData.get(World)` 解析到主世界根，因而读取同一行情。行情书模型现在使用本模组的低分辨率绿皮书贴图；这只改变外观，不影响 Item ID、配方或市场协议。
 
 ## DEC-013 第 06、07 批附魔规则与侧边界
 
@@ -246,18 +246,26 @@
 
 ## DEC-032 商人实时交易、运行时行为与文字颜色
 
-决定：`GuiMerchantTrade#doesGuiPauseGame` 固定返回 `false`。成功交易后，`MerchantTradeService` 除了保留 `CoinService` 的金币同步和既有 Packet 4 商人快照外，立即调用 `EntityPlayerMP#sendContainerToPlayer(player.inventoryContainer)` 同步窗口 0 的完整玩家背包。`ContainerMerchantTrade` 打开/关闭时分别在 `EntityMerchant` 登记/移除交易者；有交易者时停止导航和水平移动。商人常规 AI 使用 8 格玩家注视，实际受到玩家伤害后仅避开该玩家 200 tick。`GuiMerchantTrade` 的标签、卡片和不可交易文字采用原版 `GuiButton` 正常浅色；页签和确认按钮保持可见的正常字体，操作路径继续本地预检并由服务端权威复核。
+决定：`GuiMerchantTrade#doesGuiPauseGame` 固定返回 `false`。成功交易后，`MerchantTradeService` 除了保留 `CoinService` 的金币同步和既有 Packet 4 商人快照外，立即调用 `EntityPlayerMP#sendContainerToPlayer(player.inventoryContainer)` 同步窗口 0 的完整玩家背包。`ContainerMerchantTrade` 打开/关闭时分别在 `EntityMerchant` 登记/移除交易者；有交易者时停止导航和水平移动。商人常规 AI 使用 8 格玩家注视，实际受到玩家伤害后仅避开该玩家 200 tick。`GuiMerchantTrade` 的标签、卡片和数量文字采用原版 `GuiButton` 正常浅色；当前页签以及余额不足、库存不足或背包无待售物品的确认按钮必须真实设为 disabled，显示原版深色禁用字体，操作路径继续本地预检并由服务端权威复核。
 
-原因：普通 `GuiScreen` 会暂停单人集成服务端，使 C2S 交易包、库存修改和 S2C 快照只能在关闭窗口后处理。商人 Container 有意不放玩家背包 Slot，因此常规 `openContainer.detectAndSendChanges()` 不会观察到交易服务直接改动的 `InventoryPlayer`；显式发送 `inventoryContainer` 才能让客户端在同一事务 tick 收到物品变化。交易者和受击逃跑均是实体当前生命周期行为，不应污染稳定商人身份或世界存档。此前为禁用状态选用深灰色会造成同一面板字体不一致。
+原因：普通 `GuiScreen` 会暂停单人集成服务端，使 C2S 交易包、库存修改和 S2C 快照只能在关闭窗口后处理。商人 Container 有意不放玩家背包 Slot，因此常规 `openContainer.detectAndSendChanges()` 不会观察到交易服务直接改动的 `InventoryPlayer`；显式发送 `inventoryContainer` 才能让客户端在同一事务 tick 收到物品变化。交易者和受击逃跑均是实体当前生命周期行为，不应污染稳定商人身份或世界存档。可见但仍可点击的不可成交按钮会误导玩家，故恢复 1.12.2 原版 disabled 状态作为明确反馈。
 
 兼容性与影响：没有新增或变更 Packet discriminator、NBT key、WorldSavedData、Capability、registry ID 或经济数值。玩家物品、金币、库存和价格仍只在逻辑服务端校验及修改；客户端只接收同步和发起请求。交易者集合、逃跑目标和倒计时随实体卸载/重启自然丢弃，下一次实体加载不会残留冻结或仇恨。
 
 ## DEC-033 交通资源一致性与商人延迟补生
 
-决定：交通 GUI 所有手绘文字和重绘后的原版 `GuiButton` 标签统一采用原版按钮正常浅色；即使按钮因状态不可用而禁用，仍保留浅色文字、原版禁用背景与既有点击限制。`village_station` 的模型和方块 Material 改为石质交通站，并复用 `transport_station.png`。蟹笼和交通站贴图替换为简约像素风 32×32 RGB PNG；两个交通站名称都提供正确的 `.name` lang key。
+决定：交通 GUI 所有手绘文字和重绘后的原版 `GuiButton` 标签统一采用原版按钮正常浅色；即使按钮因状态不可用而禁用，仍保留浅色文字、原版禁用背景与既有点击限制。`village_station` 的模型和方块 Material 改为石质交通站，并复用 `transport_station.png`。蟹笼和交通站贴图为简约原版风 32×32 PNG。玩家交通方块与其 ItemBlock 明确从无后缀 `tile.lisbam_pastoral_economy.transport_station` 键取得显示名称，避免标准查找链再次显示 `.name`。
 
 `VillageService` 不再在 `WorldEvent.Load` 强制执行商人补生；启动后的首次周期维护只观察/修复站点，并再等待一个 200 tick 周期让 chunk NBT 中的实体加入世界。`MerchantRecord` 可选保存最近观察到的实体 chunk。补生前必须确认村庄站区块以及该记录的最后实体区块都已加载；实体索引还会拒绝 inactive、缺少 roster、Village ID 或 Station ID 不匹配的旧实体 NBT。
 
 原因：村庄站模型曾直接引用原版 `planks_oak`，导致玩家抵达村庄时看见木板；交通方块的实际本地化查找会追加 `.name`，旧键无法命中。原有 1254×1254 贴图远高于原版方块需要，既增加发行包体积也无法保持像素边缘。更严重的是世界加载和目标村庄区块刚载入时，`loadedEntityList` 可能尚未包含已有商人；旧补生逻辑据此生成重复实体，随后区块 NBT 中的原实体加入后才被去重删除，表现为短暂多出又被刷新掉。
 
 兼容性与影响：没有改 registry ID、blockstate ID、Packet discriminator、价格或玩家数据。MerchantRecord 新增的 `entityChunkX/Z` 是可选 NBT 字段，旧存档可直接读取，第一次观察到对应实体后才保存；没有提升根 `PastoralWorldData` dataVersion。首次加载的村庄商人最多延后两个维护周期（约 20 秒）才会在确实缺失时补生，换取不与尚未加入世界的持久实体重复。纹理替换和方块 Material 只改变显示、声音/粒子材质和保护站观感，不改变站点 UUID 或传送规则。
+
+## DEC-034 交通显示、资源与商人规模维护
+
+决定：`transport_station` 的 registry ID 和 NBT 保持不变，仅让 Block 与专用 ItemBlock 直接使用同一个无 `.name` 后缀的本地化键；行情书使用单独的 32×32 绿皮书 Item 贴图；交通站、村庄站和蟹笼沿用稳定模型路径，只替换其 32×32 贴图。蟹笼 JSON 配方固定为铁锭/铁栅栏的三行交错外框和中央 `minecraft:trapped_chest`。村庄商人目标数按 `max(ceil(villagerCount * 2 / 5), 3)` 计算，采用 `long` 中间值避免 `int` 乘法溢出，不设置 8 的上限。
+
+原因：标准 Block/ItemBlock 本地化流程会追加 `.name`，而当前显示链出现了面向玩家的后缀；直接使用一个共享显示键可隔离该异常，同时不会影响稳定注册名。交易界面需要用原版 disabled 反馈不可成交状态；新的物品配方和简化像素材质均是明确玩法/视觉调整。村庄每 5 名村民仅增加一名商人会使大型村庄补充不足，新的 2/5 比例保留最低三人并按人口继续增长。
+
+兼容性与影响：没有新增 Packet、WorldSavedData、Capability、TileEntity NBT 或 registry ID。旧存档内已有交通节点、蟹笼、市场行情书和 MerchantRecord 无需迁移；下一次低频商人维护会自然补足因新公式增加的商人。资源路径保持不变，资源包覆盖点不变；行情书新增的内部纹理路径不会改变物品模型 ID。

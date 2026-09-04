@@ -14,9 +14,17 @@
 
 验证：Temurin Java 8 `1.8.0_504` 下 `check_toolchain.py`、`compileJava`、`processResources` 与 `build` PASS。Forge 1.12.2 strict audit 为 0 ERROR、5 条既有 `packet-thread` WARNING。正式重混淆 JAR 已导出为 `release/LisBam_PastoralEconomy-1.0.jar`，`mcmod.info` 和 Manifest 均确认显示 `1.0`，压缩包完整性检查通过。
 
+## 维护：交通名称、交易禁用态、资源与商人规模（2026-09-04）
+
+实现：交通方块的 Block 与新增专用 ItemBlock 直接采用同一无后缀显示键，中文固定显示“交通方块”，不再走会附加 `.name` 的默认显示路径。商人界面的当前页签、金币不足/库存不足的购买确认以及背包没有对应物品的出售确认均改为真正禁用，因此使用原版深色禁用字体；其他交易文字仍保持浅色。交通站和蟹笼替换为更简洁的原版风 32×32 像素材质，行情书使用独立绿皮书图标；蟹笼合成改为铁锭/铁栅栏交错外圈、中央陷阱箱。村庄商人目标数由 `clamp(ceil(n/5),3,8)` 改为不设上限的 `max(ceil(2n/5),3)`，并用 long 中间值计算。
+
+根因与影响：交通方块依赖默认 Block/ItemBlock 本地化链时会额外添加 `.name`，导致面向玩家的名称异常；现在显示键完全明确。先前为统一文字颜色而保留了不可成交按钮的白色标签，缺乏不可操作反馈；现在仅这些按钮恢复原版禁用外观。没有更改 registry ID、Packet、WorldSavedData、Capability 或 TileEntity NBT；旧存档无需迁移，下一次村庄维护会自动按新公式补足商人。
+
+验证：Temurin Java 8 `1.8.0_504` 下 `check_toolchain.py` 为 0 issue，严格 Forge audit 为 0 ERROR、5 条既有 `packet-thread` WARNING；`compileJava`、`processResources`、`merchantCatalogSelfTest` 与最终 `build` 均 PASS。`merchantCatalogSelfTest` 覆盖新的人口公式边界和 100/1000 村民的无上限增长。`release/LisBam_PastoralEconomy-1.0.jar` 已由 `exportReleaseJar` 导出，324,370 bytes，SHA-256 `c6ac683b7a9c7569d275ca0ab0c519cd2bb1c64803215c930c1a1032d1352b6c`，`unzip -t` PASS；JAR 已确认包含新 ItemBlock、三张 32×32 PNG、绿皮书模型和新蟹笼配方。游戏内 UI/贴图/合成、旧存档实际加载与 Dedicated Server 仍为 NOT RUN：当前环境不能创建可操作 Forge 客户端，且没有接受 EULA。
+
 ## 维护：交通界面/资源与村庄商人重复补生（2026-09-04）
 
-实现：交通界面所有文字统一为商人界面使用的原版按钮正常浅色；不可用按钮仍不可点击，但通过客户端重绘保持文字不加深。交通站输入框同样覆盖普通/禁用两种颜色。村庄交通站从原版橡木木板改为石质交通站模型与 Material，并与玩家交通方块共享新 32×32 罗盘贴图；蟹笼换为同尺寸的木框铁栅贴图。中英文补齐 `tile...transport_station.name`，中文恢复为“交通方块”。
+实现：交通界面所有文字统一为商人界面使用的原版按钮正常浅色；不可用按钮仍不可点击，但通过客户端重绘保持文字不加深。交通站输入框同样覆盖普通/禁用两种颜色。村庄交通站从原版橡木木板改为石质交通站模型与 Material，并与玩家交通方块共享新 32×32 罗盘贴图；蟹笼换为同尺寸的木框铁栅贴图。当时补齐了标准 `.name` 本地化；该显示方案现已由上方维护记录的无后缀显式键取代。
 
 根因与修复：`Block#getLocalizedName` 查找 `getUnlocalizedName() + ".name"`，旧语言资源只有无后缀键。村庄站模型又硬编码 `minecraft:blocks/planks_oak`。商人则在世界 Load 期间立即扫描短暂为空的 `loadedEntityList` 并补生；持久化的原商人稍后随 Chunk NBT 加入时才去重死亡。初始化路径现不补生，首次周期多等待一轮；MerchantRecord 记录最后实体 Chunk，补生前必须确认其已加载，且索引严格验证 active/roster/village/station 绑定。
 
@@ -198,7 +206,7 @@
 实现：
 
 - 注册可无限使用的 `lisbam_pastoral_economy:market_book`；主/副手右键仅由服务端打开 GUI，不消耗物品，也不触发市场刷新。
-- 加入书 + 小麦 → 1 本行情书的无序 1.12.2 recipe、中英文名称及引用原版 `minecraft:items/book_normal` 的 item model。
+- 加入书 + 小麦 → 1 本行情书的无序 1.12.2 recipe、中英文名称及 item model；当前模型使用本模组绿皮书贴图。
 - 分配稳定 GUI ID 0，以无槽位 common Container 配合 ClientProxy 的 `GuiMarketBook` 完成 Forge 1.12.2 GUI 协议；GUI 默认小麦，严格复用目录中的 14 条历史作物，显示今日/昨日、趋势、最多 30 点单作物折线、翻页与真实前一点悬停差值。
 - 追加同一 `lb_pastoral` channel 的 Packet 1（有界 C2S 请求）和 Packet 2（最多 30 点 S2C 快照）。服务端在主线程验证玩家、商品、游标和未来日期；客户端缓存按商品/游标/请求号隔离迟到响应，连接与断开均清空。
 - `MarketService` 增加显示专用的只读快照路径；其不调用市场推进/初始化逻辑，所以打开、切换或翻页不会重抽价格或新增历史点。
@@ -268,7 +276,7 @@
 
 - 仅在主世界低频维护 1.12.2 `VillageCollection`，识别至少 2 名村民的聚落，按 128/64/160 格参考去重并持久化稳定 villageId、中心、人口和 active 状态。
 - 新增受保护 `village_station` 方块与 TileEntity；站点拥有稳定 stationId、villageId、role=VILLAGE，安全放置限制在已加载中心 12 格内，不覆盖箱子、门、农田、TileEntity 或非空气空间；异常消失后保留身份并可恢复。
-- 注册独立 `EntityMerchant`（Steve 默认皮肤占位），全天、无主动攻击、可受伤死亡、`canDespawn=false`，绑定 MerchantRecord 并在距站点超过 32 格时归位；村民人口目标为 `clamp(ceil(n/5),3,8)`，维护幂等补足。
+- 注册独立 `EntityMerchant`（Steve 默认皮肤占位），全天、无主动攻击、可受伤死亡、`canDespawn=false`，绑定 MerchantRecord 并在距站点超过 32 格时归位；当前村民人口目标为 `max(ceil(2n/5),3)`，维护幂等补足且不设置人数上限。
 - `PastoralWorldData` 升至 v5，在 merchant section 持久化 Village/Station/Merchant、每日 6 收购 + 10 购买 Offer、共享有限库存、可持久化循环轮换状态和特殊附魔书已解析等级；实体死亡不会重置逻辑身份或库存。
 - 新增数据驱动 `TradeCatalog`：完整收购目录（含 16 色羊毛逻辑匹配和牛奶桶返桶规则）、普通 56 条和罕见 43 条购买目录；当时普通 4、罕见 3 启用，稀有 2、珍宝 1 保留禁用槽位；金锭、熔岩桶、岩浆膏、兔子脚分别为 16 bundle/次库存（稀有/珍宝栏已在第 11 批启用）。
 - 新增服务端 `MerchantTradeService`、slotless `ContainerMerchantTrade`、Packet 3/4 和客户端 `GuiMerchantTrade`。最终交易在服务端主线程重新检查 Merchant、Session、世界日、Offer、MarketService 价格、背包、余额、库存和溢出；出售先移除物品，牛奶桶原子返空桶，购买先容量模拟并维护共享 bundle 库存；requestId/单会话 guard 防止重复包。GUI 提供逐栏数量加减、数量与预计总价显示。
@@ -333,7 +341,7 @@
 
 实现：
 
-- 注册可回收 `crab_trap` Block、ItemBlock 和 TileEntity；十字铁栅栏 ×4 + 箱子 ×1 的 1.12.2 JSON 合成配方、BlockState、模型、双语名和 AI 生成的蟹笼贴图全部入库。
+- 注册可回收 `crab_trap` Block、ItemBlock 和 TileEntity；当前 1.12.2 JSON 合成配方为铁锭/铁栅栏交错外圈和中央陷阱箱，BlockState、模型、双语名和简约 32×32 蟹笼贴图均已入库。
 - 实现 `TileCrabTrap` 的固定 20 槽、服务端状态机、相邻原版水/流动水判定、100～600 ticks、Lure 非正等待重抽、每轮 Lure/Luck/饵料快照、原版 `GAMEPLAY_FISHING` 一次战利品、18 格完整容量预检与持久 pending loot。
 - 钓竿不耗耐久；有饵在 Lure 后按 `(ticks + 1) / 2` 整数向上取整，且仅在战利品完整入栏后按 50% 判定消费一块当前仍存在的合法肉。
 - 使用 1.12.2 `ISidedInventory` 完成自动化：上方/四侧只能向饵料槽输入生牛肉、生猪排、生鸡肉、生羊肉或生兔肉；下方只能从收获栏抽取，钓竿和饵料不会被输出。

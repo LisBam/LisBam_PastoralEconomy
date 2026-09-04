@@ -54,7 +54,6 @@ gui.lisbam_pastoral_economy.merchant.unlimited=不限量
 gui.lisbam_pastoral_economy.merchant.quantity=数量：%s
 gui.lisbam_pastoral_economy.merchant.total=预计总价：%s
 tile.lisbam_pastoral_economy.transport_station=交通方块
-tile.lisbam_pastoral_economy.transport_station.name=交通方块
 gui.lisbam_pastoral_economy.transport.title=交通网络管理
 gui.lisbam_pastoral_economy.transport.loading=正在读取交通节点……
 gui.lisbam_pastoral_economy.transport.current=当前位置：%s

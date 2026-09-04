@@ -17,16 +17,18 @@ public final class MerchantCatalogSelfTest {
     public static void main(String[] args) {
         Bootstrap.register();
         check(VillageService.getTargetMerchantCount(2) == 3, "2 villagers");
-        check(VillageService.getTargetMerchantCount(15) == 3, "15 villagers");
-        check(VillageService.getTargetMerchantCount(16) == 4, "16 villagers");
-        check(VillageService.getTargetMerchantCount(20) == 4, "20 villagers");
-        check(VillageService.getTargetMerchantCount(21) == 5, "21 villagers");
-        check(VillageService.getTargetMerchantCount(25) == 5, "25 villagers");
-        check(VillageService.getTargetMerchantCount(26) == 6, "26 villagers");
-        check(VillageService.getTargetMerchantCount(30) == 6, "30 villagers");
-        check(VillageService.getTargetMerchantCount(31) == 7, "31 villagers");
-        check(VillageService.getTargetMerchantCount(35) == 7, "35 villagers");
-        check(VillageService.getTargetMerchantCount(36) == 8, "36 villagers");
+        check(VillageService.getTargetMerchantCount(7) == 3, "7 villagers");
+        check(VillageService.getTargetMerchantCount(8) == 4, "8 villagers");
+        check(VillageService.getTargetMerchantCount(10) == 4, "10 villagers");
+        check(VillageService.getTargetMerchantCount(11) == 5, "11 villagers");
+        check(VillageService.getTargetMerchantCount(15) == 6, "15 villagers");
+        check(VillageService.getTargetMerchantCount(16) == 7, "16 villagers");
+        check(VillageService.getTargetMerchantCount(20) == 8, "20 villagers");
+        check(VillageService.getTargetMerchantCount(21) == 9, "21 villagers");
+        check(VillageService.getTargetMerchantCount(35) == 14, "35 villagers");
+        check(VillageService.getTargetMerchantCount(36) == 15, "36 villagers");
+        check(VillageService.getTargetMerchantCount(100) == 40, "100 villagers");
+        check(VillageService.getTargetMerchantCount(1000) == 400, "1000 villagers");
 
         check(TradeCatalog.getPool(TradePool.SELL_CORE).size() == 9, "core sell pool");
         check(TradeCatalog.getPool(TradePool.SELL_SECONDARY).size() == 13, "secondary sell pool");

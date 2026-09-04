@@ -59,7 +59,7 @@
 
 ## 第 05 批市场行情书与历史 GUI
 
-- [x] `market_book` 具有稳定 registry/unlocalized name；书 + 小麦使用无序 JSON 配方、输出严格为 1；模型引用已确认存在的 1.12.2 原版 `minecraft:items/book_normal`。PASS：编译、`processResources`、成品 Jar 资源检查。
+- [x] `market_book` 具有稳定 registry/unlocalized name；书 + 小麦使用无序 JSON 配方、输出严格为 1；模型引用本模组 `textures/items/market_book.png` 绿皮书贴图。PASS：编译、`processResources`、成品 Jar 资源检查。
 - [x] Packet 1/2 使用既有 `lb_pastoral` channel、稳定不重排的 discriminator 1/2；商品 key 限制为 128 UTF-8 bytes，历史点计数最大 30；C2S 仅接收 key/游标/请求号，服务端验证实际打开的 `ContainerMarketBook`、14 种历史作物、非负/非未来游标并调度主线程。书本首个 cursor `-1` 请求会下发全部 14 种最新窗口，切换作物不再发包；后备请求最多每 2 tick 生成一次，冷却内快速切换合并为最后一项而非静默丢弃。PASS：代码审查、Forge audit 与编译。
 - [x] S2C 快照包含当前日、商品 key、窗口游标、今日/可选昨日价、最多 30 个日/价格/真实前一点价格、前后翻页标记；客户端缓存仅在打开书本期间接收，关闭立即清空并拒绝迟到包，连接内请求号不复用。PASS：代码审查、`marketPacketSelfTest`、编译。
 - [x] `marketPacketSelfTest`：合法请求/快照可往返，129-byte key 与 31 点快照被拒绝，首个可见点保留无前日状态，较旧同窗口快照不会替换较新缓存；同一打开请求号的预取小麦/胡萝卜窗口可独立命中缓存；首个后备请求立即处理、冷却内快速切换只保留最后一项并在到期后处理。PASS。
@@ -199,15 +199,16 @@
 - [x] 商人/行情书图标调用原版 `renderToolTip`；蟹笼继承 `GuiContainer` 原版 Slot 悬停提示。PASS：代码审查与编译。
 - [x] 蟹笼只显示 2 个输入槽、18 个收获槽和原版玩家背包槽；不存在没有 Container Slot 的顶部空格，状态文字不与槽框重叠。PASS：Container/GUI 坐标审查与编译。
 - [x] 交通站操作区在 320x240 最小缩放中不越界；节点文字截断后可悬停读取完整坐标/状态。PASS：布局代码审查与编译。
-- [x] 商人出售页按 3 × 2 对称卡片排版；购买余额不足一整包时数量输入和滑条限制范围但保持浅色字体，确认操作仍由客户端与服务端复核。PASS：客户端布局/数量上限代码审查与编译。
+- [x] 商人出售页按 3 × 2 对称卡片排版；购买余额不足一整包或出售页背包无目标物品时，数量输入和滑条限制范围、确认按钮进入原版深色禁用态；当前出售/购买页签同样禁用，确认操作仍由客户端与服务端复核。PASS：客户端布局/数量上限代码审查与编译。
 - [x] 交通节点快照往返保留 `travelFee`；目的地行、悬停提示和前往按钮显示费用，余额不足/路径不可用时前往按钮暗置。PASS：`TransportCoreSelfTest` Packet 往返、`build`。
 - [x] `compileJava`、`processResources`、`build`（含 `test`、`reobfJar`）— PASS：2026-09-04 以 Corretto 11 JDK 兼容构建；项目 source/target Java 8，`GuiMerchantTrade.class` 为 major 52。当前环境无 Java 8 JDK，因此仍需用 Temurin 8 复验。
 - [x] UTF-8 JavaCompile 编码、Forge 1.12.2 strict audit 0 ERROR、成品 JAR 的 GUI 类和 `mcmod.info` — PASS；5 条既有 `packet-thread` WARNING 已审查。
 - [x] 每次 `build` 在 `reobfJar` 后自动执行 `exportReleaseJar`，并覆盖导出 `release/LisBam_PastoralEconomy-0.1.0.jar`。PASS：2026-09-04 构建日志、SHA-256 与 `unzip -t` 完整性检查。
-- [x] UI 文字使用原版 `FontRenderer`；商人所有可见交易文字统一使用原版 `GuiButton` 正常浅色。蟹笼 20 个实际槽和商人物品槽直接裁取原版 `generic_54.png`，蟹笼空白背景也取原版纹理像素；商人/交通面板每帧以单次完整 `demo_background.png` 裁取绘制，避免分片错位且没有手绘槽框/凸起边框。PASS：源码审查、`compileJava`、`build` 与 Forge audit。
+- [x] UI 文字使用原版 `FontRenderer`；商人的静态交易文字与数量文字使用原版 `GuiButton` 正常浅色，而当前页签和不可成交确认按钮按原版 `GuiButton` 禁用状态显示深色。蟹笼 20 个实际槽和商人物品槽直接裁取原版 `generic_54.png`，蟹笼空白背景也取原版纹理像素；商人/交通面板每帧以单次完整 `demo_background.png` 裁取绘制，避免分片错位且没有手绘槽框/凸起边框。PASS：源码审查、`compileJava`、`build` 与 Forge audit。
 - [x] 交通 GUI 的标签、节点、文本输入和不可用按钮文字与商人 GUI 一样使用原版 `GuiButton` 正常浅色，仍由原版禁用背景与 `enabled` 限制交互。PASS：源码审查、`compileJava`、`build`。
-- [x] 蟹笼、玩家交通站与村庄交通站资源：两张实际 PNG 都是 32×32，村庄模型不再引用 `planks_oak`，中英文交通站 `.name` 语言键均已打包。PASS：`processResources`、release JAR 检查。
+- [x] 蟹笼、玩家交通站与村庄交通站资源：交通站和蟹笼两张实际 PNG 都是 32×32，村庄模型不再引用 `planks_oak`；玩家交通方块与 ItemBlock 都从无后缀 `tile...transport_station` 显示键得到“交通方块”，不会显示 `.name`。行情书自有绿皮书 32×32 Item PNG；蟹笼配方为铁锭/铁栅栏交错外框和中央陷阱箱。PASS：源码、`processResources`、release JAR 检查。
 - [x] 发行版本 `1.0`：`build.gradle`、处理后的 `mcmod.info` 和 JAR Manifest 的 Specification/Implementation Version 均为 `1.0`；重混淆文件导出为 `release/LisBam_PastoralEconomy-1.0.jar`。PASS：`processResources`、`build`、JAR 检查。
 - [x] 购买有限库存显示实际剩余物品数量（剩余包数 × 每包数），而非包数；不限量保持显示不限量。PASS：`GuiMerchantTrade` 代码审查、双语资源处理与 `build`。
-- [ ] 游戏内：在 320x240、常规 GUI Scale 和高分辨率下验证所有四种 GUI 的文字、按钮、滚动、物品 Tooltip、蟹笼点击/Shift-click、无虚假顶部格子、商人余额暗置/3×2 出售页、交通费用与余额暗置，以及商人连续切换后的默认页。NOT RUN：当前环境无法创建可操作的 Forge 客户端窗口。
-- [ ] 游戏内：交通 GUI 各种可用/不可用状态下文字均为正常浅色；两种交通站均显示石质罗盘贴图，蟹笼显示 32px 木框铁栅贴图，物品名为“交通方块”；传送、重进和 Chunk unload/reload 后没有短暂重复商人。NOT RUN：当前环境无法创建可操作的 Forge 客户端窗口。
+- [x] `merchantCatalogSelfTest`：村民 2/7 的最低 3 名、8/10/11/15/16/20/21/35/36 的 `ceil(2n/5)` 边界及 100/1000 村民的无上限增长均通过。PASS：2026-09-04。
+- [ ] 游戏内：在 320x240、常规 GUI Scale 和高分辨率下验证所有四种 GUI 的文字、按钮、滚动、物品 Tooltip、蟹笼点击/Shift-click、无虚假顶部格子、商人余额/背包不足深色禁用态和当前页签禁用、交通费用与余额暗置，以及商人连续切换后的默认页。NOT RUN：当前环境无法创建可操作的 Forge 客户端窗口。
+- [ ] 游戏内：交通方块物品/方块名精确为“交通方块”、两种交通站显示简约石质罗盘贴图、蟹笼显示简约木框铁栅贴图、行情书为绿皮书，且蟹笼新配方正确；传送、重进和 Chunk unload/reload 后没有短暂重复商人。NOT RUN：当前环境无法创建可操作的 Forge 客户端窗口。
