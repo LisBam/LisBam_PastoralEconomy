@@ -396,7 +396,7 @@ public final class VillageService {
 
     public static int getTargetMerchantCount(int villagerCount) {
         long villagers = Math.max(0L, (long) villagerCount);
-        long target = (villagers * 2L + 4L) / 5L;
+        long target = (villagers + 4L) / 5L;
         return (int) Math.min((long) Integer.MAX_VALUE, Math.max(3L, target));
     }
 
