@@ -207,6 +207,7 @@
 - [x] UI 文字使用原版 `FontRenderer`；商人所有可见交易文字统一使用原版 `GuiButton` 正常浅色。蟹笼 20 个实际槽和商人物品槽直接裁取原版 `generic_54.png`，蟹笼空白背景也取原版纹理像素；商人/交通面板每帧以单次完整 `demo_background.png` 裁取绘制，避免分片错位且没有手绘槽框/凸起边框。PASS：源码审查、`compileJava`、`build` 与 Forge audit。
 - [x] 交通 GUI 的标签、节点、文本输入和不可用按钮文字与商人 GUI 一样使用原版 `GuiButton` 正常浅色，仍由原版禁用背景与 `enabled` 限制交互。PASS：源码审查、`compileJava`、`build`。
 - [x] 蟹笼、玩家交通站与村庄交通站资源：两张实际 PNG 都是 32×32，村庄模型不再引用 `planks_oak`，中英文交通站 `.name` 语言键均已打包。PASS：`processResources`、release JAR 检查。
+- [x] 发行版本 `1.0`：`build.gradle`、处理后的 `mcmod.info` 和 JAR Manifest 的 Specification/Implementation Version 均为 `1.0`；重混淆文件导出为 `release/LisBam_PastoralEconomy-1.0.jar`。PASS：`processResources`、`build`、JAR 检查。
 - [x] 购买有限库存显示实际剩余物品数量（剩余包数 × 每包数），而非包数；不限量保持显示不限量。PASS：`GuiMerchantTrade` 代码审查、双语资源处理与 `build`。
 - [ ] 游戏内：在 320x240、常规 GUI Scale 和高分辨率下验证所有四种 GUI 的文字、按钮、滚动、物品 Tooltip、蟹笼点击/Shift-click、无虚假顶部格子、商人余额暗置/3×2 出售页、交通费用与余额暗置，以及商人连续切换后的默认页。NOT RUN：当前环境无法创建可操作的 Forge 客户端窗口。
 - [ ] 游戏内：交通 GUI 各种可用/不可用状态下文字均为正常浅色；两种交通站均显示石质罗盘贴图，蟹笼显示 32px 木框铁栅贴图，物品名为“交通方块”；传送、重进和 Chunk unload/reload 后没有短暂重复商人。NOT RUN：当前环境无法创建可操作的 Forge 客户端窗口。

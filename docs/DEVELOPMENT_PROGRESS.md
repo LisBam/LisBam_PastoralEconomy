@@ -6,7 +6,13 @@
 
 - `env JAVA_HOME=/tmp/lisbam-jdk8-UlgK66/jdk8u504-b01 PATH=<Temurin-8-bin> ./gradlew build`
 - 日期：2026-09-04
-- 结果：PASS（Forge 14.23.5.2859 / Temurin Java 8 `1.8.0_504`；`build` 包含 `reobfJar` 与 `exportReleaseJar`。`release/LisBam_PastoralEconomy-0.1.0.jar` 为 322,635 bytes，SHA-256 `e1a67f2c183b7e7d158c2748a4dc4cd72e7deae8ced5dc5490fe811198152e45`，`unzip -t` PASS。）
+- 结果：PASS（Forge 14.23.5.2859 / Temurin Java 8 `1.8.0_504`；`build` 包含 `reobfJar` 与 `exportReleaseJar`。`release/LisBam_PastoralEconomy-1.0.jar` 为 322,628 bytes，SHA-256 `a167aeaa18064cf090acfc233929632fb0490f4acda827cc146e1ef5ed957e1f`，`unzip -t` PASS。）
+
+## 发行：版本 1.0（2026-09-04）
+
+`build.gradle` 的项目版本更新为 `1.0`；既有 `processResources` 展开使 `mcmod.info`、JAR Manifest 的 Specification/Implementation Version 与发布文件名保持一致。该变更不涉及注册 ID、网络协议、存档、经济或玩法数据。
+
+验证：Temurin Java 8 `1.8.0_504` 下 `check_toolchain.py`、`compileJava`、`processResources` 与 `build` PASS。Forge 1.12.2 strict audit 为 0 ERROR、5 条既有 `packet-thread` WARNING。正式重混淆 JAR 已导出为 `release/LisBam_PastoralEconomy-1.0.jar`，`mcmod.info` 和 Manifest 均确认显示 `1.0`，压缩包完整性检查通过。
 
 ## 维护：交通界面/资源与村庄商人重复补生（2026-09-04）
 
