@@ -316,10 +316,18 @@
 
 ## DEC-040 原版标题直绘、交通二次确认与金闪闪的骨粉
 
-决定：`GuiMerchantTrade`、`GuiTransportStation` 的静态非按钮文字统一由 `FontRenderer#drawString(text, x, y, 4210752)` 直接绘制；水平居中先用 `FontRenderer#getStringWidth` 计算左边界，禁止用 `GuiScreen#drawCenteredString`。`GuiCrabTrap` 的全部前景标签也使用相同的 `4210752`。交通节点列表起点下移，令“我的节点”标题完全位于“接入最近村庄”按钮之后。最近村庄和移出节点共用原版 `demo_background.png` 比例的本地确认层：移出层只保存待确认的 Station UUID，只有点击确认才发既有 `REMOVE` action；接入层仍只从 Packet 6 快照读取候选展示值并发既有 `CONNECT_VILLAGE` action。
+决定：`GuiMerchantTrade`、`GuiTransportStation` 的静态非按钮文字统一由 `FontRenderer#drawString(text, x, y, 4210752)` 直接绘制；水平居中先用 `FontRenderer#getStringWidth` 计算左边界，禁止用 `GuiScreen#drawCenteredString`。`GuiCrabTrap` 的全部前景标签也使用相同的 `4210752`。交通节点列表起点下移，令“我的节点”标题完全位于“接入最近村庄”按钮之后。最近村庄和移出节点使用原版 `GuiYesNo` 的背景、白色文本和按钮：移出层只保存待确认的 Station UUID，只有点击确认才发既有 `REMOVE` action；接入层仍只从 Packet 6 快照读取候选展示值并发既有 `CONNECT_VILLAGE` action。
 
 新增稳定物品 ID `lisbam_pastoral_economy:golden_bone_meal`。`ItemGoldenBoneMeal` 只在逻辑服务端工作：中心原版可耕作物最多重复 8 次临时白色染料的 `ItemDye.applyBonemeal`，5×5 其余作物或草层中的草方块各调用一次；其他目标也只调用一次。该物品自身仅在至少一次路径成功后消耗一次，创造模式不消耗。`GoldenBoneMealRules` 将作物/草花分类和 X/Z 半径 2 的 25 格范围从 Item 中分离，便于无世界自检；模型、双语键和两份 JSON 无序配方与注册同时加入。
 
 原因：`drawCenteredString` 在 1.12.2 走带阴影绘制，尽管颜色同为 `0x404040`，仍会造成工作台/熔炉标题没有的重影。移出是可恢复但会影响交通网络状态的操作，需要与村庄接入一致的确认节奏；客户端确认不能代替服务端的 Station/余额/候选验证。金闪闪的骨粉若自行复制 `IGrowable` 逻辑，会绕过 Forge 的原版骨粉钩子并容易与其他 1.12.2 模组不兼容，因此复用 `ItemDye.applyBonemeal`。
 
 兼容性与影响：没有更改 Packet discriminator、action ordinal、TileEntity NBT、Capability、WorldSavedData 或金币/交通计算。确认层和列表排版仅是客户端暂态；任何绕过或过期确认仍由既有服务端拒绝。新物品不读写长期状态；旧存档可直接加载，新增配方/物品会按 Forge 正常注册出现。
+
+## DEC-041 原版确认链、物品提示与金闪闪骨粉兼容
+
+决定：交通确认使用 Java 1.12.2 `GuiYesNo`，仅在 `initGui` 中按现有客户端快照启用/禁用它本来就有的“是”按钮；不再绘制或缩放自定义确认背景。`GuiCrabTrap#drawScreen` 明确执行原版 `GuiChest` 同样的 `renderHoveredToolTip` 调用。商人交易和行情书只给任意颜色羊毛的显示用 `ItemStack` 写入“羊毛”自定义显示名。金闪闪的骨粉在 common `preInit` 注册 `dyeWhite` OreDictionary 条目，白色染料的生物交互委托给临时的原版白色 `ItemDye`，并将自身的增强 5×5 行为注册进 `BlockDispenser.DISPENSE_BEHAVIOR_REGISTRY`。
+
+原因：`GuiContainer#drawScreen` 不会自行调用 Tooltip 渲染；原版 `GuiChest` 的显式补充调用才使普通背包式容器出现物品说明。缩放 `demo_background` 的确认层无法同时保证原版比例和文字对比，直接采用 `GuiYesNo` 才能严格复用原版底图、字体和按钮。羊毛商品逻辑接受全部 metadata，不能因显示名称而更改其匹配或行情身份。物品若只重写方块使用，便会缺少白色染料和发射器两条原版入口；临时白色 `ItemDye` 与无玩家 `applyBonemeal` 继续经过 Forge 1.12.2 骨粉 hook，失败的发射器路径交回原版默认抛出行为。
+
+兼容性与影响：不新增或改变 registry ID、Packet、NBT、Capability 或 `PastoralWorldData`。确认可见性、节点绿色和羊毛显示名均为客户端暂态；羊和方块的最终修改仍在逻辑服务端发生。已有存档中的物品、蟹笼库存、商人 Offer、市场 key 与交通节点无需迁移。

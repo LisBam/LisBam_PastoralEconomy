@@ -245,7 +245,7 @@ public final class GuiMerchantTrade extends GuiScreen implements GuiSlider.ISlid
         if (entry == null) {
             return;
         }
-        ItemStack stack = entry.createStack(1, view.getEnchantmentLevel());
+        ItemStack stack = createDisplayStack(entry, view.getEnchantmentLevel());
         drawNativeSlot(x + 3, y + 3);
         mc.getRenderItem().renderItemAndEffectIntoGUI(stack, x + 4, y + 4);
         mc.getRenderItem().renderItemOverlayIntoGUI(fontRenderer, stack, x + 4, y + 4, null);
@@ -290,10 +290,19 @@ public final class GuiMerchantTrade extends GuiScreen implements GuiSlider.ISlid
             MerchantTradeOfferView view = getView(snapshot, index);
             TradeCatalogEntry entry = view == null ? null : TradeCatalog.get(view.getCatalogKey());
             if (entry != null && view.isEnabled()) {
-                renderToolTip(entry.createStack(1, view.getEnchantmentLevel()), mouseX, mouseY);
+                renderToolTip(createDisplayStack(entry, view.getEnchantmentLevel()), mouseX, mouseY);
             }
             return;
         }
+    }
+
+    /** The single wool offer is intentionally colour-agnostic, including its visible name. */
+    private ItemStack createDisplayStack(TradeCatalogEntry entry, int enchantmentLevel) {
+        ItemStack stack = entry.createStack(1, enchantmentLevel);
+        if (entry.isAnyWoolColor()) {
+            stack.setStackDisplayName(I18n.format("gui.lisbam_pastoral_economy.commodity.wool"));
+        }
+        return stack;
     }
 
     private void updateControls(MerchantTradeSnapshot snapshot) {

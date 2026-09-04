@@ -4,6 +4,7 @@ import lisbam.pastoraleconomy.LisBamPastoralEconomy;
 import lisbam.pastoraleconomy.data.player.PlayerDataCapability;
 import lisbam.pastoraleconomy.entity.ModEntities;
 import lisbam.pastoraleconomy.gui.ModGuiHandler;
+import lisbam.pastoraleconomy.item.ItemGoldenBoneMeal;
 import lisbam.pastoraleconomy.market.MarketHistorySnapshot;
 import lisbam.pastoraleconomy.merchant.MerchantTradeSnapshot;
 import lisbam.pastoraleconomy.network.ModNetwork;
@@ -20,6 +21,7 @@ public class CommonProxy {
         PlayerDataCapability.register();
         ModEntities.register();
         ModNetwork.initialize();
+        ItemGoldenBoneMeal.registerCompatibility();
         FMLLog.info("Player data capability, merchant entities, and common network infrastructure are ready.");
     }
 

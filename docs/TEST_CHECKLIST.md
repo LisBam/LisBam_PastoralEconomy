@@ -3,8 +3,17 @@
 ## 构建
 
 - [x] `./gradlew compileJava`、`compileTestJava` — PASS（2026-09-04，临时 Temurin Java 8 `1.8.0_504`）
-- [x] `./gradlew processResources`、`build` — PASS（2026-09-04，含 `reobfJar`、`exportReleaseJar`；release JAR 324,313 bytes，SHA-256 `5c5dfa7073cec1251675e1f626b9672a9aa0ef388af11bbc505b6e19815ed2c3`，`unzip -t` PASS）
+- [x] `./gradlew processResources`、`build` — PASS（2026-09-04，Temurin Java 8 `1.8.0_504`；含 `reobfJar`、`exportReleaseJar`；release JAR 337,961 bytes，SHA-256 `42939b2030bf05d8895e8a48ee76693f019322a5904fb00c9699013877b654c0`，`unzip -t` PASS）
 - [x] Forge 1.12.2 static audit — 0 ERROR；5 条 `packet-thread` WARNING 已审查（通用注册不处理消息；四个 S2C Proxy 桥没有直接修改状态，客户端实际写入均调度至主线程；交通 C2S handler 调度至服务端主线程）。
+
+## 维护：原版确认、Tooltip、羊毛显示与骨粉入口
+
+- [x] `check_toolchain.py`：ForgeGradle 3、Forge `14.23.5.2859`、Gradle 4.9、snapshot `20171003-1.12`、Temurin Java 8 `1.8.0_504`；0 issue。PASS（2026-09-04）。
+- [x] Forge 1.12.2 strict audit：0 ERROR；5 条既有 `packet-thread` WARNING 已审查为通用注册与 Proxy/客户端主线程桥接，本轮无 common 客户端引用或新的网络处理器。PASS（2026-09-04）。
+- [x] `goldenBoneMealSelfTest`：中心/外围 5×5 边界、可耕作物和草/花目标分类保持。PASS（2026-09-04，Temurin Java 8）。
+- [x] `crabTrapSelfTest`、`merchantCatalogSelfTest`、`marketCoreSelfTest`、`marketPacketSelfTest`、`transportCoreSelfTest`、`transportTravelSelfTest`：相关库存、羊毛共享商品、交通候选/费用和服务端确认路径均未回归。PASS（2026-09-04，Temurin Java 8）。
+- [x] 源码审查：蟹笼的 `drawScreen` 先执行 `GuiContainer` 原版槽位绘制、再调用 `renderHoveredToolTip`；交通确认直接实例化 `GuiYesNo`，仅调整原版“是”按钮 enabled；羊毛仅在商人/行情书显示栈重命名；金闪闪骨粉注册 `dyeWhite`、原版白色羊染色委托和发射器增强行为都在 common-safe vanilla/Forge API 中。PASS。
+- [ ] 游戏内：确认 `GuiYesNo` 的泥土背景、白色文字与是/否按钮；交通改名白字、选中节点整行绿色；蟹笼内部/背包 Tooltip；商人/行情书“羊毛”；金闪闪骨粉白色染羊、发射器中心满熟/5×5 效果、失败时抛出物品及贴图辨识度。NOT RUN：当前环境没有可操作 Forge 客户端窗口，服务器 EULA 未接受。
 
 ## 维护：蟹笼专用槽与交通交互
 
