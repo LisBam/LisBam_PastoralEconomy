@@ -287,3 +287,11 @@
 原因：原先所有姓氏等概率，无法反映常见百家姓人口分布；商人移速 0.5 远高于玩家基础值，且没有水面上浮 AI。Steve 作为默认皮肤不符合商人视觉要求。把密度系数从 2/5 回调为 1/5 可使同人口村庄的目标商人数减半，而不打破最低三人的既有保障。商人不是村民实体，显式空声音可避免其被误配置为村民声源。
 
 兼容性与影响：不新增 Packet、registry ID、WorldSavedData、MerchantRecord 或持久化 schema。`merchantSkin` key 仍为同一可选实体 NBT key，只有旧索引 0 会发生一次展示迁移。已生成的商人记录在下一轮 reconciliation 按新较低目标数被停用/移除多余实体；交易、库存、价格和 UUID 规则不变。
+
+## DEC-037 敌对生成、动物骨头与粘液球池迁移
+
+决定：删除全部敌对/中立生物行为修改，包括玩家索敌/反击限制、农田骚扰 AI 和 Creeper 爆炸方块列表拦截。主世界敌对自然生成改由 `LivingSpawnEvent.CheckSpawn` 控制：仅逻辑服务端维度 0、`isSpawner=false`、`EnumCreatureType.MONSTER` 的事件设为 `DENY`。动物骨头在服务端 `LivingDropsEvent` 的 `HIGHEST` 优先级加入，然后交给既有 `SlaughterEnchantmentEventHandler` 的正常优先级倍率处理；基础成功后才应用事件给出的 Looting 等级随机 `0..level` 附加量。羊毛转线与附魔金苹果均使用 1.12.2 JSON 配方。粘液球保持既有 market/catalog key、4 个一组和 480 基础买价，但从 `BUY_UNCOMMON` 迁入 `BUY_RARE`，每日库存设为 8 组。
+
+原因：使用 `CheckSpawn#isSpawner` 是 Forge 1.12.2 明确区分 WorldSpawner 自然生成与 `MobSpawnerBaseLogic` 刷怪笼的边界，既能禁止主世界自然敌对生成，也不会误伤刷怪笼。骨头必须在屠宰倍率前加入同一死亡掉落列表，才能不复制倍率逻辑而保留正确的抢夺、屠宰及外部附魔组合顺序。旧商人的当天 Offer 会持久化 catalog key；只改 TradeCatalog 会使仍在 4--6 号罕见槽的旧无限库存粘液球继续出现，故迁移只替换该一个旧槽位，保留当天其他商品。
+
+兼容性与影响：没有新 registry ID、Packet discriminator、Capability 或玩家数据。旧敌对实体不会被删除，加载后恢复原版 AI/爆炸行为；旧实体 ForgeData 的农田骚扰冷却不再被读取。旧 `PastoralWorldData` 的 `farmHarassment` 字段读取时忽略，下一次保存时移除，不影响 market、merchant 或 transport 段，也不需要提升根 dataVersion。旧当天罕见槽的粘液球会在首次服务端读取 Offer 时被一个当前罕见池条目替换；其它同日条目、价格和已消耗库存保持。新的稀有粘液球 Offer 初始库存为 8 组，跨日按普通目录轮换规则生成。

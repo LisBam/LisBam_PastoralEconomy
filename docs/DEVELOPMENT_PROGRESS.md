@@ -8,6 +8,14 @@
 - 日期：2026-09-04
 - 结果：PASS（Forge 14.23.5.2859 / Temurin Java 8 `1.8.0_504`；`build` 包含 `reobfJar` 与 `exportReleaseJar`。`release/LisBam_PastoralEconomy-1.0.jar` 为 335,340 bytes，SHA-256 `98de865d634ddfbdc1d25e54c72349cff2531f32e4cd1cf214819771075d0690`，`unzip -t` PASS。）
 
+## 维护：主世界敌对生成、动物骨头、配方与粘液球（2026-09-04）
+
+实现：删除针对敌对生物的玩家索敌/反击限制、Creeper 爆炸方块保护及农田骚扰 AI。新增服务端 `OverworldMonsterSpawnEventHandler`，只拒绝维度 0 的自然 `MONSTER` 生成，刷怪笼、刷怪蛋、命令与模组主动生成不受影响。新增动物骨头死亡掉落：牛、哞菇、猪、羊、马、驴、骡、羊驼按 20% 双骨/50% 单骨结算；鸡、兔、狼、豹猫、鹦鹉按 25% 单骨结算。抢夺仅增强已成功的基础掉落，屠宰在骨头加入掉落列表后按既有倍率处理。新增任意羊毛转 4 线、8 金块环绕苹果转附魔金苹果的 JSON 配方。粘液球迁入稀有购买池，保持 4 个/480，日库存为 8 组；旧当天罕见槽的无限库存粘液球在首次读取时仅替换该槽位。
+
+兼容性与影响：不变更 registry ID、Packet、Capability、玩家数据或根 WorldSavedData 版本。已存在的敌对实体不删除，恢复原版行为；历史 `farmHarassment` 数据读取时忽略、下次保存时删除，不影响市场、商人和交通。旧商人当天除上述已迁移的粘液球槽外的商品、库存和价格均保持。
+
+验证：Temurin Java 8 `1.8.0_504` 下 `compileJava`、`processResources`、`animalBoneDropSelfTest`、`merchantCatalogSelfTest` 与 `pastoralWorldDataSelfTest` 均 PASS。最终 `build` PASS，包含 `test`、`reobfJar` 与 `exportReleaseJar`；严格 Forge 1.12.2 审计为 0 ERROR，5 条既有 `packet-thread` WARNING 已复核为网络同步处理器，未由本次引入。`release/LisBam_PastoralEconomy-1.0.jar` 已导出，为 325,829 bytes、SHA-256 `ece4347f519d2adab909099d8772f720e3225c95df1d5d11584300b6aa95e961`，`unzip -t` PASS，确认包含新事件类和两份配方、不含已删除的敌对行为类。`timeout 60s ./gradlew runServer` 实际进入 Forge/FML 引导与 coremod 阶段，但在模组发现前到达时限；`run/eula.txt` 保持 `false`，未接受 EULA。本次运行时行为尚未进行游戏内手测。
+
 ## 维护：内容书与实际实现核对（2026-09-04）
 
 实现：以当前 Java、资源和配方为事实来源，修正《聆竹の休闲田园经济》内容书中的过期或不准确说明。行情书历史改为准确描述实际的最近 30 个世界日保留窗口与按需读取；商人改为中文姓名、四种农作服装、无上限的 `max(ceil(村民数/5),3)` 规模和现有受击/游泳/无声行为；蟹笼配方改为铁锭、铁栅栏与陷阱箱，工作条件改为直接接触相邻水方块。同时补充普通蜘蛛与洞穴蜘蛛的边界、农田骚扰的 `mobGriefing`/无掉落规则，以及无图标金币 HUD。`AGENTS.md` 现要求每次更新后同步更新内容书。

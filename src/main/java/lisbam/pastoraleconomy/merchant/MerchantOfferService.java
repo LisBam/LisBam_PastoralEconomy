@@ -1,5 +1,6 @@
 package lisbam.pastoraleconomy.merchant;
 
+import lisbam.pastoraleconomy.LisBamPastoralEconomy;
 import lisbam.pastoraleconomy.market.MarketService;
 import net.minecraft.world.World;
 
@@ -12,6 +13,8 @@ import java.util.Set;
 
 /** Generates one persisted 6 + 10 offer layout per merchant and market day. */
 public final class MerchantOfferService {
+    private static final String SLIME_BALL_CATALOG_KEY = LisBamPastoralEconomy.MODID + ":merchant/slime_ball";
+
     private MerchantOfferService() {
     }
 
@@ -23,8 +26,10 @@ public final class MerchantOfferService {
         long worldDay = MarketService.getCurrentMarketDay(world);
         DailyOfferState existing = merchant.getDailyOfferState();
         if (existing != null && existing.getWorldDay() == worldDay) {
+            boolean migratedLegacySlimeBall = migrateLegacyUncommonSlimeBallOffer(merchant, existing);
+            existing = merchant.getDailyOfferState();
             if (hasAdvancedOffers(existing)) {
-                return false;
+                return migratedLegacySlimeBall;
             }
             // v4 -> v5 migration: preserve the existing sell/common/uncommon offers
             // and only fill the three placeholders introduced by this batch.
@@ -50,6 +55,30 @@ public final class MerchantOfferService {
         appendPoolOffers(merchant, TradePool.BUY_TREASURE, 1, buy, worldDay);
         merchant.setDailyOfferState(new DailyOfferState(worldDay, sell, buy));
         return true;
+    }
+
+    /**
+     * Before slime balls moved to BUY_RARE they could be persisted in one of
+     * the three BUY_UNCOMMON slots with unlimited stock. Preserve every other
+     * same-day offer while replacing only that obsolete slot.
+     */
+    static boolean migrateLegacyUncommonSlimeBallOffer(MerchantRecord merchant, DailyOfferState state) {
+        List<DailyOffer> buy = new ArrayList<DailyOffer>(state.getBuyOffers());
+        boolean changed = false;
+        for (int slot = 4; slot <= 6; slot++) {
+            DailyOffer offer = buy.get(slot);
+            if (offer.isEnabled() && SLIME_BALL_CATALOG_KEY.equals(offer.getCatalogKey())) {
+                TradeCatalogEntry replacement = takeNext(merchant, TradePool.BUY_UNCOMMON);
+                buy.set(slot, new DailyOffer(replacement.getCatalogKey(), true,
+                        replacement.getInitialRemainingBundles()));
+                changed = true;
+            }
+        }
+        if (changed) {
+            merchant.setDailyOfferState(new DailyOfferState(state.getWorldDay(),
+                    new ArrayList<DailyOffer>(state.getSellOffers()), buy));
+        }
+        return changed;
     }
 
     private static boolean hasAdvancedOffers(DailyOfferState state) {
