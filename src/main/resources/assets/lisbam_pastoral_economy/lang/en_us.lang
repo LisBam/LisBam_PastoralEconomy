@@ -1,6 +1,9 @@
 # Localization keys are added with their actual gameplay content batches.
 # Batch 02 HUD text; the client formats the number with fixed comma grouping.
 hud.lisbam_pastoral_economy.coins=Coins %s
+config.lisbam_pastoral_economy.title=Pastoral Economy Settings
+config.lisbam_pastoral_economy.market=Market
+config.lisbam_pastoral_economy.market.more_stable_market_volatility=More stable market volatility
 item.lisbam_pastoral_economy.market_book.name=Market Book
 item.lisbam_pastoral_economy.golden_bone_meal.name=Gleaming Bone Meal
 tile.lisbam_pastoral_economy.crab_trap.name=Crab Trap

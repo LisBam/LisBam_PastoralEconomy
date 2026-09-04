@@ -12,7 +12,8 @@ import net.minecraftforge.fml.common.event.FMLPreInitializationEvent;
         name = LisBamPastoralEconomy.NAME,
         version = LisBamPastoralEconomy.VERSION,
         acceptedMinecraftVersions = "[1.12.2]",
-        useMetadata = true
+        useMetadata = true,
+        guiFactory = "lisbam.pastoraleconomy.client.config.ModGuiFactory"
 )
 public final class LisBamPastoralEconomy {
     public static final String MODID = "lisbam_pastoral_economy";

@@ -1,6 +1,7 @@
 package lisbam.pastoraleconomy.data.world;
 
 import lisbam.pastoraleconomy.LisBamPastoralEconomy;
+import lisbam.pastoraleconomy.config.ModSettings;
 import lisbam.pastoraleconomy.market.MarketCatalog;
 import lisbam.pastoraleconomy.market.MarketCommodity;
 import lisbam.pastoraleconomy.market.MarketHistoryPoint;
@@ -64,8 +65,6 @@ public final class PastoralWorldData extends WorldSavedData {
     private final Map<String, Long> previousMarketPrices = new LinkedHashMap<String, Long>();
     private final Map<String, NavigableMap<Long, Long>> cropPriceHistory =
             new LinkedHashMap<String, NavigableMap<Long, Long>>();
-    /** Runtime-only marker. Loaded v3-v6 data is normalized on its first market access. */
-    private long cropHistoryWindowDay = Long.MIN_VALUE;
     /** Batch 08--10 world-owned village, station, merchant, offer, and stock state. */
     private final MerchantWorldState merchantWorldState = new MerchantWorldState();
     /** Batch 14 world-owned physical transport-node registry. */
@@ -127,27 +126,26 @@ public final class PastoralWorldData extends WorldSavedData {
     }
 
     /**
-     * Server-side market transition. Prices are deterministic from the stable
-     * market seed, so a time jump never needs to iterate every skipped day.
-     * Only the visible 30-day crop window is materialized and persisted.
+     * Server-side market transition. The default path advances every skipped
+     * day because every price is deliberately chained to its saved predecessor.
+     * Existing-day snapshots are never regenerated when a setting changes.
      */
     public synchronized void ensureMarketDay(long worldDay, long authoritativeWorldSeed) {
         if (!marketInitialized) {
             marketInitialized = true;
             marketSeed = MarketPriceGenerator.createMarketSeed(authoritativeWorldSeed);
             firstMarketDay = worldDay;
-            setCurrentSnapshot(worldDay, Collections.<String, Long>emptyMap());
+            setInitialSnapshot(worldDay, Collections.<String, Long>emptyMap());
             previousMarketDay = -1L;
             previousMarketPrices.clear();
-            rebuildCropHistoryWindow(worldDay);
+            appendCropHistory(worldDay, currentMarketPrices);
             markDirty();
             return;
         }
 
         if (worldDay == currentMarketDay) {
             boolean changed = fillMissingCurrentPrices();
-            if (cropHistoryWindowDay != worldDay) {
-                rebuildCropHistoryWindow(worldDay);
+            if (ensureCurrentCropHistory()) {
                 changed = true;
             }
             if (changed) {
@@ -156,17 +154,14 @@ public final class PastoralWorldData extends WorldSavedData {
             return;
         }
 
-        setCurrentSnapshot(worldDay, Collections.<String, Long>emptyMap());
-        previousMarketPrices.clear();
-        if (worldDay > firstMarketDay) {
-            previousMarketDay = worldDay - 1L;
-            previousMarketPrices.putAll(createSnapshot(previousMarketDay, Collections.<String, Long>emptyMap()));
+        if (worldDay > currentMarketDay) {
+            advanceMarketDays(worldDay, ModSettings.isMoreStableMarketVolatility());
         } else {
-            // A rollback before market activation is viewable but must not
-            // invent pre-install history.
-            previousMarketDay = -1L;
+            // Rollbacks are administrator-driven time changes. Retained crop
+            // prices are restored exactly; non-book prices use the legacy
+            // deterministic fallback when no full historic snapshot exists.
+            restoreMarketDay(worldDay);
         }
-        rebuildCropHistoryWindow(worldDay);
         markDirty();
     }
 
@@ -295,52 +290,134 @@ public final class PastoralWorldData extends WorldSavedData {
         return compound;
     }
 
-    private void setCurrentSnapshot(long day, Map<String, Long> existingPrices) {
+    private void setInitialSnapshot(long day, Map<String, Long> existingPrices) {
         currentMarketDay = day;
         currentMarketPrices.clear();
-        currentMarketPrices.putAll(createSnapshot(day, existingPrices));
+        currentMarketPrices.putAll(createInitialSnapshot(day, existingPrices));
     }
 
     private boolean fillMissingCurrentPrices() {
         boolean changed = false;
         for (MarketCommodity commodity : MarketCatalog.getAll()) {
             if (!currentMarketPrices.containsKey(commodity.getKey())) {
-                currentMarketPrices.put(commodity.getKey(), MarketPriceGenerator.calculatePrice(marketSeed, currentMarketDay, commodity));
+                Long previous = previousMarketPrices.get(commodity.getKey());
+                long recovered = previous == null
+                        ? MarketPriceGenerator.calculateInitialPrice(marketSeed, currentMarketDay, commodity,
+                        ModSettings.isMoreStableMarketVolatility())
+                        : MarketPriceGenerator.calculateNextPrice(marketSeed, currentMarketDay, commodity,
+                        previous.longValue(), ModSettings.isMoreStableMarketVolatility());
+                currentMarketPrices.put(commodity.getKey(), recovered);
                 changed = true;
             }
         }
         return changed;
     }
 
-    private Map<String, Long> createSnapshot(long day, Map<String, Long> existingPrices) {
+    private Map<String, Long> createInitialSnapshot(long day, Map<String, Long> existingPrices) {
         Map<String, Long> snapshot = new LinkedHashMap<String, Long>(existingPrices);
         for (MarketCommodity commodity : MarketCatalog.getAll()) {
             if (!snapshot.containsKey(commodity.getKey())) {
-                snapshot.put(commodity.getKey(), MarketPriceGenerator.calculatePrice(marketSeed, day, commodity));
+                snapshot.put(commodity.getKey(), MarketPriceGenerator.calculateInitialPrice(marketSeed, day, commodity,
+                        ModSettings.isMoreStableMarketVolatility()));
             }
         }
         return snapshot;
     }
 
-    private void rebuildCropHistoryWindow(long worldDay) {
-        cropPriceHistory.clear();
-        cropHistoryWindowDay = worldDay;
-        if (worldDay < firstMarketDay) {
-            return;
+    private void advanceMarketDays(long targetDay, boolean moreStableVolatility) {
+        long day = currentMarketDay;
+        while (day < targetDay) {
+            if (day == Long.MAX_VALUE) {
+                break;
+            }
+            day++;
+            Map<String, Long> oldCurrent = new LinkedHashMap<String, Long>(currentMarketPrices);
+            Map<String, Long> nextCurrent = new LinkedHashMap<String, Long>();
+            for (MarketCommodity commodity : MarketCatalog.getAll()) {
+                Long previous = oldCurrent.get(commodity.getKey());
+                if (previous == null || previous.longValue() <= 0L) {
+                    previous = Long.valueOf(MarketPriceGenerator.calculateInitialPrice(marketSeed, day - 1L, commodity,
+                            moreStableVolatility));
+                }
+                nextCurrent.put(commodity.getKey(), Long.valueOf(MarketPriceGenerator.calculateNextPrice(
+                        marketSeed, day, commodity, previous.longValue(), moreStableVolatility)));
+            }
+            previousMarketDay = day - 1L;
+            previousMarketPrices.clear();
+            previousMarketPrices.putAll(oldCurrent);
+            currentMarketDay = day;
+            currentMarketPrices.clear();
+            currentMarketPrices.putAll(nextCurrent);
+            appendCropHistory(day, nextCurrent);
         }
-        long retentionOffset = MARKET_HISTORY_RETENTION_DAYS - 1L;
-        long earliestRetainedDay = worldDay < Long.MIN_VALUE + retentionOffset
-                ? Long.MIN_VALUE : worldDay - retentionOffset;
-        long firstVisibleDay = Math.max(firstMarketDay, earliestRetainedDay);
+    }
+
+    private void restoreMarketDay(long worldDay) {
+        currentMarketDay = worldDay;
+        currentMarketPrices.clear();
+        currentMarketPrices.putAll(createRestoredSnapshot(worldDay));
+        previousMarketPrices.clear();
+        if (worldDay > firstMarketDay) {
+            previousMarketDay = worldDay - 1L;
+            previousMarketPrices.putAll(createRestoredSnapshot(previousMarketDay));
+        } else {
+            previousMarketDay = -1L;
+        }
+    }
+
+    private Map<String, Long> createRestoredSnapshot(long day) {
+        Map<String, Long> snapshot = new LinkedHashMap<String, Long>();
+        for (MarketCommodity commodity : MarketCatalog.getAll()) {
+            Long retained = getRetainedCropPrice(commodity.getKey(), day);
+            snapshot.put(commodity.getKey(), retained == null
+                    ? Long.valueOf(MarketPriceGenerator.calculatePrice(marketSeed, day, commodity)) : retained);
+        }
+        return snapshot;
+    }
+
+    private Long getRetainedCropPrice(String key, long day) {
+        NavigableMap<Long, Long> history = cropPriceHistory.get(key);
+        return history == null ? null : history.get(Long.valueOf(day));
+    }
+
+    private boolean ensureCurrentCropHistory() {
+        boolean changed = false;
         for (MarketCommodity commodity : MarketCatalog.getHistoryTracked()) {
-            NavigableMap<Long, Long> history = new TreeMap<Long, Long>();
-            for (long historyDay = firstVisibleDay; historyDay <= worldDay; historyDay++) {
-                history.put(historyDay, MarketPriceGenerator.calculatePrice(marketSeed, historyDay, commodity));
-                if (historyDay == Long.MAX_VALUE) {
-                    break;
+            NavigableMap<Long, Long> history = cropPriceHistory.get(commodity.getKey());
+            if (history == null) {
+                history = new TreeMap<Long, Long>();
+                cropPriceHistory.put(commodity.getKey(), history);
+            }
+            if (!history.containsKey(Long.valueOf(currentMarketDay))) {
+                Long price = currentMarketPrices.get(commodity.getKey());
+                if (price != null) {
+                    history.put(Long.valueOf(currentMarketDay), price);
+                    trimCropHistory(history);
+                    changed = true;
                 }
             }
-            cropPriceHistory.put(commodity.getKey(), history);
+        }
+        return changed;
+    }
+
+    private void appendCropHistory(long day, Map<String, Long> prices) {
+        for (MarketCommodity commodity : MarketCatalog.getHistoryTracked()) {
+            NavigableMap<Long, Long> history = cropPriceHistory.get(commodity.getKey());
+            if (history == null) {
+                history = new TreeMap<Long, Long>();
+                cropPriceHistory.put(commodity.getKey(), history);
+            }
+            Long price = prices.get(commodity.getKey());
+            if (price != null && price.longValue() > 0L) {
+                history.put(Long.valueOf(day), price);
+                trimCropHistory(history);
+            }
+        }
+    }
+
+    private void trimCropHistory(NavigableMap<Long, Long> history) {
+        while (history.size() > MARKET_HISTORY_RETENTION_DAYS) {
+            history.pollFirstEntry();
         }
     }
 
@@ -353,7 +430,6 @@ public final class PastoralWorldData extends WorldSavedData {
         currentMarketPrices.clear();
         previousMarketPrices.clear();
         cropPriceHistory.clear();
-        cropHistoryWindowDay = Long.MIN_VALUE;
     }
 
     private NBTTagCompound writeMarket() {
@@ -416,10 +492,9 @@ public final class PastoralWorldData extends WorldSavedData {
             readSnapshot(market.getCompoundTag(KEY_PREVIOUS_SNAPSHOT), previousMarketPrices, false);
         }
         readCropHistories(market.getTagList(KEY_CROP_HISTORIES, 10));
-        // v3-v6 saves may carry unbounded history. Retain no more than the
-        // newest thirty entries while the first on-demand market access
-        // deterministically rebuilds the exact current-day window.
-        cropHistoryWindowDay = Long.MIN_VALUE;
+        // Preserve v3-v7 recorded prices exactly. In particular, loading an
+        // old world under the new chained mode must not reroll its current
+        // day or erase the book's retained legacy points.
     }
 
     private void readSnapshot(NBTTagCompound snapshot, Map<String, Long> target, boolean current) {

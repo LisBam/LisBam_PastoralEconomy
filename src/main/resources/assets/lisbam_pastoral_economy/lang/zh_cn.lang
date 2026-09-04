@@ -1,6 +1,9 @@
 # 本文件将在对应玩法内容批次中加入实际本地化键。
 # 第 02 批 HUD 文本；数字由客户端使用固定英文逗号格式化。
 hud.lisbam_pastoral_economy.coins=金币 %s
+config.lisbam_pastoral_economy.title=聆竹の休闲田园经济设置
+config.lisbam_pastoral_economy.market=市场
+config.lisbam_pastoral_economy.market.more_stable_market_volatility=更稳定的市场波动
 item.lisbam_pastoral_economy.market_book.name=市场行情书
 item.lisbam_pastoral_economy.golden_bone_meal.name=金闪闪的骨粉
 tile.lisbam_pastoral_economy.crab_trap.name=蟹笼

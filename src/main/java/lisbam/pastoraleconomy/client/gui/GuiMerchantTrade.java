@@ -84,8 +84,8 @@ public final class GuiMerchantTrade extends GuiScreen implements GuiSlider.ISlid
             GuiTextField field = new GuiTextField(index, fontRenderer, layout.fieldX(cardX), controlsY,
                     layout.fieldWidth, 12);
             field.setMaxStringLength(4);
-            field.setTextColor(VANILLA_CONTAINER_TEXT_COLOR);
-            field.setDisabledTextColour(VANILLA_CONTAINER_TEXT_COLOR);
+            field.setTextColor(0xFFFFFF);
+            field.setDisabledTextColour(0xFFFFFF);
             field.setText(Integer.toString(quantity));
             quantityFields[index] = field;
 
@@ -176,6 +176,9 @@ public final class GuiMerchantTrade extends GuiScreen implements GuiSlider.ISlid
 
     @Override
     protected void keyTyped(char typedChar, int keyCode) throws java.io.IOException {
+        if (ModGuiInput.closeWithInventoryKey(mc, keyCode)) {
+            return;
+        }
         for (int index = 0; index < quantityFields.length; index++) {
             GuiTextField field = quantityFields[index];
             if (!field.isFocused()) {

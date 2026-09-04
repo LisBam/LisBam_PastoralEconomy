@@ -174,6 +174,9 @@ public final class GuiTransportStation extends GuiScreen implements GuiYesNoCall
 
     @Override
     protected void keyTyped(char typedChar, int keyCode) throws java.io.IOException {
+        if (ModGuiInput.closeWithInventoryKey(mc, keyCode)) {
+            return;
+        }
         if (!renameField.textboxKeyTyped(typedChar, keyCode)) {
             super.keyTyped(typedChar, keyCode);
         }
@@ -339,7 +342,10 @@ public final class GuiTransportStation extends GuiScreen implements GuiYesNoCall
             title = I18n.format("gui.lisbam_pastoral_economy.transport.confirm_village_title");
             detail = I18n.format("gui.lisbam_pastoral_economy.transport.confirm_village_detail",
                     format(candidate.getDistance()), format(candidate.getConnectionFee()));
-            canConfirm = snapshot.getCoins() >= candidate.getConnectionFee();
+            // A displayed fee is advisory. Keep this confirmation actionable
+            // even when the client cache is short of coins; the existing C2S
+            // path recomputes and atomically checks the real server balance.
+            canConfirm = true;
         } else if (confirmationType == ConfirmationType.REMOVE_NODE) {
             TransportNodeView node = findNode(snapshot.getNodes(), removalStationId);
             if (node == null) {
@@ -364,7 +370,7 @@ public final class GuiTransportStation extends GuiScreen implements GuiYesNoCall
         if (result && snapshot != null && snapshot.hasCurrentStation()) {
             if (confirmationType == ConfirmationType.CONNECT_VILLAGE) {
                 VillageTransportCandidate candidate = snapshot.getNearestVillage();
-                if (candidate != null && snapshot.getCoins() >= candidate.getConnectionFee()) {
+                if (candidate != null) {
                     send(TransportAction.CONNECT_VILLAGE, candidate.getVillageId(), "");
                     villageLookupRequested = false;
                 }
@@ -541,6 +547,14 @@ public final class GuiTransportStation extends GuiScreen implements GuiYesNoCall
                     button.enabled = canConfirm;
                 }
             }
+        }
+
+        @Override
+        protected void keyTyped(char typedChar, int keyCode) throws java.io.IOException {
+            if (ModGuiInput.closeWithInventoryKey(mc, keyCode)) {
+                return;
+            }
+            super.keyTyped(typedChar, keyCode);
         }
     }
 
