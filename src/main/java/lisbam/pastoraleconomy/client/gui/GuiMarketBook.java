@@ -23,11 +23,12 @@ import java.util.List;
 public final class GuiMarketBook extends GuiScreen {
     private static final int BUTTON_OLDER = 1;
     private static final int BUTTON_NEWER = 2;
-    private static final int CROP_BUTTON_OFFSET = 100;
-    private static final List<MarketCommodity> CROPS = MarketCatalog.getHistoryTracked();
+    private static final int SELL_GOOD_BUTTON_OFFSET = 100;
+    private static final int SELL_GOOD_COLUMNS = 3;
+    private static final List<MarketCommodity> SELL_GOODS = MarketCatalog.getHistoryTracked();
 
     private final List<Long> newerCursors = new ArrayList<Long>();
-    private MarketCommodity selectedCommodity = CROPS.get(0);
+    private MarketCommodity selectedCommodity = SELL_GOODS.get(0);
     private long requestedBeforeExclusiveDay = -1L;
     private int activeRequestId;
     private boolean initialRequestSent;
@@ -48,7 +49,7 @@ public final class GuiMarketBook extends GuiScreen {
         }
         buttonList.clear();
         layout = Layout.create(width, height);
-        addCropButtons();
+        addSellGoodButtons();
         olderButton = new GuiButton(BUTTON_OLDER, layout.previousButtonX, layout.pageButtonY,
                 layout.pageButtonWidth, layout.pageButtonHeight, I18n.format("gui.lisbam_pastoral_economy.market_book.older"));
         newerButton = new GuiButton(BUTTON_NEWER, layout.nextButtonX, layout.pageButtonY,
@@ -63,13 +64,13 @@ public final class GuiMarketBook extends GuiScreen {
         }
     }
 
-    private void addCropButtons() {
-        for (int index = 0; index < CROPS.size(); index++) {
-            int column = index / 7;
-            int row = index % 7;
+    private void addSellGoodButtons() {
+        for (int index = 0; index < SELL_GOODS.size(); index++) {
+            int column = index % SELL_GOOD_COLUMNS;
+            int row = index / SELL_GOOD_COLUMNS;
             int buttonX = layout.cropListX + column * (layout.cropButtonWidth + layout.cropColumnGap);
             int buttonY = layout.cropListY + row * (layout.cropButtonHeight + layout.cropRowGap);
-            buttonList.add(new GuiButton(CROP_BUTTON_OFFSET + index, buttonX, buttonY,
+            buttonList.add(new GuiButton(SELL_GOOD_BUTTON_OFFSET + index, buttonX, buttonY,
                     layout.cropButtonWidth, layout.cropButtonHeight, ""));
         }
     }
@@ -79,8 +80,8 @@ public final class GuiMarketBook extends GuiScreen {
         if (!button.enabled) {
             return;
         }
-        if (button.id >= CROP_BUTTON_OFFSET && button.id < CROP_BUTTON_OFFSET + CROPS.size()) {
-            selectedCommodity = CROPS.get(button.id - CROP_BUTTON_OFFSET);
+        if (button.id >= SELL_GOOD_BUTTON_OFFSET && button.id < SELL_GOOD_BUTTON_OFFSET + SELL_GOODS.size()) {
+            selectedCommodity = SELL_GOODS.get(button.id - SELL_GOOD_BUTTON_OFFSET);
             newerCursors.clear();
             if (useCachedNewestWindow()) {
                 return;
@@ -282,10 +283,10 @@ public final class GuiMarketBook extends GuiScreen {
     }
 
     private void drawCropSelectors() {
-        for (int index = 0; index < CROPS.size(); index++) {
-            MarketCommodity commodity = CROPS.get(index);
-            int column = index / 7;
-            int row = index % 7;
+        for (int index = 0; index < SELL_GOODS.size(); index++) {
+            MarketCommodity commodity = SELL_GOODS.get(index);
+            int column = index % SELL_GOOD_COLUMNS;
+            int row = index / SELL_GOOD_COLUMNS;
             int x = layout.cropListX + column * (layout.cropButtonWidth + layout.cropColumnGap);
             int y = layout.cropListY + row * (layout.cropButtonHeight + layout.cropRowGap);
             if (commodity.getKey().equals(selectedCommodity.getKey())) {
@@ -331,20 +332,20 @@ public final class GuiMarketBook extends GuiScreen {
         }
     }
 
-    /** Gives every rendered crop icon the same native tooltip as an inventory stack. */
+    /** Gives every rendered merchant-sell icon the same native tooltip as an inventory stack. */
     private void drawItemTooltip(int mouseX, int mouseY) {
         if (mouseX >= layout.detailsX && mouseX < layout.detailsX + 16
                 && mouseY >= layout.detailsY + 14 && mouseY < layout.detailsY + 30) {
             renderToolTip(new ItemStack(selectedCommodity.getItem(), 1, selectedCommodity.getMetadata()), mouseX, mouseY);
             return;
         }
-        for (int index = 0; index < CROPS.size(); index++) {
-            int column = index / 7;
-            int row = index % 7;
+        for (int index = 0; index < SELL_GOODS.size(); index++) {
+            int column = index % SELL_GOOD_COLUMNS;
+            int row = index / SELL_GOOD_COLUMNS;
             int x = layout.cropListX + column * (layout.cropButtonWidth + layout.cropColumnGap) + 2;
             int y = layout.cropListY + row * (layout.cropButtonHeight + layout.cropRowGap) + 1;
             if (mouseX >= x && mouseX < x + 16 && mouseY >= y && mouseY < y + 16) {
-                MarketCommodity commodity = CROPS.get(index);
+                MarketCommodity commodity = SELL_GOODS.get(index);
                 renderToolTip(new ItemStack(commodity.getItem(), 1, commodity.getMetadata()), mouseX, mouseY);
                 return;
             }
@@ -355,7 +356,7 @@ public final class GuiMarketBook extends GuiScreen {
         return ClientMarketState.getSnapshot(selectedCommodity.getKey(), requestedBeforeExclusiveDay, activeRequestId);
     }
 
-    /** All fourteen newest windows arrive with the opening request id. */
+    /** All merchant-sell newest windows arrive with the opening request id. */
     private boolean useCachedNewestWindow() {
         MarketHistorySnapshot snapshot = ClientMarketState.getSnapshot(selectedCommodity.getKey(), -1L, activeRequestId);
         if (snapshot == null) {
@@ -377,7 +378,7 @@ public final class GuiMarketBook extends GuiScreen {
                     && !newerCursors.isEmpty();
         }
         for (GuiButton button : buttonList) {
-            if (button.id >= CROP_BUTTON_OFFSET && button.id < CROP_BUTTON_OFFSET + CROPS.size()) {
+            if (button.id >= SELL_GOOD_BUTTON_OFFSET && button.id < SELL_GOOD_BUTTON_OFFSET + SELL_GOODS.size()) {
                 button.enabled = !waitingForSnapshot;
             }
         }
@@ -492,7 +493,7 @@ public final class GuiMarketBook extends GuiScreen {
             int panelRight = panelX + panelWidth;
             int panelBottom = panelY + panelHeight;
             int cropAreaWidth = Math.min(144, Math.max(40, panelWidth / 3));
-            int cropButtonWidth = Math.max(12, (cropAreaWidth - 7) / 2);
+            int cropButtonWidth = Math.max(12, (cropAreaWidth - 2 * 5) / SELL_GOOD_COLUMNS);
             int cropButtonHeight = Math.max(12, Math.min(16, Math.max(12, (panelHeight - 64) / 8)));
             int cropListX = panelX + 7;
             int cropListY = panelY + 28;

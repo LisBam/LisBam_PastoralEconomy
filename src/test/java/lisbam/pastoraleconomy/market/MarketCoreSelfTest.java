@@ -4,7 +4,10 @@ import lisbam.pastoraleconomy.data.world.PastoralWorldData;
 import net.minecraft.init.Bootstrap;
 import net.minecraft.nbt.NBTTagCompound;
 
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 /** Standalone deterministic checks for the fourth-batch market data boundary. */
 public final class MarketCoreSelfTest {
@@ -23,9 +26,36 @@ public final class MarketCoreSelfTest {
     private static void verifyCatalogAndFormula() {
         MarketCommodity wheat = MarketCatalog.get(WHEAT);
         require(wheat != null && wheat.getBasePrice() == 5L, "wheat base sell price must stay frozen at five");
-        require(MarketCatalog.getHistoryTracked().size() == 14, "exactly fourteen crops must be history tracked");
-        require(!MarketCatalog.get("lisbam_pastoral_economy:sell/agriculture/apple").isHistoryTracked(),
-                "apple must not have a crop history");
+        Set<String> expectedSellGoods = new HashSet<String>(Arrays.asList(
+                "lisbam_pastoral_economy:sell/crop/wheat",
+                "lisbam_pastoral_economy:sell/crop/carrot",
+                "lisbam_pastoral_economy:sell/crop/potato",
+                "lisbam_pastoral_economy:sell/crop/beetroot",
+                "lisbam_pastoral_economy:sell/crop/pumpkin",
+                "lisbam_pastoral_economy:sell/crop/melon_block",
+                "lisbam_pastoral_economy:sell/crop/melon_slice",
+                "lisbam_pastoral_economy:sell/crop/sugar_cane",
+                "lisbam_pastoral_economy:sell/crop/cactus",
+                "lisbam_pastoral_economy:sell/crop/cocoa_beans",
+                "lisbam_pastoral_economy:sell/crop/red_mushroom",
+                "lisbam_pastoral_economy:sell/crop/brown_mushroom",
+                "lisbam_pastoral_economy:sell/agriculture/apple",
+                "lisbam_pastoral_economy:sell/livestock/egg",
+                "lisbam_pastoral_economy:sell/livestock/feather",
+                "lisbam_pastoral_economy:sell/livestock/leather",
+                "lisbam_pastoral_economy:sell/livestock/rabbit_hide",
+                "lisbam_pastoral_economy:sell/livestock/rabbit_foot",
+                "lisbam_pastoral_economy:sell/crop/nether_wart",
+                "lisbam_pastoral_economy:sell/crop/chorus_fruit",
+                "lisbam_pastoral_economy:sell/livestock/milk_bucket",
+                "lisbam_pastoral_economy:sell/livestock/wool"
+        ));
+        Set<String> actualSellGoods = new HashSet<String>();
+        for (MarketCommodity commodity : MarketCatalog.getHistoryTracked()) {
+            actualSellGoods.add(commodity.getKey());
+        }
+        require(actualSellGoods.equals(expectedSellGoods),
+                "market book must include every and only merchant sell good");
 
         long expected = MarketPriceGenerator.calculatePrice(71L, 12L, wheat);
         for (int index = 0; index < 100; index++) {

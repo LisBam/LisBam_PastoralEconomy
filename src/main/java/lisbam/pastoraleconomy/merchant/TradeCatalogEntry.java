@@ -14,30 +14,35 @@ public final class TradeCatalogEntry {
     private final String catalogKey;
     private final String marketKey;
     private final TradePool pool;
-    private final int bundleSize;
-    private final int initialRemainingBundles;
+    private final int groupSize;
+    private final int initialRemainingGroups;
     private final boolean anyWoolColor;
     private final MarketCommodity marketCommodity;
     private final EnchantmentTradeDefinition enchantmentDefinition;
 
-    TradeCatalogEntry(String catalogKey, String marketKey, TradePool pool, int bundleSize,
-                      int initialRemainingBundles, boolean anyWoolColor, MarketCommodity marketCommodity) {
-        this(catalogKey, marketKey, pool, bundleSize, initialRemainingBundles, anyWoolColor, marketCommodity, null);
+    TradeCatalogEntry(String catalogKey, String marketKey, TradePool pool, int initialRemainingGroups,
+                      boolean anyWoolColor, MarketCommodity marketCommodity) {
+        this(catalogKey, marketKey, pool, initialRemainingGroups, anyWoolColor, marketCommodity, null);
     }
 
-    TradeCatalogEntry(String catalogKey, String marketKey, TradePool pool, int bundleSize,
-                      int initialRemainingBundles, boolean anyWoolColor, MarketCommodity marketCommodity,
+    TradeCatalogEntry(String catalogKey, String marketKey, TradePool pool, int initialRemainingGroups,
+                      boolean anyWoolColor, MarketCommodity marketCommodity,
                       EnchantmentTradeDefinition enchantmentDefinition) {
         if (catalogKey == null || catalogKey.isEmpty() || marketKey == null || marketKey.isEmpty()
-                || pool == null || bundleSize <= 0 || marketCommodity == null
-                || (initialRemainingBundles != UNLIMITED_STOCK && initialRemainingBundles <= 0)) {
+                || pool == null || marketCommodity == null
+                || (initialRemainingGroups != UNLIMITED_STOCK && initialRemainingGroups <= 0)) {
             throw new IllegalArgumentException("Invalid merchant catalog entry.");
+        }
+        int vanillaMaxStackSize = marketCommodity.getItem().getItemStackLimit();
+        if (vanillaMaxStackSize <= 0) {
+            throw new IllegalArgumentException("Merchant item must have a positive vanilla stack limit.");
         }
         this.catalogKey = catalogKey;
         this.marketKey = marketKey;
         this.pool = pool;
-        this.bundleSize = bundleSize;
-        this.initialRemainingBundles = initialRemainingBundles;
+        // A group is exactly one vanilla maximum stack, never a catalog-defined amount.
+        this.groupSize = vanillaMaxStackSize;
+        this.initialRemainingGroups = initialRemainingGroups;
         this.anyWoolColor = anyWoolColor;
         this.marketCommodity = marketCommodity;
         this.enchantmentDefinition = enchantmentDefinition;
@@ -55,16 +60,16 @@ public final class TradeCatalogEntry {
         return pool;
     }
 
-    public int getBundleSize() {
-        return bundleSize;
+    public int getGroupSize() {
+        return groupSize;
     }
 
-    public int getInitialRemainingBundles() {
-        return initialRemainingBundles;
+    public int getInitialRemainingGroups() {
+        return initialRemainingGroups;
     }
 
     public boolean isUnlimitedStock() {
-        return initialRemainingBundles == UNLIMITED_STOCK;
+        return initialRemainingGroups == UNLIMITED_STOCK;
     }
 
     public boolean isAnyWoolColor() {

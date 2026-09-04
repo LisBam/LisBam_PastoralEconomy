@@ -22,8 +22,8 @@ import java.util.List;
 
 /**
  * Server-authoritative 20-slot crab-trap inventory and fishing state machine.
- * Slot 0 is the hand-managed rod module, slot 1 is raw-meat bait, and slots
- * 2-19 are the only harvest storage and bottom-hopper output.
+ * Slot 0 is read as the rod module, slot 1 as raw-meat bait, and slots 2-19
+ * receive catches. All twenty inventory slots remain general-purpose storage.
  */
 public final class TileCrabTrap extends TileEntity implements ISidedInventory, ITickable {
     public static final int ROD_SLOT = 0;
@@ -33,9 +33,8 @@ public final class TileCrabTrap extends TileEntity implements ISidedInventory, I
     public static final int SLOT_COUNT = FIRST_HARVEST_SLOT + HARVEST_SLOT_COUNT;
     private static final int COUNTDOWN_SAVE_INTERVAL_TICKS = 20;
 
-    private static final int[] BAIT_INPUT_SLOTS = new int[] { BAIT_SLOT };
-    private static final int[] HARVEST_OUTPUT_SLOTS = new int[] {
-            2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19
+    private static final int[] ALL_SLOTS = new int[] {
+            0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19
     };
     private static final String KEY_INVENTORY = "inventory";
     private static final String KEY_SLOT = "slot";
@@ -267,17 +266,17 @@ public final class TileCrabTrap extends TileEntity implements ISidedInventory, I
 
     @Override
     public int[] getSlotsForFace(EnumFacing side) {
-        return side == EnumFacing.DOWN ? HARVEST_OUTPUT_SLOTS : BAIT_INPUT_SLOTS;
+        return ALL_SLOTS;
     }
 
     @Override
     public boolean canInsertItem(int index, ItemStack stack, EnumFacing direction) {
-        return direction != EnumFacing.DOWN && index == BAIT_SLOT && CrabTrapRules.isRawMeatBait(stack);
+        return isItemValidForSlot(index, stack);
     }
 
     @Override
     public boolean canExtractItem(int index, ItemStack stack, EnumFacing direction) {
-        return direction == EnumFacing.DOWN && index >= FIRST_HARVEST_SLOT && index < SLOT_COUNT;
+        return isValidSlot(index);
     }
 
     @Override
@@ -379,13 +378,7 @@ public final class TileCrabTrap extends TileEntity implements ISidedInventory, I
 
     @Override
     public boolean isItemValidForSlot(int index, ItemStack stack) {
-        if (index == ROD_SLOT) {
-            return CrabTrapRules.isFishingRod(stack);
-        }
-        if (index == BAIT_SLOT) {
-            return CrabTrapRules.isRawMeatBait(stack);
-        }
-        return index >= FIRST_HARVEST_SLOT && index < SLOT_COUNT;
+        return isValidSlot(index);
     }
 
     @Override

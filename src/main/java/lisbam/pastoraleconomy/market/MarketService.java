@@ -99,7 +99,7 @@ public final class MarketService {
 
     /**
      * Builds every selectable newest window from one ready WorldSavedData view.
-     * A book only needs this once per open session, so crop switching can stay
+     * A book only needs this once per open session, so merchant-sell good switching can stay
      * entirely client-side without creating one packet round trip per button.
      */
     public static List<MarketHistorySnapshot> getNewestHistorySnapshots(World world, int requestId) {
@@ -175,7 +175,7 @@ public final class MarketService {
     private static MarketCommodity requireHistoryCommodity(String commodityKey) {
         MarketCommodity commodity = requireCommodity(commodityKey);
         if (!commodity.isHistoryTracked()) {
-            throw new IllegalArgumentException("Commodity has no crop price history: " + commodityKey);
+            throw new IllegalArgumentException("Commodity has no merchant-sell price history: " + commodityKey);
         }
         return commodity;
     }
