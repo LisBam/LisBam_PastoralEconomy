@@ -4,9 +4,24 @@
 
 最近成功构建：
 
-- `cmd.exe /C "set JAVA_HOME=C:\\Users\\23107\\.jdks\\corretto-11.0.26&& gradlew.bat compileJava processResources build"`
+- `env JAVA_HOME=/tmp/lisbam-jdk8-UlgK66/jdk8u504-b01 PATH=<Temurin-8-bin> ./gradlew build`
 - 日期：2026-09-04
-- 结果：PASS（Forge 14.23.5.2859；`build.gradle` 固定 source/target 为 Java 8，`GuiMerchantTrade.class` 已验证为 class major 52；当前 Linux PATH 无 Java 8，仅以 Corretto 11 JDK 完成兼容编译。仍应在可用 Temurin Java 8 环境复验。）
+- 结果：PASS（Forge 14.23.5.2859 / Temurin Java 8 `1.8.0_504`；`build` 包含 `reobfJar` 与 `exportReleaseJar`。`release/LisBam_PastoralEconomy-0.1.0.jar` 为 2,552,264 bytes，SHA-256 `0d5a22726c2713ff8a72934a93b467a84740b11d1a5258c3c664012977d4c116`，`unzip -t` PASS。）
+
+## 维护：市场、经济与商人性能（2026-09-04）
+
+实现：
+
+- `PastoralWorldData` schema 升至 v7：删除无限增长的市场 processed-day 集合，14 种作物只持久化当前日前 30 天；超大 `/time` 前跳按 marketSeed 直接重建窗口，不再逐日补齐。v3--v6 旧市场可读，首次访问后写回 v7；第 31 天及更早的作物曲线会被回收。
+- 删除主世界每 tick 的 `MarketService.tick`。行情书打开请求和商人价格读取才在服务端惰性刷新市场；行情书请求必须绑定实际 `ContainerMarketBook`，每会话 2 tick 限速。客户端在打开/关闭建立和销毁会话缓存，并使用连接内递增请求号拒绝迟到包。
+- 商人交易快照一次取得 `MarketPriceSnapshot`，村庄维护只扫描一次 `loadedEntityList`，商人离站返航每 20 tick 最多重新寻路一次；商人 GUI 缓存出售数量，行情书缓存折线节点。
+- 蟹笼倒计时保持逐 tick 逻辑，但仅每 20 tick/状态转换标脏，减少大量加载蟹笼造成的区块保存压力。
+
+验证：
+
+- Forge 1.12.2 strict audit：PASS（0 ERROR；5 条既有 packet-thread WARNING 已人工复核为 Proxy/S2C 主线程桥接或通用注册器）。
+- 临时 Temurin Java 8 `1.8.0_504`：`compileJava`、`compileTestJava`、`marketCoreSelfTest`、`marketPacketSelfTest`、`merchantCatalogSelfTest`、`crabTrapSelfTest`、`pastoralWorldDataSelfTest`、`processResources`、`build`：PASS。`merchantCatalogSelfTest` 的八条 FML alternative-prefix 提示为既有模组附魔注册警告，任务仍 PASS。
+- 游戏内/ Dedicated Server：NOT RUN。本环境没有可用图形显示；`run/eula.txt` 保持 `eula=false`，未代为接受 EULA。仍需手测书本关闭后无迟到显示、跨日重开、v6 存档首次迁移、商人返航与非正常退出后的蟹笼倒计时最多 19 tick 回退。
 
 # 批次记录
 

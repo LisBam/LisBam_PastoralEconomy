@@ -6,6 +6,8 @@ import lisbam.pastoraleconomy.data.world.PastoralWorldData;
 import lisbam.pastoraleconomy.entity.EntityMerchant;
 import lisbam.pastoraleconomy.gui.ContainerMerchantTrade;
 import lisbam.pastoraleconomy.gui.GuiIds;
+import lisbam.pastoraleconomy.market.MarketPriceSnapshot;
+import lisbam.pastoraleconomy.market.MarketService;
 import lisbam.pastoraleconomy.network.ModNetwork;
 import lisbam.pastoraleconomy.network.message.SyncMerchantTradeMessage;
 import net.minecraft.entity.Entity;
@@ -387,11 +389,13 @@ public final class MerchantTradeService {
         if (state == null) {
             return null;
         }
+        MarketPriceSnapshot prices = MarketService.getPriceSnapshot(player.world);
         return new MerchantTradeSnapshot(record.getMerchantId(), container.windowId, state.getWorldDay(),
-                CoinService.getBalance(player), createViews(player.world, state.getSellOffers()), createViews(player.world, state.getBuyOffers()));
+                CoinService.getBalance(player), createViews(state.getSellOffers(), prices),
+                createViews(state.getBuyOffers(), prices));
     }
 
-    private static List<MerchantTradeOfferView> createViews(World world, List<DailyOffer> offers) {
+    private static List<MerchantTradeOfferView> createViews(List<DailyOffer> offers, MarketPriceSnapshot prices) {
         List<MerchantTradeOfferView> result = new ArrayList<MerchantTradeOfferView>(offers.size());
         for (DailyOffer offer : offers) {
             TradeCatalogEntry entry = offer.isEnabled() ? TradeCatalog.get(offer.getCatalogKey()) : null;
@@ -406,8 +410,12 @@ public final class MerchantTradeService {
                 if (marketKey == null) {
                     throw new IllegalStateException("Invalid resolved offer level.");
                 }
-                price = lisbam.pastoraleconomy.market.MarketService.getCurrentPrice(world, marketKey);
-                previous = lisbam.pastoraleconomy.market.MarketService.getPreviousPrice(world, marketKey);
+                Long current = prices.getCurrentPrice(marketKey);
+                if (current == null) {
+                    throw new IllegalStateException("Current market snapshot is incomplete: " + marketKey);
+                }
+                price = current.longValue();
+                previous = prices.getPreviousPrice(marketKey);
             } catch (RuntimeException ignored) {
                 // A malformed/legacy catalog entry is displayed disabled and never tradable.
                 result.add(new MerchantTradeOfferView(false, "", 0, 0L, null, TradeCatalogEntry.UNLIMITED_STOCK));

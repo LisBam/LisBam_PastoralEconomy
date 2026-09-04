@@ -6,7 +6,6 @@ import lisbam.pastoraleconomy.data.player.IPlayerData;
 import lisbam.pastoraleconomy.data.player.PlayerDataCapability;
 import lisbam.pastoraleconomy.data.player.PlayerDataProvider;
 import lisbam.pastoraleconomy.data.world.PastoralWorldData;
-import lisbam.pastoraleconomy.market.MarketService;
 import lisbam.pastoraleconomy.merchant.VillageService;
 import lisbam.pastoraleconomy.transport.TransportService;
 import net.minecraft.entity.Entity;
@@ -48,17 +47,15 @@ public final class PersistenceEventHandler {
         World world = event.getWorld();
         if (!world.isRemote && world instanceof WorldServer && world.provider.getDimension() == 0) {
             PastoralWorldData.get(world).completeFirstInitialization((WorldServer) world);
-            MarketService.tick((WorldServer) world);
             VillageService.tick((WorldServer) world, true);
         }
     }
 
-    /** The market is global, so it advances once on the logical-server overworld only. */
+    /** Merchant reconciliation is global and runs on the logical-server overworld only. */
     @SubscribeEvent
     public static void updateMarket(TickEvent.WorldTickEvent event) {
         if (event.phase == TickEvent.Phase.END && !event.world.isRemote && event.world instanceof WorldServer
                 && event.world.provider.getDimension() == 0) {
-            MarketService.tick((WorldServer) event.world);
             VillageService.tick((WorldServer) event.world);
         }
     }

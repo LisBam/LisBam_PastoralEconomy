@@ -31,6 +31,7 @@ public final class TileCrabTrap extends TileEntity implements ISidedInventory, I
     public static final int FIRST_HARVEST_SLOT = 2;
     public static final int HARVEST_SLOT_COUNT = 18;
     public static final int SLOT_COUNT = FIRST_HARVEST_SLOT + HARVEST_SLOT_COUNT;
+    private static final int COUNTDOWN_SAVE_INTERVAL_TICKS = 20;
 
     private static final int[] BAIT_INPUT_SLOTS = new int[] { BAIT_SLOT };
     private static final int[] HARVEST_OUTPUT_SLOTS = new int[] {
@@ -76,7 +77,12 @@ public final class TileCrabTrap extends TileEntity implements ISidedInventory, I
 
         if (remainingTicks > 0) {
             remainingTicks--;
-            markDirty();
+            // Persisting all loaded traps every tick continually dirties their
+            // chunks. The countdown is still exact in memory and is saved at
+            // least once per second (and on every state transition).
+            if (remainingTicks % COUNTDOWN_SAVE_INTERVAL_TICKS == 0) {
+                markDirty();
+            }
             if (remainingTicks > 0) {
                 return;
             }

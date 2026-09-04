@@ -24,11 +24,14 @@ public final class EntityMerchant extends EntityCreature {
     private static final String KEY_STATION_Z = "stationZ";
     private static final int HOME_RADIUS = 12;
     private static final int RETURN_DISTANCE = 32;
+    private static final int RETURN_REPATH_INTERVAL_TICKS = 20;
 
     private UUID merchantId;
     private UUID villageId;
     private UUID stationId;
     private BlockPos stationPosition;
+    /** Runtime-only pathfinding throttle; station identity remains fully persisted above. */
+    private int nextReturnPathTick;
 
     public EntityMerchant(World worldIn) {
         super(worldIn);
@@ -76,16 +79,24 @@ public final class EntityMerchant extends EntityCreature {
     @Override
     public void onLivingUpdate() {
         super.onLivingUpdate();
-        if (!world.isRemote && stationPosition != null
-                && getDistanceSq(stationPosition.getX() + 0.5D, stationPosition.getY() + 1.0D,
-                stationPosition.getZ() + 0.5D) > (double) (RETURN_DISTANCE * RETURN_DISTANCE)) {
-            boolean pathing = getNavigator().tryMoveToXYZ(stationPosition.getX() + 0.5D, stationPosition.getY() + 1.0D,
-                    stationPosition.getZ() + 0.5D, 0.8D);
-            if (!pathing && world.isBlockLoaded(stationPosition)) {
-                BlockPos standing = stationPosition.up();
-                if (world.isAirBlock(standing) && world.isAirBlock(standing.up())) {
-                    setPosition(standing.getX() + 0.5D, standing.getY(), standing.getZ() + 0.5D);
-                }
+        if (world.isRemote || stationPosition == null) {
+            return;
+        }
+        if (getDistanceSq(stationPosition.getX() + 0.5D, stationPosition.getY() + 1.0D,
+                stationPosition.getZ() + 0.5D) <= (double) (RETURN_DISTANCE * RETURN_DISTANCE)) {
+            nextReturnPathTick = ticksExisted;
+            return;
+        }
+        if (ticksExisted < nextReturnPathTick) {
+            return;
+        }
+        nextReturnPathTick = ticksExisted + RETURN_REPATH_INTERVAL_TICKS;
+        boolean pathing = getNavigator().tryMoveToXYZ(stationPosition.getX() + 0.5D, stationPosition.getY() + 1.0D,
+                stationPosition.getZ() + 0.5D, 0.8D);
+        if (!pathing && world.isBlockLoaded(stationPosition)) {
+            BlockPos standing = stationPosition.up();
+            if (world.isAirBlock(standing) && world.isAirBlock(standing.up())) {
+                setPosition(standing.getX() + 0.5D, standing.getY(), standing.getZ() + 0.5D);
             }
         }
     }

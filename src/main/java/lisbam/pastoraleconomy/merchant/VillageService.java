@@ -16,7 +16,6 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.village.Village;
 import net.minecraft.world.WorldServer;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -243,8 +242,9 @@ public final class VillageService {
     }
 
     private static boolean reconcileMerchants(WorldServer world, MerchantWorldState state) {
-        boolean changed = removeInvalidAndDuplicateEntities(world, state);
-        Map<UUID, EntityMerchant> entities = indexLiveMerchants(world, state);
+        MerchantEntityIndex entityIndex = indexAndRemoveInvalidMerchants(world, state);
+        boolean changed = entityIndex.changed;
+        Map<UUID, EntityMerchant> entities = entityIndex.entities;
         for (VillageRecord village : state.getVillages()) {
             if (!village.isActive()) {
                 continue;
@@ -296,10 +296,12 @@ public final class VillageService {
         return changed;
     }
 
-    private static boolean removeInvalidAndDuplicateEntities(WorldServer world, MerchantWorldState state) {
+    /** One maintenance pass replaces the previous copy-plus-second full entity scan. */
+    private static MerchantEntityIndex indexAndRemoveInvalidMerchants(WorldServer world, MerchantWorldState state) {
         boolean changed = false;
         Set<UUID> seen = new HashSet<UUID>();
-        for (Object value : new ArrayList<Object>(world.loadedEntityList)) {
+        Map<UUID, EntityMerchant> result = new HashMap<UUID, EntityMerchant>();
+        for (Object value : world.loadedEntityList) {
             if (!(value instanceof EntityMerchant)) {
                 continue;
             }
@@ -309,23 +311,11 @@ public final class VillageService {
             if (record == null || !merchant.hasValidBinding() || !seen.add(merchantId)) {
                 merchant.setDead();
                 changed = true;
+            } else if (!merchant.isDead) {
+                result.put(merchantId, merchant);
             }
         }
-        return changed;
-    }
-
-    private static Map<UUID, EntityMerchant> indexLiveMerchants(WorldServer world, MerchantWorldState state) {
-        Map<UUID, EntityMerchant> result = new HashMap<UUID, EntityMerchant>();
-        for (Object value : world.loadedEntityList) {
-            if (value instanceof EntityMerchant) {
-                EntityMerchant merchant = (EntityMerchant) value;
-                UUID id = merchant.getMerchantId();
-                if (!merchant.isDead && id != null && state.getMerchant(id) != null && !result.containsKey(id)) {
-                    result.put(id, merchant);
-                }
-            }
-        }
-        return result;
+        return new MerchantEntityIndex(result, changed);
     }
 
     private static EntityMerchant spawnMerchant(WorldServer world, MerchantRecord merchant, StationRecord station) {
@@ -366,6 +356,16 @@ public final class VillageService {
     public static int getTargetMerchantCount(int villagerCount) {
         int ceiling = (Math.max(0, villagerCount) + 4) / 5;
         return Math.max(3, Math.min(8, ceiling));
+    }
+
+    private static final class MerchantEntityIndex {
+        private final Map<UUID, EntityMerchant> entities;
+        private final boolean changed;
+
+        private MerchantEntityIndex(Map<UUID, EntityMerchant> entities, boolean changed) {
+            this.entities = entities;
+            this.changed = changed;
+        }
     }
 
     /** Returns an existing persisted identity near a structure result, or creates one without a station block. */

@@ -22,6 +22,7 @@ public final class MarketPacketSelfTest {
         verifyRequestRoundTripAndBounds();
         verifySnapshotRoundTripAndBounds();
         verifyStaleSnapshotDoesNotReplaceNewerWindow();
+        verifyBookSessionDropsLateSnapshots();
     }
 
     private static void verifyRequestRoundTripAndBounds() {
@@ -92,6 +93,29 @@ public final class MarketPacketSelfTest {
         require(ClientMarketState.getSnapshot(WHEAT, -1L, 2) == fresh,
                 "a late response cannot replace a newer snapshot for the same window");
         ClientMarketState.clear();
+    }
+
+    private static void verifyBookSessionDropsLateSnapshots() {
+        List<MarketHistoryPoint> points = new ArrayList<MarketHistoryPoint>();
+        points.add(new MarketHistoryPoint(1L, 5L, null));
+        ClientMarketState.beginBookSession();
+        int firstRequest = ClientMarketState.nextRequestId();
+        MarketHistorySnapshot first = new MarketHistorySnapshot(
+                firstRequest, WHEAT, -1L, 1L, 5L, null, points, false, false
+        );
+        ClientMarketState.acceptSnapshot(first);
+        require(ClientMarketState.getSnapshot(WHEAT, -1L, firstRequest) == first,
+                "an open book session must accept its own snapshot");
+
+        ClientMarketState.endBookSession();
+        ClientMarketState.acceptSnapshot(first);
+        require(ClientMarketState.getSnapshot(WHEAT, -1L, firstRequest) == null,
+                "a closed book must discard late market packets");
+
+        ClientMarketState.beginBookSession();
+        int secondRequest = ClientMarketState.nextRequestId();
+        require(secondRequest > firstRequest, "reopened books must not reuse request ids in one connection");
+        ClientMarketState.endBookSession();
     }
 
     private static void writeKey(ByteBuf buffer, String key) {

@@ -67,10 +67,16 @@ public final class MarketCoreSelfTest {
         data.ensureMarketDay(45L, 12345L);
         recentThirty = data.getCropHistory(WHEAT, 45L, 30, null);
         require(recentThirty.get(0).getWorldDay() == 16L && recentThirty.get(29).getWorldDay() == 45L,
-                "recent history must not delete older actual points");
+                "retention must keep the newest exact thirty days");
         List<MarketHistoryPoint> older = data.getCropHistory(WHEAT, 45L, 30, Long.valueOf(16L));
-        require(older.size() == 6 && older.get(0).getWorldDay() == 10L && older.get(5).getWorldDay() == 15L,
-                "older history must remain available through pagination");
+        require(older.isEmpty(), "older-than-thirty history must be discarded instead of growing indefinitely");
+
+        data.ensureMarketDay(1000000L, 12345L);
+        recentThirty = data.getCropHistory(WHEAT, 1000000L, 100, null);
+        require(recentThirty.size() == PastoralWorldData.MARKET_HISTORY_RETENTION_DAYS
+                        && recentThirty.get(0).getWorldDay() == 999971L
+                        && recentThirty.get(29).getWorldDay() == 1000000L,
+                "large time jumps must build one bounded recent window without processing every skipped day");
     }
 
     private static void verifySaveReloadRollbackAndMigration() {
@@ -86,10 +92,21 @@ public final class MarketCoreSelfTest {
         restored.ensureMarketDay(10L, 99L);
         require(price(restored, WHEAT) == dayTenPrice, "rollback must reuse the existing day price");
         require(restored.getCropHistory(WHEAT, 10L, 100, null).size() == 3,
-                "rollback must hide later history without deleting it");
+                "rollback must rebuild only the visible history through the current day");
         restored.ensureMarketDay(12L, 99L);
         require(restored.getCropHistory(WHEAT, 12L, 100, null).size() == 5,
-                "returning to a processed day must not duplicate history");
+                "returning to a day must deterministically rebuild without duplicate history");
+
+        NBTTagCompound v6 = data.writeToNBT(new NBTTagCompound());
+        v6.setInteger("dataVersion", 6);
+        PastoralWorldData migratedV6 = new PastoralWorldData();
+        migratedV6.readFromNBT(v6);
+        migratedV6.ensureMarketDay(1000000L, 12345L);
+        NBTTagCompound migratedV6Nbt = migratedV6.writeToNBT(new NBTTagCompound());
+        require(migratedV6Nbt.getInteger("dataVersion") == PastoralWorldData.DATA_VERSION,
+                "v6 worlds must migrate to the bounded market schema");
+        require(migratedV6Nbt.getCompoundTag("market").getTagList("processedDays", 10).tagCount() == 0,
+                "v7 must not write the legacy unbounded processed-day list");
 
         NBTTagCompound v2 = new NBTTagCompound();
         v2.setInteger("dataVersion", 2);

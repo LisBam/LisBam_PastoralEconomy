@@ -3,6 +3,7 @@ package lisbam.pastoraleconomy.network.handler;
 import lisbam.pastoraleconomy.market.MarketCommodity;
 import lisbam.pastoraleconomy.market.MarketHistorySnapshot;
 import lisbam.pastoraleconomy.market.MarketService;
+import lisbam.pastoraleconomy.gui.ContainerMarketBook;
 import lisbam.pastoraleconomy.network.ModNetwork;
 import lisbam.pastoraleconomy.network.message.RequestMarketHistoryMessage;
 import lisbam.pastoraleconomy.network.message.SyncMarketHistoryMessage;
@@ -36,13 +37,21 @@ public final class RequestMarketHistoryMessageHandler
             return;
         }
 
+        if (!(player.openContainer instanceof ContainerMarketBook)) {
+            return;
+        }
+        ContainerMarketBook book = (ContainerMarketBook) player.openContainer;
+        if (!book.acceptMarketRequest(player.getServerWorld().getTotalWorldTime())) {
+            return;
+        }
+
         MarketCommodity commodity = MarketService.getCommodity(request.getCommodityKey());
         if (commodity == null || !commodity.isHistoryTracked()) {
             return;
         }
 
         WorldServer playerWorld = player.getServerWorld();
-        long currentDay = MarketService.getCurrentMarketDayForDisplay(playerWorld);
+        long currentDay = MarketService.getCurrentMarketDay(playerWorld);
         long cursor = request.getBeforeExclusiveDay();
         if (cursor < -1L || (cursor >= 0L && cursor > currentDay)) {
             return;

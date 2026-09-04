@@ -211,3 +211,19 @@
 新决定：`GuiMerchantTrade` 与 `GuiTransportStation` 每帧只使用一次 `drawScaledCustomSizeModalRect`，从原版 `demo_background.png` 完整裁取 248×166 区域绘制响应式面板。继续使用原版 `FontRenderer`、`GuiButton`、`GuiTextField`、`GuiSlider` 与原版物品槽裁切，不再对 `demo_background` 做任何分片组合。
 
 数据兼容影响：无。纯客户端视觉修复；不改变 Packet、Container、TileEntity、NBT、库存、金币或交通数据。
+
+## DEC-028 市场按需刷新与 30 天有界历史
+
+决定：`PastoralWorldData` 升为 v7。保留 marketSeed、首次市场日和当前/昨日价格快照，移除无限 `processedDays` 持久化；14 种作物历史仅保存并同步当前世界日前 30 天。价格仍由稳定 seed/day/key 公式计算，所以任意向前跳时不逐日循环，只重建该 30 天窗口。`MarketService.tick` 从世界 tick 生命周期移除，打开中的 `ContainerMarketBook` 请求或商人实际读取价格时才在逻辑服务端惰性刷新市场。行情书请求仍使用 Packet 1/2 的既有格式和 discriminator，但服务端只接受实际打开的书本 Container，单会话每 2 tick 最多处理一次；客户端关闭书本即清缓存并拒绝迟到快照。
+
+原因：旧实现每个主世界 tick 都进入市场服务、检查当前价格，并把处理日与每种作物曲线永久追加到 `WorldSavedData`。这同时制造持续 CPU 开销、存档增长和客户端分页缓存增长，而 GUI 的单个可见窗口本来就最多 30 点。确定性价格生成已足以重建任何合法的当前窗口，不需要保存完整历史。
+
+兼容性与影响：v3--v6 存档可直接读取，首次市场访问会按旧 marketSeed 重建当日窗口，下一次保存写 v7；第 31 天及更早的作物曲线会永久丢弃，当前/昨日价格、经济 key、价格公式、Packet 编码和 registry ID 均不变。市场不再在无人使用时跨日更新；书本保持打开跨日时需重新打开（或进行新的请求）才显示新日，商人交易请求仍会在服务端重新刷新并验证价格。
+
+## DEC-029 商人、GUI 与蟹笼维护负载
+
+决定：商人每日维护把原先的两次 `loadedEntityList` 遍历合为一次，并由 `MarketPriceSnapshot` 一次复制所有当前/昨日价格供单个交易快照使用；`EntityMerchant` 离开站点超过范围时最多每 20 tick 重算一次导航路径。商人 GUI 按客户端 tick 缓存出售持有量，行情书缓存图表几何，避免在渲染帧重复扫描背包或重算 30 点坐标。`TileCrabTrap` 的倒计时仍逐 tick 递减，但仅每 20 tick 和状态转换 `markDirty()`。
+
+原因：这些路径不会改变权威规则，却会在商人多、GUI 高帧率或蟹笼多时重复分配集合、扫描实体/背包、执行寻路或持续标脏区块。批处理只减少重复读取，所有交易价格、库存、金币和掉落仍由原有服务端路径决定。
+
+影响：没有新的注册 ID、NBT key、Capability 或 Packet discriminator。商人离站返航的下一次寻路最多延迟 1 秒；蟹笼在非正常停机后最多回退 19 tick 的倒计时持久化进度，正常运行中的倒计时和掉落时机不变。

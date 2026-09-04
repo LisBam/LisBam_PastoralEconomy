@@ -2,7 +2,6 @@ package lisbam.pastoraleconomy.market;
 
 import lisbam.pastoraleconomy.data.world.PastoralWorldData;
 import net.minecraft.world.World;
-import net.minecraft.world.WorldServer;
 
 import javax.annotation.Nullable;
 import java.util.List;
@@ -12,17 +11,9 @@ import java.util.List;
  * Every stateful lookup resolves the authoritative shared WorldSavedData.
  */
 public final class MarketService {
-    public static final int DEFAULT_HISTORY_DAYS = 30;
+    public static final int DEFAULT_HISTORY_DAYS = PastoralWorldData.MARKET_HISTORY_RETENTION_DAYS;
 
     private MarketService() {
-    }
-
-    /** Lightweight server tick hook; only the overworld calls it. */
-    public static void tick(WorldServer overworld) {
-        if (overworld.provider.getDimension() != 0) {
-            return;
-        }
-        getReadyData(overworld);
     }
 
     public static List<MarketCommodity> getAllCommodities() {
@@ -36,11 +27,6 @@ public final class MarketService {
 
     public static long getCurrentMarketDay(World world) {
         return getReadyData(world).getCurrentMarketDay();
-    }
-
-    /** Display-only lookup that never advances the market as a side effect. */
-    public static long getCurrentMarketDayForDisplay(World world) {
-        return getReadOnlyMarketData(world).getCurrentMarketDay();
     }
 
     public static long getCurrentPrice(World world, String commodityKey) {
@@ -89,8 +75,8 @@ public final class MarketService {
 
     /**
      * Builds one bounded display window from the authoritative WorldSavedData.
-     * This is a read-only view: the normal overworld tick remains the only
-     * active market-day advancement entry point.
+     * The market has no background ticker: an open market book or an economy
+     * operation is what lazily refreshes this deterministic daily snapshot.
      */
     public static MarketHistorySnapshot getHistorySnapshot(
             World world, String commodityKey, long beforeExclusiveDay, int limit, int requestId
@@ -100,7 +86,7 @@ public final class MarketService {
         }
 
         MarketCommodity commodity = requireHistoryCommodity(commodityKey);
-        PastoralWorldData data = getReadOnlyMarketData(world);
+        PastoralWorldData data = getReadyData(world);
         long currentDay = data.getCurrentMarketDay();
         if (beforeExclusiveDay < -1L || (beforeExclusiveDay >= 0L && beforeExclusiveDay > currentDay)) {
             throw new IllegalArgumentException("Market history cursor is outside the current world day.");
@@ -138,21 +124,20 @@ public final class MarketService {
         return data.getCropHistoryPoint(commodity.getKey(), worldDay, data.getCurrentMarketDay());
     }
 
+    /**
+     * Captures all current/previous prices once for callers that need to render
+     * many offers. This avoids resolving WorldSavedData for every offer row.
+     */
+    public static MarketPriceSnapshot getPriceSnapshot(World world) {
+        return getReadyData(world).createMarketPriceSnapshot();
+    }
+
     private static PastoralWorldData getReadyData(World world) {
         PastoralWorldData data = PastoralWorldData.get(world);
         data.ensureMarketDay(
                 PastoralWorldData.getAuthoritativeMarketDay(world),
                 PastoralWorldData.getAuthoritativeWorldSeed(world)
         );
-        return data;
-    }
-
-    /** Used by display packets so opening a GUI never advances or initializes market history. */
-    private static PastoralWorldData getReadOnlyMarketData(World world) {
-        PastoralWorldData data = PastoralWorldData.get(world);
-        if (!data.isMarketInitialized()) {
-            throw new IllegalStateException("Market data has not been initialized by the overworld tick.");
-        }
         return data;
     }
 
