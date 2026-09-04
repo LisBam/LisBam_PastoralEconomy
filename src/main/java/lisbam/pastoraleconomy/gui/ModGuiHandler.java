@@ -6,6 +6,7 @@ import lisbam.pastoraleconomy.tile.TileCrabTrap;
 import lisbam.pastoraleconomy.tile.TileTransportStation;
 import lisbam.pastoraleconomy.tile.TileVillageStation;
 import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.world.World;
 import net.minecraftforge.fml.common.network.IGuiHandler;
 
@@ -40,7 +41,9 @@ public final class ModGuiHandler implements IGuiHandler {
             }
             return null;
         }
-        return new ContainerMarketBook();
+        return player instanceof EntityPlayerMP
+                ? new ContainerMarketBook((EntityPlayerMP) player)
+                : null;
     }
 
     @Override
