@@ -6,7 +6,11 @@
 
 - `JDK8_HOME=/tmp/lbpe-jdk8; env JAVA_HOME="$JDK8_HOME" PATH="$JDK8_HOME/bin:$PATH" ./gradlew compileJava processResources build`
 - 日期：2026-09-05
-- 结果：PASS（Forge 14.23.5.2859 / Temurin Java 8 `1.8.0_504`；`build` 包含 `reobfJar` 与 `exportReleaseJar`。`release/LisBam_PastoralEconomy-1.0.jar` 为 344,747 bytes，SHA-256 `6be402b55305362b6a7e02b6f4cc1680298e4edb2825a9aaa2a789d341fcbc5a`，`unzip -t` PASS。）
+- 结果：PASS（Forge 14.23.5.2859 / Temurin Java 8 `1.8.0_504`；`build` 包含 `reobfJar` 与 `exportReleaseJar`。`release/LisBam_PastoralEconomy-1.0.jar` 为 347,012 bytes，SHA-256 `faf5a90e83d818b219e3d7d2c0be5a67d89945730e93f853e0b4e5a541ac0474`，`unzip -t` PASS。）
+
+## 维护：强制覆盖导出发布 JAR（2026-09-05）
+
+更新 `AGENTS.md` 的发布规范：即使同名 release JAR 已存在，每次代码、资源、Gradle 或配置更新后仍必须实际运行最终 `build`，由 `exportReleaseJar` 直接覆盖导出，不能沿用上一次成品。本次按该规则使用 JDK 8 完成 `compileJava`、`processResources`、`build`，并确认 `release/LisBam_PastoralEconomy-1.0.jar` 非空且压缩完整。
 
 ## 维护：经济市场与商品价格统一修复（2026-09-05）
 
