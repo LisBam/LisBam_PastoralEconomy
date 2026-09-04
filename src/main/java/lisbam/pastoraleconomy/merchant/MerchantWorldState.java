@@ -41,6 +41,7 @@ public final class MerchantWorldState {
     public void putVillage(VillageRecord record) { villages.put(record.getVillageId(), record); }
     public void putStation(StationRecord record) { stations.put(record.getStationId(), record); }
     public void putMerchant(MerchantRecord record) { merchants.put(record.getMerchantId(), record); }
+    public MerchantRecord removeMerchant(UUID id) { return merchants.remove(id); }
 
     public NBTTagCompound writeToNBT() {
         NBTTagCompound tag = new NBTTagCompound();

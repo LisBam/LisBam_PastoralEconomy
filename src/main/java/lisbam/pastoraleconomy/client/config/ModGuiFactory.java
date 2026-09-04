@@ -10,6 +10,9 @@ import net.minecraftforge.fml.client.IModGuiFactory;
 import net.minecraftforge.fml.client.config.GuiConfig;
 
 import java.util.Collections;
+import java.util.ArrayList;
+import java.util.List;
+import net.minecraftforge.fml.client.config.IConfigElement;
 import java.util.Set;
 
 /** Physical-client Forge 1.12.2 Mod List configuration entry point. */
@@ -26,10 +29,12 @@ public final class ModGuiFactory implements IModGuiFactory {
 
     @Override
     public GuiScreen createConfigGui(GuiScreen parentScreen) {
+        List<IConfigElement> elements = new ArrayList<IConfigElement>();
+        elements.addAll(new ConfigElement(ModSettings.getConfiguration().getCategory(ModSettings.MARKET_CATEGORY)).getChildElements());
+        elements.addAll(new ConfigElement(ModSettings.getConfiguration().getCategory(ModSettings.GAMEPLAY_CATEGORY)).getChildElements());
         return new GuiConfig(
                 parentScreen,
-                new ConfigElement(ModSettings.getConfiguration().getCategory(ModSettings.MARKET_CATEGORY))
-                        .getChildElements(),
+                elements,
                 LisBamPastoralEconomy.MODID,
                 false,
                 false,

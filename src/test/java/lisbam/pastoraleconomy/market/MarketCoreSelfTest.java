@@ -61,10 +61,17 @@ public final class MarketCoreSelfTest {
                 "lisbam_pastoral_economy:sell/crop/nether_wart",
                 "lisbam_pastoral_economy:sell/crop/chorus_fruit",
                 "lisbam_pastoral_economy:sell/livestock/milk_bucket",
+                "lisbam_pastoral_economy:sell/livestock/beef",
+                "lisbam_pastoral_economy:sell/livestock/porkchop",
+                "lisbam_pastoral_economy:sell/livestock/chicken",
+                "lisbam_pastoral_economy:sell/livestock/mutton",
+                "lisbam_pastoral_economy:sell/livestock/rabbit",
+                "lisbam_pastoral_economy:sell/livestock/fish",
+                "lisbam_pastoral_economy:sell/livestock/salmon",
                 "lisbam_pastoral_economy:sell/livestock/wool"
         ));
         Set<String> actualSellGoods = new HashSet<String>();
-        for (MarketCommodity commodity : MarketCatalog.getHistoryTracked()) {
+        for (MarketCommodity commodity : MarketCatalog.getSellHistoryTracked()) {
             actualSellGoods.add(commodity.getKey());
         }
         require(actualSellGoods.equals(expectedSellGoods),

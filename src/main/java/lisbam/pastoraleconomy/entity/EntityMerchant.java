@@ -41,8 +41,8 @@ public final class EntityMerchant extends EntityCreature {
     private static final String LEGACY_GENERIC_NAME = "商人";
     private static final DataParameter<Integer> SKIN_VARIANT = EntityDataManager.createKey(EntityMerchant.class,
             DataSerializers.VARINT);
-    private static final int HOME_RADIUS = 12;
-    private static final int RETURN_DISTANCE = 32;
+    private static final int HOME_RADIUS = 64;
+    private static final int RETURN_DISTANCE = 96;
     private static final int RETURN_REPATH_INTERVAL_TICKS = 20;
     private static final int FLEE_DURATION_TICKS = 200;
     private static final float FLEE_DISTANCE = 12.0F;
@@ -229,14 +229,10 @@ public final class EntityMerchant extends EntityCreature {
             return;
         }
         nextReturnPathTick = ticksExisted + RETURN_REPATH_INTERVAL_TICKS;
-        boolean pathing = getNavigator().tryMoveToXYZ(stationPosition.getX() + 0.5D, stationPosition.getY() + 1.0D,
+        getNavigator().tryMoveToXYZ(stationPosition.getX() + 0.5D, stationPosition.getY() + 1.0D,
                 stationPosition.getZ() + 0.5D, 1.0D);
-        if (!pathing && world.isBlockLoaded(stationPosition)) {
-            BlockPos standing = stationPosition.up();
-            if (world.isAirBlock(standing) && world.isAirBlock(standing.up())) {
-                setPosition(standing.getX() + 0.5D, standing.getY(), standing.getZ() + 0.5D);
-            }
-        }
+        // Villager-style navigation is intentionally allowed to fail while a
+        // chunk is unavailable; never teleport a merchant across the village.
     }
 
     private boolean isFleeing() {

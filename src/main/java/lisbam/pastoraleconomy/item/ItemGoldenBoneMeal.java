@@ -50,7 +50,7 @@ public final class ItemGoldenBoneMeal extends Item {
     public ItemGoldenBoneMeal() {
         setRegistryName(LisBamPastoralEconomy.MODID, "golden_bone_meal");
         setUnlocalizedName(LisBamPastoralEconomy.MODID + ".golden_bone_meal");
-        setCreativeTab(net.minecraft.creativetab.CreativeTabs.MATERIALS);
+        setCreativeTab(ModItems.CREATIVE_TAB);
     }
 
     @Override

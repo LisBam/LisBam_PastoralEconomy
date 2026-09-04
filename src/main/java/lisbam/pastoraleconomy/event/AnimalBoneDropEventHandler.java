@@ -1,6 +1,7 @@
 package lisbam.pastoraleconomy.event;
 
 import lisbam.pastoraleconomy.LisBamPastoralEconomy;
+import lisbam.pastoraleconomy.config.ModSettings;
 import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.item.EntityItem;
 import net.minecraft.init.Items;
@@ -19,7 +20,7 @@ public final class AnimalBoneDropEventHandler {
     @SubscribeEvent(priority = EventPriority.HIGHEST)
     public static void addAnimalBoneDrop(LivingDropsEvent event) {
         EntityLivingBase animal = event.getEntityLiving();
-        if (animal.world.isRemote) {
+        if (animal.world.isRemote || ModSettings.isDisableAnimalBoneDrops()) {
             return;
         }
 

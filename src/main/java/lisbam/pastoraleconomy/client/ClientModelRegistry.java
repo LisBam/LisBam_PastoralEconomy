@@ -30,6 +30,11 @@ public final class ClientModelRegistry {
                 new ModelResourceLocation(new ResourceLocation(LisBamPastoralEconomy.MODID, "golden_bone_meal"), "inventory")
         );
         ModelLoader.setCustomModelResourceLocation(
+                ModItems.MERCHANT_SPAWN_EGG,
+                0,
+                new ModelResourceLocation(new ResourceLocation(LisBamPastoralEconomy.MODID, "merchant_spawn_egg"), "inventory")
+        );
+        ModelLoader.setCustomModelResourceLocation(
                 ModItems.CRAB_TRAP_ITEM,
                 0,
                 new ModelResourceLocation(ModBlocks.CRAB_TRAP.getRegistryName(), "inventory")

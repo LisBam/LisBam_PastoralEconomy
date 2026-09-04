@@ -36,8 +36,8 @@ public final class MarketCatalog {
                 tracked.add(commodity);
             }
         }
-        if (tracked.size() != 22) {
-            throw new IllegalStateException("The market must track every one of the twenty-two merchant sell goods.");
+        if (tracked.size() < 29) {
+            throw new IllegalStateException("The market must track merchant sell goods and purchases.");
         }
         HISTORY_TRACKED = Collections.unmodifiableList(tracked);
     }
@@ -55,6 +55,17 @@ public final class MarketCatalog {
 
     public static List<MarketCommodity> getHistoryTracked() {
         return HISTORY_TRACKED;
+    }
+
+    /** Merchant sell-side goods used by the first market-book page. */
+    public static List<MarketCommodity> getSellHistoryTracked() {
+        List<MarketCommodity> result = new ArrayList<MarketCommodity>();
+        for (MarketCommodity commodity : HISTORY_TRACKED) {
+            if (commodity.getKey().contains(":sell/") && !commodity.getKey().contains("wool_")) {
+                result.add(commodity);
+            }
+        }
+        return Collections.unmodifiableList(result);
     }
 
     private static void addSellingDefinitions(Map<String, MarketCommodity> definitions) {
@@ -79,6 +90,13 @@ public final class MarketCatalog {
         add(definitions, "sell/crop/nether_wart", Items.NETHER_WART, 0, 80, CommodityCategory.SECONDARY_AGRICULTURE_LIVESTOCK, true);
         add(definitions, "sell/crop/chorus_fruit", Items.CHORUS_FRUIT, 0, 80, CommodityCategory.SECONDARY_AGRICULTURE_LIVESTOCK, true);
         add(definitions, "sell/livestock/milk_bucket", Items.MILK_BUCKET, 0, 200, CommodityCategory.SECONDARY_AGRICULTURE_LIVESTOCK, true);
+        add(definitions, "sell/livestock/beef", Items.BEEF, 0, 120, CommodityCategory.SECONDARY_AGRICULTURE_LIVESTOCK, true);
+        add(definitions, "sell/livestock/porkchop", Items.PORKCHOP, 0, 120, CommodityCategory.SECONDARY_AGRICULTURE_LIVESTOCK, true);
+        add(definitions, "sell/livestock/chicken", Items.CHICKEN, 0, 80, CommodityCategory.SECONDARY_AGRICULTURE_LIVESTOCK, true);
+        add(definitions, "sell/livestock/mutton", Items.MUTTON, 0, 120, CommodityCategory.SECONDARY_AGRICULTURE_LIVESTOCK, true);
+        add(definitions, "sell/livestock/rabbit", Items.RABBIT, 0, 140, CommodityCategory.SECONDARY_AGRICULTURE_LIVESTOCK, true);
+        add(definitions, "sell/livestock/fish", Items.FISH, 0, 80, CommodityCategory.SECONDARY_AGRICULTURE_LIVESTOCK, true);
+        add(definitions, "sell/livestock/salmon", Items.FISH, 1, 100, CommodityCategory.SECONDARY_AGRICULTURE_LIVESTOCK, true);
         // Merchant offers treat all 16 wool metadata values as one logical good,
         // so it needs one shared frozen unit price rather than sixteen rolls.
         add(definitions, "sell/livestock/wool", block(Blocks.WOOL), 0, 80,
@@ -271,8 +289,10 @@ public final class MarketCatalog {
     private static void add(Map<String, MarketCommodity> definitions, String path, Item item, int metadata, long basePrice,
                             CommodityCategory category, boolean historyTracked, String variantIdentity) {
         String key = LisBamPastoralEconomy.MODID + ":" + path;
+        // Purchase-list items are also available on the market book's second tab.
+        boolean tracked = historyTracked || path.startsWith("buy/");
         MarketCommodity previous = definitions.put(key, new MarketCommodity(key, item, metadata, basePrice, category,
-                historyTracked, variantIdentity));
+                tracked, variantIdentity));
         if (previous != null) {
             throw new IllegalStateException("Duplicate market commodity key: " + key);
         }

@@ -326,6 +326,12 @@
 
 ## DEC-041 原版确认链、物品提示与金闪闪骨粉兼容
 
+## DEC-042 购买行情分页与商人活动维护（2026-09-05）
+
+出售肉类与作物共用次级收购池；购买目录商品全部参与 30 日历史。行情书拆分出售/购买页，仅保留最新窗口，服务端单项同步，客户端会话缓存按选中优先、其余低频预取，避免一次性传输完整购买目录。
+
+刷怪蛋生成未绑定商人，由 `VillageService` 在村庄范围创建 MerchantRecord；随机安全点出生，越界清除绑定并以原版寻路返站，不瞬移。新增创造标签和两个默认关闭的服务器设置；不改既有 Packet、WorldSavedData 或 Capability 身份。
+
 决定：交通确认使用 Java 1.12.2 `GuiYesNo`，仅在 `initGui` 中按现有客户端快照启用/禁用它本来就有的“是”按钮；不再绘制或缩放自定义确认背景。`GuiCrabTrap#drawScreen` 明确执行原版 `GuiChest` 同样的 `renderHoveredToolTip` 调用。商人交易和行情书只给任意颜色羊毛的显示用 `ItemStack` 写入“羊毛”自定义显示名。金闪闪的骨粉在 common `preInit` 注册 `dyeWhite` OreDictionary 条目，白色染料的生物交互委托给临时的原版白色 `ItemDye`，并将自身的增强 5×5 行为注册进 `BlockDispenser.DISPENSE_BEHAVIOR_REGISTRY`。
 
 原因：`GuiContainer#drawScreen` 不会自行调用 Tooltip 渲染；原版 `GuiChest` 的显式补充调用才使普通背包式容器出现物品说明。缩放 `demo_background` 的确认层无法同时保证原版比例和文字对比，直接采用 `GuiYesNo` 才能严格复用原版底图、字体和按钮。羊毛商品逻辑接受全部 metadata，不能因显示名称而更改其匹配或行情身份。物品若只重写方块使用，便会缺少白色染料和发射器两条原版入口；临时白色 `ItemDye` 与无玩家 `applyBonemeal` 继续经过 Forge 1.12.2 骨粉 hook，失败的发射器路径交回原版默认抛出行为。

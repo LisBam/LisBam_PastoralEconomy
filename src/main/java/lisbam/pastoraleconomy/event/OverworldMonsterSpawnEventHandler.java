@@ -1,6 +1,7 @@
 package lisbam.pastoraleconomy.event;
 
 import lisbam.pastoraleconomy.LisBamPastoralEconomy;
+import lisbam.pastoraleconomy.config.ModSettings;
 import net.minecraft.entity.EnumCreatureType;
 import net.minecraftforge.event.entity.living.LivingSpawnEvent;
 import net.minecraftforge.fml.common.Mod;
@@ -16,6 +17,7 @@ public final class OverworldMonsterSpawnEventHandler {
     @SubscribeEvent
     public static void denyNaturalOverworldMonsters(LivingSpawnEvent.CheckSpawn event) {
         if (!event.getWorld().isRemote
+                && !ModSettings.isRestoreVanillaMonsterSpawns()
                 && event.getWorld().provider.getDimension() == 0
                 && !event.isSpawner()
                 && event.getEntityLiving().isCreatureType(EnumCreatureType.MONSTER, false)) {

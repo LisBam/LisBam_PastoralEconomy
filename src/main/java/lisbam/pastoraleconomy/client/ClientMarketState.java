@@ -33,6 +33,16 @@ public final class ClientMarketState {
         return snapshot != null && snapshot.getRequestId() == requestId ? snapshot : null;
     }
 
+    /** Returns the newest cached window regardless of the request id that filled it. */
+    @Nullable
+    public static MarketHistorySnapshot getLatestSnapshot(String commodityKey) {
+        MarketHistorySnapshot newest = SNAPSHOTS.get(new WindowKey(commodityKey, -1L));
+        if (newest != null) {
+            return newest;
+        }
+        return null;
+    }
+
     public static void clear() {
         SNAPSHOTS.clear();
     }
