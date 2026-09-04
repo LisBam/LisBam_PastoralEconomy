@@ -8,7 +8,7 @@ import net.minecraft.inventory.IContainerListener;
 import net.minecraft.inventory.Slot;
 import net.minecraft.item.ItemStack;
 
-/** Authoritative general 20-slot crab-trap container with safe shift-clicking. */
+/** Authoritative 20-slot crab-trap container with validated functional inputs. */
 public final class ContainerCrabTrap extends Container {
     private static final int TRAP_SLOT_COUNT = TileCrabTrap.SLOT_COUNT;
     private static final int PLAYER_FIRST_SLOT = TRAP_SLOT_COUNT;

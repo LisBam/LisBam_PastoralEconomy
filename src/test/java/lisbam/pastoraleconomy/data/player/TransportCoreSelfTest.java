@@ -77,8 +77,8 @@ public final class TransportCoreSelfTest {
         data.markFirstSelfBuiltStationEstablished(true);
         require(data.hasEstablishedFirstSelfBuiltStation() && data.hasUsedFirstSelfBuiltStationFree(),
                 "free first-node history");
-        require(data.deactivateTransportNode(first), "remove only deactivates player node");
-        require(!data.getTransportNode(first).isActive(), "removed node stays recorded");
+        require(data.removeTransportNode(first), "remove deletes player node");
+        require(data.getTransportNode(first) == null, "removed node must not stay recorded");
         require(data.activateTransportNode(second, "自建站点 #001"), "second node activation");
         NBTTagCompound saved = data.writeToNBT();
         PlayerData restored = new PlayerData();
@@ -86,12 +86,12 @@ public final class TransportCoreSelfTest {
         require(restored.hasStarterTransportBeenGranted(), "starter state NBT round trip");
         require(restored.hasEstablishedFirstSelfBuiltStation() && restored.hasUsedFirstSelfBuiltStationFree(),
                 "free history NBT round trip");
-        require(!restored.getTransportNode(first).isActive() && restored.getTransportNode(second).isActive(),
-                "active and removed state NBT round trip");
+        require(restored.getTransportNode(first) == null && restored.getTransportNode(second).isActive(),
+                "only active nodes survive the NBT round trip");
         PlayerData clone = new PlayerData();
         clone.copyFrom(restored);
-        require(clone.getTransportNodes().size() == 2 && !clone.getTransportNode(first).isActive(),
-                "death clone must preserve transport node state");
+        require(clone.getTransportNodes().size() == 1 && clone.getTransportNode(second).isActive(),
+                "death clone must preserve active transport nodes");
     }
 
     private static void verifyWorldRegistry() {

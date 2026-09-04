@@ -217,13 +217,8 @@ final class PlayerData implements IPlayerData {
         return stationId != null && (transportNodes.containsKey(stationId) || transportNodes.size() < MAX_TRANSPORT_NODES);
     }
 
-    boolean deactivateTransportNode(UUID stationId) {
-        PlayerTransportNode existing = getTransportNode(stationId);
-        if (existing == null || !existing.isActive()) {
-            return false;
-        }
-        transportNodes.put(stationId, new PlayerTransportNode(stationId, false, existing.getAlias()));
-        return true;
+    boolean removeTransportNode(UUID stationId) {
+        return stationId != null && transportNodes.remove(stationId) != null;
     }
 
     boolean renameTransportNode(UUID stationId, String alias) {
@@ -265,7 +260,9 @@ final class PlayerData implements IPlayerData {
     private void readTransportNodes(NBTTagList list) {
         for (int index = 0; index < list.tagCount() && transportNodes.size() < MAX_TRANSPORT_NODES; index++) {
             PlayerTransportNode node = PlayerTransportNode.readFromNBT(list.getCompoundTagAt(index));
-            if (node != null && !transportNodes.containsKey(node.getStationId())) {
+            // Earlier builds retained inactive nodes after removal. They are no
+            // longer part of the player network and are discarded on load.
+            if (node != null && node.isActive() && !transportNodes.containsKey(node.getStationId())) {
                 transportNodes.put(node.getStationId(), node);
             }
         }

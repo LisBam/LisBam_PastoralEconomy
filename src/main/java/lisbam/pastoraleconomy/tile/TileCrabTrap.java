@@ -23,7 +23,8 @@ import java.util.List;
 /**
  * Server-authoritative 20-slot crab-trap inventory and fishing state machine.
  * Slot 0 is read as the rod module, slot 1 as raw-meat bait, and slots 2-19
- * receive catches. All twenty inventory slots remain general-purpose storage.
+ * receive catches. The two functional slots validate their specific modules;
+ * all harvest slots remain general-purpose storage.
  */
 public final class TileCrabTrap extends TileEntity implements ISidedInventory, ITickable {
     public static final int ROD_SLOT = 0;
@@ -378,7 +379,13 @@ public final class TileCrabTrap extends TileEntity implements ISidedInventory, I
 
     @Override
     public boolean isItemValidForSlot(int index, ItemStack stack) {
-        return isValidSlot(index);
+        if (index == ROD_SLOT) {
+            return CrabTrapRules.isFishingRod(stack);
+        }
+        if (index == BAIT_SLOT) {
+            return CrabTrapRules.isRawMeatBait(stack);
+        }
+        return index >= FIRST_HARVEST_SLOT && index < SLOT_COUNT;
     }
 
     @Override

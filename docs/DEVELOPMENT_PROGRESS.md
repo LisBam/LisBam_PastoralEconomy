@@ -6,7 +6,15 @@
 
 - `env JAVA_HOME=/tmp/lbpe-jdk8 PATH=/tmp/lbpe-jdk8/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin ./gradlew --console=plain build`
 - 日期：2026-09-04
-- 结果：PASS（Forge 14.23.5.2859 / Temurin Java 8 `1.8.0_504`；`build` 包含 `reobfJar` 与 `exportReleaseJar`。`release/LisBam_PastoralEconomy-1.0.jar` 为 322,772 bytes，SHA-256 `296b440379f22a0f15990eaf49af31fc5b1272397427d7b0f222e05428290bb2`，`unzip -t` PASS。）
+- 结果：PASS（Forge 14.23.5.2859 / Temurin Java 8 `1.8.0_504`；`build` 包含 `reobfJar` 与 `exportReleaseJar`。`release/LisBam_PastoralEconomy-1.0.jar` 为 324,313 bytes，SHA-256 `5c5dfa7073cec1251675e1f626b9672a9aa0ef388af11bbc505b6e19815ed2c3`，`unzip -t` PASS。）
+
+## 维护：蟹笼专用槽与交通交互（2026-09-04）
+
+实现：蟹笼 0 号槽恢复仅接收钓竿、1 号槽恢复仅接收合法生肉，2～19 保持通用；Container 和所有方向 Hopper 共用 `TileCrabTrap` 校验，任意槽仍可取出。蟹笼 GUI 继续继承 `GuiContainer` 原版物品悬停路径。交通方块配方改为四角红石块、上下左右铁块、中央指南针。商人和交通界面的非按钮文字改为原版工作台/熔炉标题深灰色；交通界面去除查找按钮与主面板村庄详情，自动获取候选并以单按钮打开距离/接入费确认层，余额不足时确认禁用。
+
+根因与影响：蟹笼先前将 `isItemValidForSlot` 放宽为任意有效槽，导致功能槽失去限制；交通“移出”只保留 inactive tombstone，方块拆除只删除世界登记，因此列表会显示“已移出”或“节点无效”。现在移出直接删除玩家节点，拆除同步删除世界节点、Tile UUID 和在线玩家引用，读取旧 inactive 或构造交通快照时清理残项。保留 Packet 5 action ordinal，服务端继续重算村庄候选、费用和余额。旧蟹笼 0/1 槽中已有的非功能物品不会删除，仍可取出；旧 inactive 节点在下次读取时清除。
+
+验证：Temurin Java 8 `1.8.0_504` 下 `compileJava`、`processResources`、`crabTrapSelfTest`、`transportCoreSelfTest`、`transportTravelSelfTest` 和最终 `build` 均 PASS。严格 Forge 1.12.2 audit 为 0 ERROR、5 条既有 packet-thread WARNING 已复核为 Proxy/主线程桥接。正式重混淆 JAR 已导出为 `release/LisBam_PastoralEconomy-1.0.jar`，324,313 bytes，SHA-256 `5c5dfa7073cec1251675e1f626b9672a9aa0ef388af11bbc505b6e19815ed2c3`，`unzip -t` PASS；资源清单确认包含更新后的交通配方、双语资源和实现类。游戏内 GUI、方块破坏与 Dedicated Server 未运行：当前环境不能创建可操作 Forge 客户端，服务器 EULA 未接受。
 
 ## 维护：商人整组、行情书与蟹笼规则（2026-09-04）
 

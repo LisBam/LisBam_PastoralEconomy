@@ -48,8 +48,8 @@ public final class PlayerTransportDataService {
         return requireServerData(player).canActivateTransportNode(stationId);
     }
 
-    public static boolean deactivateNode(EntityPlayerMP player, UUID stationId) {
-        return requireServerData(player).deactivateTransportNode(stationId);
+    public static boolean removeNode(EntityPlayerMP player, UUID stationId) {
+        return requireServerData(player).removeTransportNode(stationId);
     }
 
     public static boolean renameNode(EntityPlayerMP player, UUID stationId, String alias) {

@@ -34,6 +34,12 @@ public final class TileTransportStation extends TileEntity {
         markDirty();
     }
 
+    /** Clears a retired physical identity before this TileEntity leaves the world. */
+    public void clearStationId() {
+        stationId = null;
+        markDirty();
+    }
+
     public void setStarterOwner(UUID owner) {
         starterOwner = owner;
         markDirty();
