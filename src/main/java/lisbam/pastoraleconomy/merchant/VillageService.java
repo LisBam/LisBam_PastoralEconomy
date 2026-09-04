@@ -54,6 +54,7 @@ public final class VillageService {
         MerchantWorldState state = data.getMerchantWorldState();
         boolean changed = observeLegacyVillages(overworld, state);
         changed |= ensureStations(overworld, state);
+        changed |= adoptUnboundMerchants(overworld, state);
         if (isInitialEntitySettleComplete(overworld, worldTime)) {
             changed |= reconcileMerchants(overworld, state);
         }
@@ -314,6 +315,42 @@ public final class VillageService {
         return changed;
     }
 
+    /** Spawn-egg merchants are initially free entities; adopt them when they enter a village. */
+    private static boolean adoptUnboundMerchants(WorldServer world, MerchantWorldState state) {
+        boolean changed = false;
+        for (Object value : world.loadedEntityList) {
+            if (!(value instanceof EntityMerchant)) continue;
+            EntityMerchant entity = (EntityMerchant) value;
+            if (entity.hasValidBinding()) continue;
+            VillageRecord village = findNearestVillage(state.getVillages(), entity.getPosition());
+            if (village == null) continue;
+            StationRecord station = village.getStationId() == null ? null : state.getStation(village.getStationId());
+            if (station == null) continue;
+            MerchantRecord merchant = new MerchantRecord(UUID.randomUUID(), village.getVillageId(), station.getStationId());
+            state.putMerchant(merchant);
+            village.addMerchant(merchant.getMerchantId());
+            entity.bind(merchant.getMerchantId(), village.getVillageId(), station.getStationId(), station.getPosition());
+            changed = true;
+        }
+        return changed;
+    }
+
+    private static VillageRecord findNearestVillage(Collection<VillageRecord> records, BlockPos position) {
+        VillageRecord best = null;
+        long bestDistance = Long.MAX_VALUE;
+        for (VillageRecord record : records) {
+            if (!record.isActive()) continue;
+            long dx = (long) record.getCenterX() - position.getX();
+            long dz = (long) record.getCenterZ() - position.getZ();
+            long distance = dx * dx + dz * dz;
+            if (distance <= (long) VILLAGE_REFERENCE_RANGE * VILLAGE_REFERENCE_RANGE && distance < bestDistance) {
+                best = record;
+                bestDistance = distance;
+            }
+        }
+        return best;
+    }
+
     /** One maintenance pass replaces the previous copy-plus-second full entity scan. */
     private static MerchantEntityIndex indexAndRemoveInvalidMerchants(WorldServer world, MerchantWorldState state) {
         boolean changed = false;
@@ -326,7 +363,14 @@ public final class VillageService {
             EntityMerchant merchant = (EntityMerchant) value;
             UUID merchantId = merchant.getMerchantId();
             MerchantRecord record = merchantId == null ? null : state.getMerchant(merchantId);
-            if (!isCurrentMerchantEntity(state, merchant, record) || !seen.add(merchantId)) {
+            if (record != null && merchant.hasValidBinding()) {
+                VillageRecord boundVillage = state.getVillage(record.getVillageId());
+                if (boundVillage != null && !isWithinVillageRange(boundVillage, merchant.getPosition())) {
+                    boundVillage.removeMerchant(record.getMerchantId());
+                    state.removeMerchant(record.getMerchantId());
+                }
+            }
+            if (!isCurrentMerchantEntity(world, state, merchant, record) || !seen.add(merchantId)) {
                 merchant.setDead();
                 changed = true;
             } else if (!merchant.isDead) {
@@ -339,7 +383,7 @@ public final class VillageService {
     }
 
     /** Reject stale, inactive, or cross-village entity NBT before it can count toward a roster. */
-    private static boolean isCurrentMerchantEntity(MerchantWorldState state, EntityMerchant merchant,
+    private static boolean isCurrentMerchantEntity(WorldServer world, MerchantWorldState state, EntityMerchant merchant,
                                                    MerchantRecord record) {
         if (state == null || merchant == null || record == null || !record.isActive() || !merchant.hasValidBinding()
                 || !record.getMerchantId().equals(merchant.getMerchantId())
@@ -349,8 +393,15 @@ public final class VillageService {
         }
         VillageRecord village = state.getVillage(record.getVillageId());
         StationRecord station = state.getStation(record.getStationId());
-        return village != null && village.getMerchantRoster().contains(record.getMerchantId())
+        if (village == null || !isWithinVillageRange(village, merchant.getPosition())) return false;
+        return village.getMerchantRoster().contains(record.getMerchantId())
                 && station != null && station.getVillageId().equals(record.getVillageId());
+    }
+
+    private static boolean isWithinVillageRange(VillageRecord village, BlockPos position) {
+        long dx = (long) village.getCenterX() - position.getX();
+        long dz = (long) village.getCenterZ() - position.getZ();
+        return dx * dx + dz * dz <= (long) VILLAGE_REFERENCE_RANGE * VILLAGE_REFERENCE_RANGE;
     }
 
     /** An unloaded last-known entity chunk may still contain the persistent entity in its chunk NBT. */
@@ -374,6 +425,15 @@ public final class VillageService {
     }
 
     private static BlockPos findMerchantSpawnPosition(WorldServer world, BlockPos station) {
+        // Prefer a random safe point in the village's normal activity radius.
+        for (int attempt = 0; attempt < 32; attempt++) {
+            int offsetX = world.rand.nextInt(VILLAGE_REFERENCE_RANGE * 2 + 1) - VILLAGE_REFERENCE_RANGE;
+            int offsetZ = world.rand.nextInt(VILLAGE_REFERENCE_RANGE * 2 + 1) - VILLAGE_REFERENCE_RANGE;
+            BlockPos column = new BlockPos(station.getX() + offsetX, 0, station.getZ() + offsetZ);
+            if (!world.isBlockLoaded(column)) continue;
+            BlockPos candidate = world.getHeight(column);
+            if (isSafeMerchantSpawn(world, candidate)) return candidate;
+        }
         for (int radius = 0; radius <= STATION_SEARCH_RADIUS; radius++) {
             for (int offsetX = -radius; offsetX <= radius; offsetX++) {
                 for (int offsetZ = -radius; offsetZ <= radius; offsetZ++) {
@@ -385,13 +445,21 @@ public final class VillageService {
                         continue;
                     }
                     IBlockState floor = world.getBlockState(candidate.down());
-                    if (floor.getMaterial().isSolid() && floor.isSideSolid(world, candidate.down(), EnumFacing.UP)) {
+                    if (isSafeMerchantSpawn(world, candidate)) {
                         return candidate;
                     }
                 }
             }
         }
         return null;
+    }
+
+    private static boolean isSafeMerchantSpawn(WorldServer world, BlockPos candidate) {
+        if (candidate == null || !world.isBlockLoaded(candidate) || !world.isAirBlock(candidate)
+                || !world.isAirBlock(candidate.up())) return false;
+        IBlockState floor = world.getBlockState(candidate.down());
+        return floor.getMaterial().isSolid() && floor.isSideSolid(world, candidate.down(), EnumFacing.UP)
+                && floor.getBlock() != Blocks.FARMLAND;
     }
 
     public static int getTargetMerchantCount(int villagerCount) {

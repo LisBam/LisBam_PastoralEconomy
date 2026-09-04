@@ -12,11 +12,14 @@ import java.io.File;
  */
 public final class ModSettings {
     public static final String MARKET_CATEGORY = "market";
+    public static final String GAMEPLAY_CATEGORY = "gameplay";
     private static final String KEY_MORE_STABLE_MARKET_VOLATILITY = "moreStableMarketVolatility";
     private static final boolean DEFAULT_MORE_STABLE_MARKET_VOLATILITY = false;
 
     private static Configuration configuration;
     private static Property moreStableMarketVolatility;
+    private static Property restoreVanillaMonsterSpawns;
+    private static Property disableAnimalBoneDrops;
 
     private ModSettings() {
     }
@@ -32,6 +35,14 @@ public final class ModSettings {
                 "Server-authoritative. False uses the chained daily market; true restores the legacy independent "
                         + "triangular daily prices. Changing this never recalculates an existing market day."
         ).setLanguageKey("config." + LisBamPastoralEconomy.MODID + ".market.more_stable_market_volatility");
+        configuration.getCategory(GAMEPLAY_CATEGORY)
+                .setLanguageKey("config." + LisBamPastoralEconomy.MODID + ".gameplay");
+        restoreVanillaMonsterSpawns = configuration.get(GAMEPLAY_CATEGORY, "restoreVanillaMonsterSpawns", false,
+                "When enabled, the mod no longer suppresses natural Overworld monster spawning.")
+                .setLanguageKey("config." + LisBamPastoralEconomy.MODID + ".gameplay.restore_vanilla_monster_spawns");
+        disableAnimalBoneDrops = configuration.get(GAMEPLAY_CATEGORY, "disableAnimalBoneDrops", false,
+                "When enabled, animals no longer receive the mod's additional bone drops.")
+                .setLanguageKey("config." + LisBamPastoralEconomy.MODID + ".gameplay.disable_animal_bone_drops");
         save();
     }
 
@@ -42,6 +53,14 @@ public final class ModSettings {
     public static synchronized boolean isMoreStableMarketVolatility() {
         return moreStableMarketVolatility != null
                 && moreStableMarketVolatility.getBoolean(DEFAULT_MORE_STABLE_MARKET_VOLATILITY);
+    }
+
+    public static synchronized boolean isRestoreVanillaMonsterSpawns() {
+        return restoreVanillaMonsterSpawns != null && restoreVanillaMonsterSpawns.getBoolean(false);
+    }
+
+    public static synchronized boolean isDisableAnimalBoneDrops() {
+        return disableAnimalBoneDrops != null && disableAnimalBoneDrops.getBoolean(false);
     }
 
     public static synchronized Configuration getConfiguration() {

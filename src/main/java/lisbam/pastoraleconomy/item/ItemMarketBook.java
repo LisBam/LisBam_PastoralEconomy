@@ -2,7 +2,6 @@ package lisbam.pastoraleconomy.item;
 
 import lisbam.pastoraleconomy.LisBamPastoralEconomy;
 import lisbam.pastoraleconomy.gui.GuiIds;
-import net.minecraft.creativetab.CreativeTabs;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
@@ -16,7 +15,7 @@ public final class ItemMarketBook extends Item {
     public ItemMarketBook() {
         setRegistryName(LisBamPastoralEconomy.MODID, "market_book");
         setUnlocalizedName(LisBamPastoralEconomy.MODID + ".market_book");
-        setCreativeTab(CreativeTabs.MISC);
+        setCreativeTab(ModItems.CREATIVE_TAB);
     }
 
     @Override

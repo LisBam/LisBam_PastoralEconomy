@@ -13,7 +13,6 @@ import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
 import net.minecraftforge.fml.common.network.simpleimpl.IMessageHandler;
 import net.minecraftforge.fml.common.network.simpleimpl.MessageContext;
 
-import java.util.List;
 
 /** Validates C2S market display requests and reads market state only on the server thread. */
 public final class RequestMarketHistoryMessageHandler
@@ -63,12 +62,12 @@ public final class RequestMarketHistoryMessageHandler
 
         long cursor = request.getBeforeExclusiveDay();
         if (cursor == -1L) {
-            List<MarketHistorySnapshot> snapshots = MarketService.getNewestHistorySnapshots(
-                    player.getServerWorld(), request.getRequestId()
-            );
-            for (MarketHistorySnapshot snapshot : snapshots) {
-                ModNetwork.CHANNEL.sendTo(new SyncMarketHistoryMessage(snapshot), player);
-            }
+            // One bounded response per request keeps opening the book cheap;
+            // the client gradually prefetches the remaining catalogue entries.
+            MarketHistorySnapshot snapshot = MarketService.getHistorySnapshot(
+                    player.getServerWorld(), commodity.getKey(), -1L,
+                    MarketService.DEFAULT_HISTORY_DAYS, request.getRequestId());
+            ModNetwork.CHANNEL.sendTo(new SyncMarketHistoryMessage(snapshot), player);
             return;
         }
 

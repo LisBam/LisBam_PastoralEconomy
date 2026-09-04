@@ -34,7 +34,7 @@ public final class BlockTransportStation extends Block {
         setUnlocalizedName(LisBamPastoralEconomy.MODID + ".transport_station");
         setHardness(3.0F);
         setResistance(12.0F);
-        setCreativeTab(CreativeTabs.TRANSPORTATION);
+        setCreativeTab(lisbam.pastoraleconomy.item.ModItems.CREATIVE_TAB);
     }
 
     @Override

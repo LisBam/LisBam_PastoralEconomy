@@ -29,7 +29,7 @@ public final class MerchantCatalogSelfTest {
         check(VillageService.getTargetMerchantCount(1000) == 200, "1000 villagers");
 
         check(TradeCatalog.getPool(TradePool.SELL_CORE).size() == 9, "core sell pool");
-        check(TradeCatalog.getPool(TradePool.SELL_SECONDARY).size() == 13, "secondary sell pool");
+        check(TradeCatalog.getPool(TradePool.SELL_SECONDARY).size() == 20, "secondary sell pool");
         check(TradeCatalog.getPool(TradePool.BUY_COMMON).size() == 56, "common buy pool");
         check(TradeCatalog.getPool(TradePool.BUY_UNCOMMON).size() == 42, "uncommon buy pool");
         check(TradeCatalog.getPool(TradePool.BUY_RARE).size() == 28, "rare buy pool");

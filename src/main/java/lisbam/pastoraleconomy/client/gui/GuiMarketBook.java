@@ -21,20 +21,22 @@ import java.util.List;
 
 /** Client-only, display-only market book with a bounded historical line chart. */
 public final class GuiMarketBook extends GuiScreen {
-    private static final int BUTTON_OLDER = 1;
-    private static final int BUTTON_NEWER = 2;
+    private static final int BUTTON_SELL_PAGE = 1;
+    private static final int BUTTON_BUY_PAGE = 2;
     private static final int SELL_GOOD_BUTTON_OFFSET = 100;
     private static final int SELL_GOOD_COLUMNS = 3;
-    private static final List<MarketCommodity> SELL_GOODS = MarketCatalog.getHistoryTracked();
+    private static final List<MarketCommodity> SELL_GOODS = MarketCatalog.getSellHistoryTracked();
+    private static final List<MarketCommodity> BUY_GOODS = collectBuyGoods();
 
-    private final List<Long> newerCursors = new ArrayList<Long>();
     private MarketCommodity selectedCommodity = SELL_GOODS.get(0);
-    private long requestedBeforeExclusiveDay = -1L;
     private int activeRequestId;
     private boolean initialRequestSent;
     private boolean waitingForSnapshot;
-    private GuiButton olderButton;
-    private GuiButton newerButton;
+    private boolean buyPage;
+    private int prefetchIndex;
+    private long nextPrefetchTick;
+    private GuiButton sellPageButton;
+    private GuiButton buyPageButton;
     private Layout layout;
     private MarketHistorySnapshot graphSnapshot;
     private Layout graphLayout;
@@ -49,23 +51,28 @@ public final class GuiMarketBook extends GuiScreen {
         }
         buttonList.clear();
         layout = Layout.create(width, height);
+        sellPageButton = new GuiButton(BUTTON_SELL_PAGE, layout.panelX + 6, layout.panelY + 20, 62, 14,
+                I18n.format("gui.lisbam_pastoral_economy.market_book.sell_page"));
+        buyPageButton = new GuiButton(BUTTON_BUY_PAGE, layout.panelX + 70, layout.panelY + 20, 62, 14,
+                I18n.format("gui.lisbam_pastoral_economy.market_book.buy_page"));
+        buttonList.add(sellPageButton);
+        buttonList.add(buyPageButton);
         addSellGoodButtons();
-        olderButton = new GuiButton(BUTTON_OLDER, layout.previousButtonX, layout.pageButtonY,
-                layout.pageButtonWidth, layout.pageButtonHeight, I18n.format("gui.lisbam_pastoral_economy.market_book.older"));
-        newerButton = new GuiButton(BUTTON_NEWER, layout.nextButtonX, layout.pageButtonY,
-                layout.pageButtonWidth, layout.pageButtonHeight, I18n.format("gui.lisbam_pastoral_economy.market_book.newer"));
-        buttonList.add(olderButton);
-        buttonList.add(newerButton);
         if (!initialRequestSent) {
             initialRequestSent = true;
-            requestWindow(-1L, true);
+            requestWindow(true);
         } else {
-            updateNavigation(getActiveSnapshot());
+            if (getActiveSnapshot() == null) {
+                requestWindow(true);
+            } else {
+                updateNavigation(getActiveSnapshot());
+            }
         }
     }
 
     private void addSellGoodButtons() {
-        for (int index = 0; index < SELL_GOODS.size(); index++) {
+        List<MarketCommodity> goods = currentGoods();
+        for (int index = 0; index < goods.size(); index++) {
             int column = index % SELL_GOOD_COLUMNS;
             int row = index / SELL_GOOD_COLUMNS;
             int buttonX = layout.cropListX + column * (layout.cropButtonWidth + layout.cropColumnGap);
@@ -80,38 +87,32 @@ public final class GuiMarketBook extends GuiScreen {
         if (!button.enabled) {
             return;
         }
-        if (button.id >= SELL_GOOD_BUTTON_OFFSET && button.id < SELL_GOOD_BUTTON_OFFSET + SELL_GOODS.size()) {
-            selectedCommodity = SELL_GOODS.get(button.id - SELL_GOOD_BUTTON_OFFSET);
-            newerCursors.clear();
+        if (button.id == BUTTON_SELL_PAGE || button.id == BUTTON_BUY_PAGE) {
+            buyPage = button.id == BUTTON_BUY_PAGE;
+            prefetchIndex = 0;
+            List<MarketCommodity> goods = currentGoods();
+            selectedCommodity = goods.isEmpty() ? SELL_GOODS.get(0) : goods.get(0);
+            initGui();
+            return;
+        }
+        if (button.id >= SELL_GOOD_BUTTON_OFFSET && button.id < SELL_GOOD_BUTTON_OFFSET + currentGoods().size()) {
+            selectedCommodity = currentGoods().get(button.id - SELL_GOOD_BUTTON_OFFSET);
             if (useCachedNewestWindow()) {
                 return;
             }
-            requestWindow(-1L, true);
+            requestWindow(true);
             return;
-        }
-
-        MarketHistorySnapshot snapshot = getActiveSnapshot();
-        if (snapshot == null) {
-            return;
-        }
-        if (button.id == BUTTON_OLDER && snapshot.hasOlderHistory() && !snapshot.getPoints().isEmpty()) {
-            newerCursors.add(Long.valueOf(requestedBeforeExclusiveDay));
-            requestWindow(snapshot.getPoints().get(0).getWorldDay(), true);
-        } else if (button.id == BUTTON_NEWER && snapshot.hasNewerHistory() && !newerCursors.isEmpty()) {
-            long newerCursor = newerCursors.remove(newerCursors.size() - 1).longValue();
-            requestWindow(newerCursor, true);
         }
     }
 
-    private void requestWindow(long beforeExclusiveDay, boolean forceRequest) {
-        requestedBeforeExclusiveDay = beforeExclusiveDay;
+    private void requestWindow(boolean forceRequest) {
         activeRequestId = nextRequestId();
         waitingForSnapshot = true;
         updateNavigation(null);
         if (forceRequest) {
             ModNetwork.CHANNEL.sendToServer(new RequestMarketHistoryMessage(
                     selectedCommodity.getKey(),
-                    beforeExclusiveDay,
+                    -1L,
                     activeRequestId
             ));
         }
@@ -128,6 +129,20 @@ public final class GuiMarketBook extends GuiScreen {
             waitingForSnapshot = false;
         }
         updateNavigation(snapshot);
+        if (!waitingForSnapshot && mc.world != null && mc.world.getTotalWorldTime() >= nextPrefetchTick) {
+            List<MarketCommodity> goods = currentGoods();
+            while (prefetchIndex < goods.size()
+                    && (goods.get(prefetchIndex).getKey().equals(selectedCommodity.getKey())
+                    || ClientMarketState.getLatestSnapshot(goods.get(prefetchIndex).getKey()) != null)) {
+                prefetchIndex++;
+            }
+            if (prefetchIndex < goods.size()) {
+                MarketCommodity commodity = goods.get(prefetchIndex++);
+                ModNetwork.CHANNEL.sendToServer(new RequestMarketHistoryMessage(commodity.getKey(), -1L,
+                        ClientMarketState.nextRequestId()));
+                nextPrefetchTick = mc.world.getTotalWorldTime() + 4L;
+            }
+        }
     }
 
     @Override
@@ -143,7 +158,6 @@ public final class GuiMarketBook extends GuiScreen {
         // A book session owns its display cache. Closing it releases all page
         // snapshots so the next open is a fresh, bounded server request.
         ClientMarketState.endBookSession();
-        newerCursors.clear();
         graphSnapshot = null;
         graphNodes = Collections.emptyList();
         super.onGuiClosed();
@@ -291,8 +305,9 @@ public final class GuiMarketBook extends GuiScreen {
     }
 
     private void drawCropSelectors() {
-        for (int index = 0; index < SELL_GOODS.size(); index++) {
-            MarketCommodity commodity = SELL_GOODS.get(index);
+        List<MarketCommodity> goods = currentGoods();
+        for (int index = 0; index < goods.size(); index++) {
+            MarketCommodity commodity = goods.get(index);
             int column = index % SELL_GOOD_COLUMNS;
             int row = index / SELL_GOOD_COLUMNS;
             int x = layout.cropListX + column * (layout.cropButtonWidth + layout.cropColumnGap);
@@ -347,13 +362,14 @@ public final class GuiMarketBook extends GuiScreen {
             renderToolTip(createCommodityDisplayStack(selectedCommodity), mouseX, mouseY);
             return;
         }
-        for (int index = 0; index < SELL_GOODS.size(); index++) {
+        List<MarketCommodity> goods = currentGoods();
+        for (int index = 0; index < goods.size(); index++) {
             int column = index % SELL_GOOD_COLUMNS;
             int row = index / SELL_GOOD_COLUMNS;
             int x = layout.cropListX + column * (layout.cropButtonWidth + layout.cropColumnGap) + 2;
             int y = layout.cropListY + row * (layout.cropButtonHeight + layout.cropRowGap) + 1;
             if (mouseX >= x && mouseX < x + 16 && mouseY >= y && mouseY < y + 16) {
-                MarketCommodity commodity = SELL_GOODS.get(index);
+                MarketCommodity commodity = goods.get(index);
                 renderToolTip(createCommodityDisplayStack(commodity), mouseX, mouseY);
                 return;
             }
@@ -370,36 +386,45 @@ public final class GuiMarketBook extends GuiScreen {
     }
 
     private MarketHistorySnapshot getActiveSnapshot() {
-        return ClientMarketState.getSnapshot(selectedCommodity.getKey(), requestedBeforeExclusiveDay, activeRequestId);
+        MarketHistorySnapshot exact = ClientMarketState.getSnapshot(selectedCommodity.getKey(), -1L, activeRequestId);
+        return exact == null ? ClientMarketState.getLatestSnapshot(selectedCommodity.getKey()) : exact;
     }
 
     /** All merchant-sell newest windows arrive with the opening request id. */
     private boolean useCachedNewestWindow() {
-        MarketHistorySnapshot snapshot = ClientMarketState.getSnapshot(selectedCommodity.getKey(), -1L, activeRequestId);
+        MarketHistorySnapshot snapshot = ClientMarketState.getLatestSnapshot(selectedCommodity.getKey());
         if (snapshot == null) {
             return false;
         }
-        requestedBeforeExclusiveDay = -1L;
         waitingForSnapshot = false;
         updateNavigation(snapshot);
         return true;
     }
 
     private void updateNavigation(MarketHistorySnapshot snapshot) {
-        if (olderButton != null) {
-            olderButton.enabled = snapshot != null && !waitingForSnapshot && snapshot.hasOlderHistory()
-                    && !snapshot.getPoints().isEmpty();
-        }
-        if (newerButton != null) {
-            newerButton.enabled = snapshot != null && !waitingForSnapshot && snapshot.hasNewerHistory()
-                    && !newerCursors.isEmpty();
-        }
+        if (sellPageButton != null) sellPageButton.enabled = buyPage;
+        if (buyPageButton != null) buyPageButton.enabled = !buyPage;
         for (GuiButton button : buttonList) {
-            if (button.id >= SELL_GOOD_BUTTON_OFFSET && button.id < SELL_GOOD_BUTTON_OFFSET + SELL_GOODS.size()) {
+            if (button.id >= SELL_GOOD_BUTTON_OFFSET && button.id < SELL_GOOD_BUTTON_OFFSET + currentGoods().size()) {
                 button.enabled = !waitingForSnapshot;
             }
         }
     }
+
+    private List<MarketCommodity> currentGoods() {
+        return buyPage ? BUY_GOODS : SELL_GOODS;
+    }
+
+    private static List<MarketCommodity> collectBuyGoods() {
+        List<MarketCommodity> result = new ArrayList<MarketCommodity>();
+        for (MarketCommodity commodity : MarketCatalog.getHistoryTracked()) {
+            if (commodity.getKey().contains(":buy/")) {
+                result.add(commodity);
+            }
+        }
+        return Collections.unmodifiableList(result);
+    }
+
 
     private static String formatCoins(long value) {
         String digits = Long.toString(Math.max(0L, value));
@@ -467,8 +492,6 @@ public final class GuiMarketBook extends GuiScreen {
         private final int graphY;
         private final int graphRight;
         private final int graphBottom;
-        private final int previousButtonX;
-        private final int nextButtonX;
         private final int pageButtonY;
         private final int pageButtonWidth;
         private final int pageButtonHeight;
@@ -477,7 +500,7 @@ public final class GuiMarketBook extends GuiScreen {
                        int cropListX, int cropListY, int cropButtonWidth, int cropButtonHeight,
                        int cropColumnGap, int cropRowGap, int detailsX, int detailsY,
                        int graphX, int graphY, int graphRight, int graphBottom,
-                       int previousButtonX, int nextButtonX, int pageButtonY,
+                       int pageButtonY,
                        int pageButtonWidth, int pageButtonHeight) {
             this.panelX = panelX;
             this.panelY = panelY;
@@ -495,8 +518,6 @@ public final class GuiMarketBook extends GuiScreen {
             this.graphY = graphY;
             this.graphRight = graphRight;
             this.graphBottom = graphBottom;
-            this.previousButtonX = previousButtonX;
-            this.nextButtonX = nextButtonX;
             this.pageButtonY = pageButtonY;
             this.pageButtonWidth = pageButtonWidth;
             this.pageButtonHeight = pageButtonHeight;
@@ -519,16 +540,16 @@ public final class GuiMarketBook extends GuiScreen {
             int pageButtonHeight = Math.max(12, Math.min(20, panelHeight / 12));
             int pageButtonY = panelBottom - pageButtonHeight - 6;
             int graphX = detailsX;
-            int graphY = detailsY + 67;
+            // Leave a readable gap between the vertical axis label (coins/unit)
+            // and the header's today's-trend line.
+            int graphY = detailsY + 78;
             int graphRight = Math.max(graphX + 1, panelRight - 8);
             int graphBottom = Math.max(graphY + 1, pageButtonY - 18);
             int pageButtonWidth = Math.max(12, Math.min(58, Math.max(12, (graphRight - graphX) / 4)));
-            int previousButtonX = graphX;
-            int nextButtonX = graphRight - pageButtonWidth;
             return new Layout(panelX, panelY, panelRight, panelBottom,
                     cropListX, cropListY, cropButtonWidth, cropButtonHeight, 5, 2,
                     detailsX, detailsY, graphX, graphY, graphRight, graphBottom,
-                    previousButtonX, nextButtonX, pageButtonY, pageButtonWidth, pageButtonHeight);
+                    pageButtonY, pageButtonWidth, pageButtonHeight);
         }
     }
 }

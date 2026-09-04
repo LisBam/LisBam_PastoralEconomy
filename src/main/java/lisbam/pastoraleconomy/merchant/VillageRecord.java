@@ -69,6 +69,10 @@ public final class VillageRecord {
         }
     }
 
+    public void removeMerchant(UUID merchantId) {
+        merchantRoster.remove(merchantId);
+    }
+
     public NBTTagCompound writeToNBT() {
         NBTTagCompound tag = new NBTTagCompound();
         tag.setUniqueId(KEY_ID, villageId);

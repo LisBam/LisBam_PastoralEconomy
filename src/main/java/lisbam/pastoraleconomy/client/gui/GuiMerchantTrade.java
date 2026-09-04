@@ -265,6 +265,9 @@ public final class GuiMerchantTrade extends GuiScreen implements GuiSlider.ISlid
         String totalText = I18n.format("gui.lisbam_pastoral_economy.merchant.total", format(total));
         String priceText = format(view.getCurrentPrice()) + " " + trend + "  " + totalText;
         drawContainerText(fontRenderer.trimStringToWidth(priceText, layout.cardWidth - 28), textX, y + 13);
+        long basePrice = entry.getBasePriceForLevel(view.getEnchantmentLevel());
+        String baseText = I18n.format("gui.lisbam_pastoral_economy.merchant.base_price", format(basePrice));
+        drawContainerText(fontRenderer.trimStringToWidth(baseText, layout.cardWidth - 28), textX, y + 23);
         if (cardHeight >= 42) {
             String amount = buyPage
                     ? I18n.format("gui.lisbam_pastoral_economy.merchant.remaining",
@@ -273,7 +276,7 @@ public final class GuiMerchantTrade extends GuiScreen implements GuiSlider.ISlid
                             : Long.toString(view.getRemainingItems()))
                     : I18n.format("gui.lisbam_pastoral_economy.merchant.holding",
                     Integer.toString(getSellHeldCount(index, entry)));
-            drawContainerText(fontRenderer.trimStringToWidth(amount, layout.cardWidth - 28), textX, y + 23);
+            drawContainerText(fontRenderer.trimStringToWidth(amount, layout.cardWidth - 28), textX, y + 33);
         }
     }
 
@@ -576,7 +579,7 @@ public final class GuiMerchantTrade extends GuiScreen implements GuiSlider.ISlid
 
         private static int rowsPerColumn(boolean buying) {
             // The six sell offers deliberately form a balanced 3 x 2 grid.
-            return buying ? 5 : 3;
+            return buying ? 4 : 3;
         }
 
         private int sliderX(int cardX) {

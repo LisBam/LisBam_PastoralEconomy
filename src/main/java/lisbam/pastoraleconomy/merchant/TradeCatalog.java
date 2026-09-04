@@ -81,6 +81,13 @@ public final class TradeCatalog {
         add(definitions, "nether_wart", "sell/crop/nether_wart", TradePool.SELL_SECONDARY, TradeCatalogEntry.UNLIMITED_STOCK, 80);
         add(definitions, "chorus_fruit", "sell/crop/chorus_fruit", TradePool.SELL_SECONDARY, TradeCatalogEntry.UNLIMITED_STOCK, 80);
         add(definitions, "milk_bucket", "sell/livestock/milk_bucket", TradePool.SELL_SECONDARY, TradeCatalogEntry.UNLIMITED_STOCK, 200);
+        add(definitions, "beef_sell", "sell/livestock/beef", TradePool.SELL_SECONDARY, TradeCatalogEntry.UNLIMITED_STOCK, 120);
+        add(definitions, "porkchop_sell", "sell/livestock/porkchop", TradePool.SELL_SECONDARY, TradeCatalogEntry.UNLIMITED_STOCK, 120);
+        add(definitions, "chicken_sell", "sell/livestock/chicken", TradePool.SELL_SECONDARY, TradeCatalogEntry.UNLIMITED_STOCK, 80);
+        add(definitions, "mutton_sell", "sell/livestock/mutton", TradePool.SELL_SECONDARY, TradeCatalogEntry.UNLIMITED_STOCK, 120);
+        add(definitions, "rabbit_sell", "sell/livestock/rabbit", TradePool.SELL_SECONDARY, TradeCatalogEntry.UNLIMITED_STOCK, 140);
+        add(definitions, "fish_sell", "sell/livestock/fish", TradePool.SELL_SECONDARY, TradeCatalogEntry.UNLIMITED_STOCK, 80);
+        add(definitions, "salmon_sell", "sell/livestock/salmon", TradePool.SELL_SECONDARY, TradeCatalogEntry.UNLIMITED_STOCK, 100);
         addAnyWool(definitions, "wool", "sell/livestock/wool", TradePool.SELL_SECONDARY, 80);
     }
 

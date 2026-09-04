@@ -6,7 +6,7 @@ import lisbam.pastoraleconomy.tile.TileCrabTrap;
 import net.minecraft.block.Block;
 import net.minecraft.block.material.Material;
 import net.minecraft.block.state.IBlockState;
-import net.minecraft.creativetab.CreativeTabs;
+import lisbam.pastoraleconomy.item.ModItems;
 import net.minecraft.entity.item.EntityItem;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.ItemStack;
@@ -24,7 +24,7 @@ public final class BlockCrabTrap extends Block {
         setUnlocalizedName(LisBamPastoralEconomy.MODID + ".crab_trap");
         setHardness(2.5F);
         setResistance(5.0F);
-        setCreativeTab(CreativeTabs.DECORATIONS);
+        setCreativeTab(ModItems.CREATIVE_TAB);
     }
 
     @Override
