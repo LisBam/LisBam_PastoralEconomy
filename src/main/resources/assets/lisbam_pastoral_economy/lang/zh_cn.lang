@@ -48,6 +48,7 @@ gui.lisbam_pastoral_economy.merchant.future=后续内容
 gui.lisbam_pastoral_economy.merchant.bundle=整包数量：%s
 gui.lisbam_pastoral_economy.merchant.holding=持有：%s
 gui.lisbam_pastoral_economy.merchant.stock=库存：%s 包
+gui.lisbam_pastoral_economy.merchant.remaining=剩余数量：%s
 gui.lisbam_pastoral_economy.merchant.unlimited=不限量
 gui.lisbam_pastoral_economy.merchant.quantity=数量：%s
 gui.lisbam_pastoral_economy.merchant.total=预计总价：%s
