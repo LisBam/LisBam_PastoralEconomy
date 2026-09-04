@@ -35,6 +35,8 @@ public final class GuiMerchantTrade extends GuiScreen implements GuiSlider.ISlid
             "minecraft", "textures/gui/container/generic_54.png");
     private static final int VANILLA_SLOT_U = 7;
     private static final int VANILLA_SLOT_V = 17;
+    private static final int VANILLA_PANEL_WIDTH = 248;
+    private static final int VANILLA_PANEL_HEIGHT = 166;
 
     private final int merchantEntityId;
     private final int[] sellQuantities = new int[MerchantTradeSnapshot.SELL_COUNT];
@@ -183,7 +185,7 @@ public final class GuiMerchantTrade extends GuiScreen implements GuiSlider.ISlid
                 layout.panelX + 6, layout.panelY + 20, 0xFF404040);
         String coins = I18n.format("gui.lisbam_pastoral_economy.merchant.coins", format(balance));
         drawString(fontRenderer, coins, layout.panelRight - 6 - fontRenderer.getStringWidth(coins), layout.panelY + 20,
-                0xFF555500);
+                0xFF404040);
 
         for (int index = 0; index < pageOfferCount(); index++) {
             drawOffer(getView(snapshot, index), index);
@@ -202,7 +204,7 @@ public final class GuiMerchantTrade extends GuiScreen implements GuiSlider.ISlid
         boolean tradable = isTradable(view, index);
         if (view == null || !view.isEnabled()) {
             drawCenteredString(fontRenderer, I18n.format("gui.lisbam_pastoral_economy.merchant.future"),
-                    x + layout.cardWidth / 2, y + (cardHeight - 8) / 2, 0xFF555555);
+                    x + layout.cardWidth / 2, y + (cardHeight - 8) / 2, 0xFFA0A0A0);
             return;
         }
 
@@ -220,7 +222,7 @@ public final class GuiMerchantTrade extends GuiScreen implements GuiSlider.ISlid
             name = entry.getEnchantmentDefinition().getEnchantment().getTranslatedName(view.getEnchantmentLevel());
         }
         int textX = x + 24;
-        int textColor = tradable ? 0xFF404040 : 0xFF777777;
+        int textColor = tradable ? 0xFF404040 : 0xFFA0A0A0;
         drawString(fontRenderer, fontRenderer.trimStringToWidth(name, layout.cardWidth - 28), textX, y + 3, textColor);
         String trend = view.hasPreviousPrice()
                 ? MarketTrend.compare(view.getCurrentPrice(), view.getPreviousPrice()).getSymbol() : "-";
@@ -228,16 +230,20 @@ public final class GuiMerchantTrade extends GuiScreen implements GuiSlider.ISlid
         String totalText = I18n.format("gui.lisbam_pastoral_economy.merchant.total", format(total));
         String priceText = format(view.getCurrentPrice()) + " " + trend + "  " + totalText;
         drawString(fontRenderer, fontRenderer.trimStringToWidth(priceText, layout.cardWidth - 28), textX, y + 13,
-                tradable ? 0xFF555500 : 0xFF777777);
+                textColor);
         if (cardHeight >= 42) {
             String amount = buyPage
                     ? I18n.format("gui.lisbam_pastoral_economy.merchant.bundle", Integer.toString(view.getBundleSize()))
                     : I18n.format("gui.lisbam_pastoral_economy.merchant.holding", Integer.toString(countHeld(entry)));
-            String stock = buyPage && view.getRemainingBundles() >= 0
-                    ? I18n.format("gui.lisbam_pastoral_economy.merchant.stock",
-                    Integer.toString(view.getRemainingBundles())) : "";
+            String stock = "";
+            if (buyPage) {
+                stock = view.getRemainingBundles() < 0
+                        ? I18n.format("gui.lisbam_pastoral_economy.merchant.unlimited")
+                        : I18n.format("gui.lisbam_pastoral_economy.merchant.remaining",
+                        Long.toString((long) view.getRemainingBundles() * (long) view.getBundleSize()));
+            }
             drawString(fontRenderer, fontRenderer.trimStringToWidth(amount + (stock.isEmpty() ? "" : "  " + stock),
-                    layout.cardWidth - 28), textX, y + 23, tradable ? 0xFF555555 : 0xFF777777);
+                    layout.cardWidth - 28), textX, y + 23, textColor);
         }
     }
 
@@ -421,11 +427,26 @@ public final class GuiMerchantTrade extends GuiScreen implements GuiSlider.ISlid
         return String.format(java.util.Locale.ROOT, "%,d", value);
     }
 
-    /** Draws Mojang's untouched demo-panel artwork rather than a hand-made frame. */
+    /** Preserves every original panel edge pixel while expanding only its flat center. */
     private void drawNativePanel(int left, int top, int right, int bottom) {
         mc.getTextureManager().bindTexture(VANILLA_PANEL_TEXTURE);
-        drawScaledCustomSizeModalRect(left, top, 0.0F, 0.0F, 248, 166,
-                right - left, bottom - top, 256.0F, 256.0F);
+        int width = right - left;
+        int height = bottom - top;
+        drawTexturedModalRect(left, top, 0, 0, 1, 1);
+        drawScaledCustomSizeModalRect(left + 1, top, 1.0F, 0.0F, VANILLA_PANEL_WIDTH - 2, 1,
+                width - 2, 1, 256.0F, 256.0F);
+        drawTexturedModalRect(right - 1, top, VANILLA_PANEL_WIDTH - 1, 0, 1, 1);
+        drawScaledCustomSizeModalRect(left, top + 1, 0.0F, 1.0F, 1, VANILLA_PANEL_HEIGHT - 2,
+                1, height - 2, 256.0F, 256.0F);
+        drawScaledCustomSizeModalRect(left + 1, top + 1, 1.0F, 1.0F, 1, 1,
+                width - 2, height - 2, 256.0F, 256.0F);
+        drawScaledCustomSizeModalRect(right - 1, top + 1, VANILLA_PANEL_WIDTH - 1, 1.0F, 1,
+                VANILLA_PANEL_HEIGHT - 2, 1, height - 2, 256.0F, 256.0F);
+        drawTexturedModalRect(left, bottom - 1, 0, VANILLA_PANEL_HEIGHT - 1, 1, 1);
+        drawScaledCustomSizeModalRect(left + 1, bottom - 1, 1.0F, VANILLA_PANEL_HEIGHT - 1,
+                VANILLA_PANEL_WIDTH - 2, 1, width - 2, 1, 256.0F, 256.0F);
+        drawTexturedModalRect(right - 1, bottom - 1, VANILLA_PANEL_WIDTH - 1,
+                VANILLA_PANEL_HEIGHT - 1, 1, 1);
     }
 
     /** The 18x18 cell is copied directly from the vanilla chest texture. */

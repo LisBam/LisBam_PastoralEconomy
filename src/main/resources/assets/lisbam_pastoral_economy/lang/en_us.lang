@@ -48,6 +48,7 @@ gui.lisbam_pastoral_economy.merchant.future=Coming later
 gui.lisbam_pastoral_economy.merchant.bundle=Bundle x%s
 gui.lisbam_pastoral_economy.merchant.holding=Holding: %s
 gui.lisbam_pastoral_economy.merchant.stock=Stock: %s bundles
+gui.lisbam_pastoral_economy.merchant.remaining=Remaining: %s
 gui.lisbam_pastoral_economy.merchant.unlimited=Unlimited
 gui.lisbam_pastoral_economy.merchant.quantity=Quantity: %s
 gui.lisbam_pastoral_economy.merchant.total=Expected total: %s

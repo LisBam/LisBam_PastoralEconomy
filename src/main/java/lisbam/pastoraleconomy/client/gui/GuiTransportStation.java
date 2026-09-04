@@ -31,6 +31,8 @@ public final class GuiTransportStation extends GuiScreen {
     private static final int ROW_HEIGHT = 14;
     private static final ResourceLocation VANILLA_PANEL_TEXTURE = new ResourceLocation(
             "minecraft", "textures/gui/demo_background.png");
+    private static final int VANILLA_PANEL_WIDTH = 248;
+    private static final int VANILLA_PANEL_HEIGHT = 166;
 
     private final BlockPos stationPosition;
     private GuiTextField renameField;
@@ -149,7 +151,7 @@ public final class GuiTransportStation extends GuiScreen {
         TransportStateSnapshot snapshot = currentSnapshot();
         if (snapshot == null) {
             drawCenteredString(fontRenderer, I18n.format("gui.lisbam_pastoral_economy.transport.loading"), width / 2,
-                    (layout.panelY + layout.panelBottom) / 2, 0xFF555555);
+                    (layout.panelY + layout.panelBottom) / 2, 0xFF404040);
         } else {
             drawCurrentStation(snapshot);
             drawNodeList(snapshot);
@@ -171,9 +173,9 @@ public final class GuiTransportStation extends GuiScreen {
                 layout.contentX, layout.panelY + 22, 0xFF404040);
         drawTrimmed(I18n.format("gui.lisbam_pastoral_economy.transport.position",
                 Integer.toString(snapshot.getX()), Integer.toString(snapshot.getY()), Integer.toString(snapshot.getZ()),
-                Integer.toString(snapshot.getDimension())), layout.contentX, layout.panelY + 34, 0xFF555555);
+                Integer.toString(snapshot.getDimension())), layout.contentX, layout.panelY + 34, 0xFF404040);
         drawString(fontRenderer, coins, layout.contentRight - fontRenderer.getStringWidth(coins), layout.panelY + 22,
-                0xFF555500);
+                0xFF404040);
         String status;
         if (!snapshot.currentStationExists()) {
             status = I18n.format("gui.lisbam_pastoral_economy.transport.invalid");
@@ -187,11 +189,11 @@ public final class GuiTransportStation extends GuiScreen {
             status = I18n.format("gui.lisbam_pastoral_economy.transport.fee", format(snapshot.getConnectionFee()));
         }
         drawTrimmed(I18n.format("gui.lisbam_pastoral_economy.transport.status", status), layout.contentX,
-                layout.panelY + 46, 0xFF555500);
+                layout.panelY + 46, 0xFF404040);
         VillageTransportCandidate village = snapshot.getNearestVillage();
         String villageText = village == null ? "" : I18n.format("gui.lisbam_pastoral_economy.transport.nearest_village",
                 village.getDisplayName(), format(village.getDistance()), format(village.getConnectionFee()));
-        drawTrimmed(villageText, layout.contentX, layout.villageInfoY, 0xFF555555);
+        drawTrimmed(villageText, layout.contentX, layout.villageInfoY, 0xFF404040);
         drawString(fontRenderer, I18n.format("gui.lisbam_pastoral_economy.transport.nodes"), layout.contentX,
                 layout.listY - 14, 0xFF404040);
     }
@@ -217,7 +219,7 @@ public final class GuiTransportStation extends GuiScreen {
             drawString(fontRenderer, fontRenderer.trimStringToWidth(selectedPrefix + node.getAlias() + " [" + state + "]  " + location,
                     Math.max(1, textWidth)), layout.contentX, y, 0xFF404040);
             if (!fee.isEmpty()) {
-                drawString(fontRenderer, fee, layout.contentRight - feeWidth, y, 0xFF555500);
+                drawString(fontRenderer, fee, layout.contentRight - feeWidth, y, 0xFF404040);
             }
         }
     }
@@ -334,11 +336,26 @@ public final class GuiTransportStation extends GuiScreen {
         return String.format(java.util.Locale.ROOT, "%,d", value);
     }
 
-    /** Draws Mojang's untouched demo-panel artwork rather than a hand-made frame. */
+    /** Preserves every original panel edge pixel while expanding only its flat center. */
     private void drawNativePanel(int left, int top, int right, int bottom) {
         mc.getTextureManager().bindTexture(VANILLA_PANEL_TEXTURE);
-        drawScaledCustomSizeModalRect(left, top, 0.0F, 0.0F, 248, 166,
-                right - left, bottom - top, 256.0F, 256.0F);
+        int width = right - left;
+        int height = bottom - top;
+        drawTexturedModalRect(left, top, 0, 0, 1, 1);
+        drawScaledCustomSizeModalRect(left + 1, top, 1.0F, 0.0F, VANILLA_PANEL_WIDTH - 2, 1,
+                width - 2, 1, 256.0F, 256.0F);
+        drawTexturedModalRect(right - 1, top, VANILLA_PANEL_WIDTH - 1, 0, 1, 1);
+        drawScaledCustomSizeModalRect(left, top + 1, 0.0F, 1.0F, 1, VANILLA_PANEL_HEIGHT - 2,
+                1, height - 2, 256.0F, 256.0F);
+        drawScaledCustomSizeModalRect(left + 1, top + 1, 1.0F, 1.0F, 1, 1,
+                width - 2, height - 2, 256.0F, 256.0F);
+        drawScaledCustomSizeModalRect(right - 1, top + 1, VANILLA_PANEL_WIDTH - 1, 1.0F, 1,
+                VANILLA_PANEL_HEIGHT - 2, 1, height - 2, 256.0F, 256.0F);
+        drawTexturedModalRect(left, bottom - 1, 0, VANILLA_PANEL_HEIGHT - 1, 1, 1);
+        drawScaledCustomSizeModalRect(left + 1, bottom - 1, 1.0F, VANILLA_PANEL_HEIGHT - 1,
+                VANILLA_PANEL_WIDTH - 2, 1, width - 2, 1, 256.0F, 256.0F);
+        drawTexturedModalRect(right - 1, bottom - 1, VANILLA_PANEL_WIDTH - 1,
+                VANILLA_PANEL_HEIGHT - 1, 1, 1);
     }
 
     /** All action controls fit inside even Minecraft's 320x240 scaled screen. */

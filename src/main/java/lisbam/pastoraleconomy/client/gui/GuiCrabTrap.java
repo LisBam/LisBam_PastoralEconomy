@@ -13,6 +13,8 @@ public final class GuiCrabTrap extends GuiContainer {
             "minecraft", "textures/gui/container/generic_54.png");
     private static final int VANILLA_SLOT_U = 7;
     private static final int VANILLA_SLOT_V = 17;
+    private static final int VANILLA_BACKGROUND_U = 90;
+    private static final int VANILLA_BACKGROUND_V = 10;
     private final TileCrabTrap trap;
 
     public GuiCrabTrap(InventoryPlayer playerInventory, TileCrabTrap trap) {
@@ -51,7 +53,8 @@ public final class GuiCrabTrap extends GuiContainer {
         // its title strip and player inventory portion; copy the real vanilla
         // slot artwork for every Container-backed trap slot in between.
         drawTexturedModalRect(guiLeft, guiTop, 0, 0, xSize, 17);
-        drawRect(guiLeft, guiTop + 17, guiLeft + xSize, guiTop + upperInventoryHeight, 0xFFC6C6C6);
+        drawScaledCustomSizeModalRect(guiLeft, guiTop + 17, VANILLA_BACKGROUND_U, VANILLA_BACKGROUND_V,
+                1, 1, xSize, upperInventoryHeight - 17, 256.0F, 256.0F);
         drawNativeSlot(guiLeft + 25, guiTop + 18);
         drawNativeSlot(guiLeft + 61, guiTop + 18);
         for (int row = 0; row < 2; row++) {
