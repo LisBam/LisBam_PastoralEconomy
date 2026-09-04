@@ -70,4 +70,9 @@ public final class MarketCommodity {
     public String getVariantIdentity() {
         return variantIdentity;
     }
+
+    /** The market's wool entry accepts every vanilla colour, not only white wool. */
+    public boolean isAnyWoolColor() {
+        return "minecraft:wool@any_color".equals(variantIdentity);
+    }
 }

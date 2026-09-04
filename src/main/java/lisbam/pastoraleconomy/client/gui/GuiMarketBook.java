@@ -168,7 +168,7 @@ public final class GuiMarketBook extends GuiScreen {
 
         drawString(fontRenderer, I18n.format("gui.lisbam_pastoral_economy.market_book.world_day",
                 Long.toString(snapshot.getCurrentMarketDay())), layout.detailsX, layout.detailsY, 0xFFF2E4B7);
-        ItemStack icon = new ItemStack(selectedCommodity.getItem(), 1, selectedCommodity.getMetadata());
+        ItemStack icon = createCommodityDisplayStack(selectedCommodity);
         mc.getRenderItem().renderItemAndEffectIntoGUI(icon, layout.detailsX, layout.detailsY + 14);
         mc.getRenderItem().renderItemOverlayIntoGUI(fontRenderer, icon, layout.detailsX, layout.detailsY + 14, null);
         int textX = layout.detailsX + 20;
@@ -292,7 +292,7 @@ public final class GuiMarketBook extends GuiScreen {
             if (commodity.getKey().equals(selectedCommodity.getKey())) {
                 drawRect(x, y, x + layout.cropButtonWidth, y + layout.cropButtonHeight, 0x556DA24A);
             }
-            ItemStack icon = new ItemStack(commodity.getItem(), 1, commodity.getMetadata());
+            ItemStack icon = createCommodityDisplayStack(commodity);
             mc.getRenderItem().renderItemAndEffectIntoGUI(icon, x + 2, y + 1);
             String name = icon.getDisplayName();
             int maximumTextWidth = Math.max(0, layout.cropButtonWidth - 20);
@@ -336,7 +336,7 @@ public final class GuiMarketBook extends GuiScreen {
     private void drawItemTooltip(int mouseX, int mouseY) {
         if (mouseX >= layout.detailsX && mouseX < layout.detailsX + 16
                 && mouseY >= layout.detailsY + 14 && mouseY < layout.detailsY + 30) {
-            renderToolTip(new ItemStack(selectedCommodity.getItem(), 1, selectedCommodity.getMetadata()), mouseX, mouseY);
+            renderToolTip(createCommodityDisplayStack(selectedCommodity), mouseX, mouseY);
             return;
         }
         for (int index = 0; index < SELL_GOODS.size(); index++) {
@@ -346,10 +346,19 @@ public final class GuiMarketBook extends GuiScreen {
             int y = layout.cropListY + row * (layout.cropButtonHeight + layout.cropRowGap) + 1;
             if (mouseX >= x && mouseX < x + 16 && mouseY >= y && mouseY < y + 16) {
                 MarketCommodity commodity = SELL_GOODS.get(index);
-                renderToolTip(new ItemStack(commodity.getItem(), 1, commodity.getMetadata()), mouseX, mouseY);
+                renderToolTip(createCommodityDisplayStack(commodity), mouseX, mouseY);
                 return;
             }
         }
+    }
+
+    /** Keeps the generic wool listing readable without changing its item/meta market identity. */
+    private ItemStack createCommodityDisplayStack(MarketCommodity commodity) {
+        ItemStack stack = new ItemStack(commodity.getItem(), 1, commodity.getMetadata());
+        if (commodity.isAnyWoolColor()) {
+            stack.setStackDisplayName(I18n.format("gui.lisbam_pastoral_economy.commodity.wool"));
+        }
+        return stack;
     }
 
     private MarketHistorySnapshot getActiveSnapshot() {

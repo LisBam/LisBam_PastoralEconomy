@@ -10,6 +10,8 @@ import lisbam.pastoraleconomy.transport.VillageTransportCandidate;
 import net.minecraft.client.gui.GuiButton;
 import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.client.gui.GuiTextField;
+import net.minecraft.client.gui.GuiYesNo;
+import net.minecraft.client.gui.GuiYesNoCallback;
 import net.minecraft.client.resources.I18n;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.ResourceLocation;
@@ -20,7 +22,7 @@ import java.util.List;
 import java.util.UUID;
 
 /** Responsive client-only transport view; every mutation remains a C2S request. */
-public final class GuiTransportStation extends GuiScreen {
+public final class GuiTransportStation extends GuiScreen implements GuiYesNoCallback {
     private static final int BUTTON_CONNECT = 1;
     private static final int BUTTON_REMOVE = 2;
     private static final int BUTTON_RENAME = 3;
@@ -29,9 +31,10 @@ public final class GuiTransportStation extends GuiScreen {
     private static final int BUTTON_REFRESH = 6;
     private static final int BUTTON_CONNECT_VILLAGE = 8;
     private static final int BUTTON_TRAVEL = 9;
-    private static final int BUTTON_CONFIRM = 10;
-    private static final int BUTTON_CANCEL = 11;
+    private static final int VANILLA_CONFIRMATION_ID = 10;
     private static final int ROW_HEIGHT = 14;
+    private static final int SELECTED_NODE_TEXT_COLOR = 0x55FF55;
+    private static final int RENAME_FIELD_TEXT_COLOR = 0xFFFFFF;
     private static final ResourceLocation VANILLA_PANEL_TEXTURE = new ResourceLocation(
             "minecraft", "textures/gui/demo_background.png");
     /** Vanilla workbench/furnace inventory-title colour for static window text. */
@@ -72,12 +75,8 @@ public final class GuiTransportStation extends GuiScreen {
         renameField = new GuiTextField(0, fontRenderer, layout.renameFieldX, layout.footerY + 2,
                 layout.renameFieldWidth, 14);
         renameField.setMaxStringLength(96);
-        renameField.setTextColor(VANILLA_CONTAINER_TEXT_COLOR);
-        renameField.setDisabledTextColour(VANILLA_CONTAINER_TEXT_COLOR);
-        buttonList.add(new GuiButton(BUTTON_CONFIRM, layout.dialogConfirmX, layout.dialogButtonY,
-                layout.dialogButtonWidth, 18, I18n.format("gui.lisbam_pastoral_economy.transport.confirm")));
-        buttonList.add(new GuiButton(BUTTON_CANCEL, layout.dialogCancelX, layout.dialogButtonY,
-                layout.dialogButtonWidth, 18, I18n.format("gui.lisbam_pastoral_economy.transport.cancel")));
+        renameField.setTextColor(RENAME_FIELD_TEXT_COLOR);
+        renameField.setDisabledTextColour(RENAME_FIELD_TEXT_COLOR);
         updateControls(currentSnapshot());
         requestVillageCandidate(currentSnapshot());
     }
@@ -93,41 +92,17 @@ public final class GuiTransportStation extends GuiScreen {
     @Override
     protected void actionPerformed(GuiButton button) {
         TransportStateSnapshot snapshot = currentSnapshot();
-        if (button.id == BUTTON_CANCEL) {
-            closeConfirmation();
-            updateControls(snapshot);
-            return;
-        }
         if (snapshot == null || !snapshot.hasCurrentStation()) {
             return;
         }
-        if (button.id == BUTTON_CONFIRM) {
-            if (!button.enabled) {
-                return;
-            }
-            if (confirmationType == ConfirmationType.CONNECT_VILLAGE) {
-                VillageTransportCandidate candidate = snapshot.getNearestVillage();
-                if (candidate != null && snapshot.getCoins() >= candidate.getConnectionFee()) {
-                    send(TransportAction.CONNECT_VILLAGE, candidate.getVillageId(), "");
-                    villageLookupRequested = false;
-                    closeConfirmation();
-                }
-            } else if (confirmationType == ConfirmationType.REMOVE_NODE) {
-                TransportNodeView pendingNode = findNode(snapshot.getNodes(), removalStationId);
-                if (pendingNode != null && pendingNode.isActive()) {
-                    send(TransportAction.REMOVE, pendingNode.getStationId(), "");
-                }
-                closeConfirmation();
-            }
-            updateControls(snapshot);
-        } else if (button.id == BUTTON_CONNECT) {
+        if (button.id == BUTTON_CONNECT) {
             send(TransportAction.CONNECT, snapshot.getCurrentStationId(), "");
         } else if (button.id == BUTTON_REFRESH) {
             send(TransportAction.REFRESH, snapshot.getCurrentStationId(), "");
         } else if (button.id == BUTTON_CONNECT_VILLAGE) {
             if (snapshot.getNearestVillage() != null) {
                 confirmationType = ConfirmationType.CONNECT_VILLAGE;
-                updateControls(snapshot);
+                showVanillaConfirmation(snapshot);
             }
         } else if (button.id == BUTTON_TRAVEL) {
             TransportNodeView selected = selectedNode(snapshot.getNodes());
@@ -146,7 +121,7 @@ public final class GuiTransportStation extends GuiScreen {
             if (button.id == BUTTON_REMOVE) {
                 removalStationId = selected.getStationId();
                 confirmationType = ConfirmationType.REMOVE_NODE;
-                updateControls(snapshot);
+                showVanillaConfirmation(snapshot);
             } else if (button.id == BUTTON_RENAME) {
                 send(TransportAction.RENAME, selected.getStationId(), renameField.getText());
             }
@@ -155,10 +130,6 @@ public final class GuiTransportStation extends GuiScreen {
 
     @Override
     protected void mouseClicked(int mouseX, int mouseY, int mouseButton) throws java.io.IOException {
-        if (isConfirmationOpen()) {
-            super.mouseClicked(mouseX, mouseY, mouseButton);
-            return;
-        }
         super.mouseClicked(mouseX, mouseY, mouseButton);
         renameField.mouseClicked(mouseX, mouseY, mouseButton);
         TransportStateSnapshot snapshot = currentSnapshot();
@@ -179,7 +150,7 @@ public final class GuiTransportStation extends GuiScreen {
     @Override
     public void handleMouseInput() throws java.io.IOException {
         super.handleMouseInput();
-        if (isConfirmationOpen() || layout == null) {
+        if (layout == null) {
             return;
         }
         int wheelDelta = Mouse.getEventDWheel();
@@ -203,9 +174,6 @@ public final class GuiTransportStation extends GuiScreen {
 
     @Override
     protected void keyTyped(char typedChar, int keyCode) throws java.io.IOException {
-        if (isConfirmationOpen()) {
-            return;
-        }
         if (!renameField.textboxKeyTyped(typedChar, keyCode)) {
             super.keyTyped(typedChar, keyCode);
         }
@@ -225,14 +193,9 @@ public final class GuiTransportStation extends GuiScreen {
             drawCurrentStation(snapshot);
             drawNodeList(snapshot);
         }
-        if (isConfirmationOpen() && snapshot != null) {
-            drawConfirmation(snapshot);
-        }
         super.drawScreen(mouseX, mouseY, partialTicks);
-        if (!isConfirmationOpen()) {
-            renameField.drawTextBox();
-        }
-        if (snapshot != null && !isConfirmationOpen()) {
+        renameField.drawTextBox();
+        if (snapshot != null) {
             drawNodeTooltip(snapshot.getNodes(), mouseX, mouseY);
         }
     }
@@ -281,11 +244,12 @@ public final class GuiTransportStation extends GuiScreen {
                     ? I18n.format("gui.lisbam_pastoral_economy.transport.travel_fee", format(node.getTravelFee())) : "";
             int feeWidth = fee.isEmpty() ? 0 : fontRenderer.getStringWidth(fee);
             int textWidth = layout.contentRight - layout.contentX - feeWidth - (feeWidth == 0 ? 0 : 6);
-            String prefix = index == selectedIndex ? "> " : "  ";
-            drawContainerText(fontRenderer.trimStringToWidth(prefix + node.getAlias() + "  " + location,
-                    Math.max(1, textWidth)), layout.contentX, y);
+            boolean selected = index == selectedIndex;
+            String prefix = selected ? "> " : "  ";
+            drawNodeText(fontRenderer.trimStringToWidth(prefix + node.getAlias() + "  " + location,
+                    Math.max(1, textWidth)), layout.contentX, y, selected);
             if (!fee.isEmpty()) {
-                drawContainerText(fee, layout.contentRight - feeWidth, y);
+                drawNodeText(fee, layout.contentRight - feeWidth, y, selected);
             }
         }
     }
@@ -321,11 +285,6 @@ public final class GuiTransportStation extends GuiScreen {
             setEnabled(BUTTON_REFRESH, false);
             setEnabled(BUTTON_CONNECT_VILLAGE, false);
             setEnabled(BUTTON_TRAVEL, false);
-            setEnabled(BUTTON_CONFIRM, false);
-            setEnabled(BUTTON_CANCEL, false);
-            setVisible(BUTTON_CONFIRM, false);
-            setVisible(BUTTON_CANCEL, false);
-            setMainButtonsVisible(true);
             setButtonText(BUTTON_TRAVEL, I18n.format("gui.lisbam_pastoral_economy.transport.travel"));
             renameField.setEnabled(false);
             return;
@@ -340,18 +299,9 @@ public final class GuiTransportStation extends GuiScreen {
         setEnabled(BUTTON_REFRESH, snapshot.currentStationExists());
         boolean canConnectVillage = snapshot.getNearestVillage() != null && snapshot.currentStationExists()
                 && snapshot.isCurrentActive() && snapshot.isCurrentDimensionSupported();
-        if (confirmationType == ConfirmationType.CONNECT_VILLAGE && !canConnectVillage) {
-            closeConfirmation();
-        }
         setEnabled(BUTTON_CONNECT_VILLAGE, canConnectVillage);
         TransportNodeView selected = selectedNode(nodes);
         boolean canRemove = selected != null && selected.isActive();
-        if (confirmationType == ConfirmationType.REMOVE_NODE) {
-            TransportNodeView pendingNode = findNode(nodes, removalStationId);
-            if (pendingNode == null || !pendingNode.isActive()) {
-                closeConfirmation();
-            }
-        }
         setEnabled(BUTTON_REMOVE, canRemove);
         setEnabled(BUTTON_RENAME, selected != null);
         boolean canTravel = selected != null && selected.hasTravelFee() && snapshot.getCoins() >= selected.getTravelFee();
@@ -364,19 +314,6 @@ public final class GuiTransportStation extends GuiScreen {
         setEnabled(BUTTON_PREVIOUS, scrollOffset > 0);
         setEnabled(BUTTON_NEXT, scrollOffset < maxScroll(nodes));
         renameField.setEnabled(selected != null);
-        boolean canConfirmVillage = confirmationType == ConfirmationType.CONNECT_VILLAGE && canConnectVillage
-                && snapshot.getCoins() >= snapshot.getNearestVillage().getConnectionFee();
-        TransportNodeView removalNode = findNode(nodes, removalStationId);
-        boolean canConfirmRemoval = confirmationType == ConfirmationType.REMOVE_NODE
-                && removalNode != null && removalNode.isActive();
-        setEnabled(BUTTON_CONFIRM, canConfirmVillage || canConfirmRemoval);
-        setEnabled(BUTTON_CANCEL, isConfirmationOpen());
-        setVisible(BUTTON_CONFIRM, isConfirmationOpen());
-        setVisible(BUTTON_CANCEL, isConfirmationOpen());
-        setButtonText(BUTTON_CONFIRM, I18n.format(confirmationType == ConfirmationType.REMOVE_NODE
-                ? "gui.lisbam_pastoral_economy.transport.remove_confirm"
-                : "gui.lisbam_pastoral_economy.transport.confirm"));
-        setMainButtonsVisible(!isConfirmationOpen());
     }
 
     private void requestVillageCandidate(TransportStateSnapshot snapshot) {
@@ -388,45 +325,58 @@ public final class GuiTransportStation extends GuiScreen {
         }
     }
 
-    private void drawConfirmation(TransportStateSnapshot snapshot) {
-        drawNativePanel(layout.dialogX, layout.dialogY, layout.dialogRight, layout.dialogBottom);
-        int centerX = layout.dialogX + layout.dialogWidth / 2;
+    /** Uses Minecraft's own GuiYesNo so contrast, button geometry, and backdrop remain vanilla. */
+    private void showVanillaConfirmation(TransportStateSnapshot snapshot) {
+        String title;
+        String detail;
+        boolean canConfirm;
         if (confirmationType == ConfirmationType.CONNECT_VILLAGE) {
             VillageTransportCandidate candidate = snapshot.getNearestVillage();
             if (candidate == null) {
+                closeConfirmation();
                 return;
             }
-            drawCenteredContainerText(I18n.format("gui.lisbam_pastoral_economy.transport.confirm_village"), centerX,
-                    layout.dialogY + 12);
-            drawCenteredContainerText(I18n.format("gui.lisbam_pastoral_economy.transport.confirm_notice"), centerX,
-                    layout.dialogY + 30);
-            drawCenteredContainerText(I18n.format("gui.lisbam_pastoral_economy.transport.village_distance",
-                    format(candidate.getDistance())), centerX, layout.dialogY + 46);
-            drawCenteredContainerText(I18n.format("gui.lisbam_pastoral_economy.transport.village_fee",
-                    format(candidate.getConnectionFee())), centerX, layout.dialogY + 60);
+            title = I18n.format("gui.lisbam_pastoral_economy.transport.confirm_village_title");
+            detail = I18n.format("gui.lisbam_pastoral_economy.transport.confirm_village_detail",
+                    format(candidate.getDistance()), format(candidate.getConnectionFee()));
+            canConfirm = snapshot.getCoins() >= candidate.getConnectionFee();
         } else if (confirmationType == ConfirmationType.REMOVE_NODE) {
             TransportNodeView node = findNode(snapshot.getNodes(), removalStationId);
             if (node == null) {
+                closeConfirmation();
                 return;
             }
-            drawCenteredContainerText(I18n.format("gui.lisbam_pastoral_economy.transport.confirm_remove"), centerX,
-                    layout.dialogY + 12);
-            drawCenteredContainerText(I18n.format("gui.lisbam_pastoral_economy.transport.remove_target",
-                    fontRenderer.trimStringToWidth(node.getAlias(), layout.dialogWidth - 24)), centerX, layout.dialogY + 34);
-            drawCenteredContainerText(I18n.format("gui.lisbam_pastoral_economy.transport.remove_warning"), centerX,
-                    layout.dialogY + 56);
+            title = I18n.format("gui.lisbam_pastoral_economy.transport.confirm_remove_title");
+            detail = I18n.format("gui.lisbam_pastoral_economy.transport.confirm_remove_detail", node.getAlias());
+            canConfirm = node.isActive();
+        } else {
+            return;
         }
+        mc.displayGuiScreen(new TransportConfirmationScreen(this, title, detail, canConfirm));
     }
 
-    private void setMainButtonsVisible(boolean visible) {
-        setVisible(BUTTON_CONNECT, visible);
-        setVisible(BUTTON_REMOVE, visible);
-        setVisible(BUTTON_RENAME, visible);
-        setVisible(BUTTON_PREVIOUS, visible);
-        setVisible(BUTTON_NEXT, visible);
-        setVisible(BUTTON_REFRESH, visible);
-        setVisible(BUTTON_CONNECT_VILLAGE, visible);
-        setVisible(BUTTON_TRAVEL, visible);
+    @Override
+    public void confirmClicked(boolean result, int id) {
+        if (id != VANILLA_CONFIRMATION_ID) {
+            return;
+        }
+        TransportStateSnapshot snapshot = currentSnapshot();
+        if (result && snapshot != null && snapshot.hasCurrentStation()) {
+            if (confirmationType == ConfirmationType.CONNECT_VILLAGE) {
+                VillageTransportCandidate candidate = snapshot.getNearestVillage();
+                if (candidate != null && snapshot.getCoins() >= candidate.getConnectionFee()) {
+                    send(TransportAction.CONNECT_VILLAGE, candidate.getVillageId(), "");
+                    villageLookupRequested = false;
+                }
+            } else if (confirmationType == ConfirmationType.REMOVE_NODE) {
+                TransportNodeView pendingNode = findNode(snapshot.getNodes(), removalStationId);
+                if (pendingNode != null && pendingNode.isActive()) {
+                    send(TransportAction.REMOVE, pendingNode.getStationId(), "");
+                }
+            }
+        }
+        closeConfirmation();
+        mc.displayGuiScreen(this);
     }
 
     private void send(TransportAction action, java.util.UUID stationId, String alias) {
@@ -437,14 +387,6 @@ public final class GuiTransportStation extends GuiScreen {
         for (GuiButton button : buttonList) {
             if (button.id == id) {
                 button.enabled = enabled;
-            }
-        }
-    }
-
-    private void setVisible(int id, boolean visible) {
-        for (GuiButton button : buttonList) {
-            if (button.id == id) {
-                button.visible = visible;
             }
         }
     }
@@ -471,10 +413,6 @@ public final class GuiTransportStation extends GuiScreen {
             }
         }
         return null;
-    }
-
-    private boolean isConfirmationOpen() {
-        return confirmationType != ConfirmationType.NONE;
     }
 
     private void closeConfirmation() {
@@ -505,6 +443,10 @@ public final class GuiTransportStation extends GuiScreen {
     /** Matches GuiCrafting/GuiFurnace: direct FontRenderer with 4210752 and no shadow pass. */
     private void drawContainerText(String text, int x, int y) {
         fontRenderer.drawString(text, x, y, VANILLA_CONTAINER_TEXT_COLOR);
+    }
+
+    private void drawNodeText(String text, int x, int y, boolean selected) {
+        fontRenderer.drawString(text, x, y, selected ? SELECTED_NODE_TEXT_COLOR : VANILLA_CONTAINER_TEXT_COLOR);
     }
 
     private void drawCenteredContainerText(String text, int centerX, int y) {
@@ -545,16 +487,6 @@ public final class GuiTransportStation extends GuiScreen {
         private final int renameFieldX;
         private final int renameFieldWidth;
         private final int renameX;
-        private final int dialogX;
-        private final int dialogY;
-        private final int dialogWidth;
-        private final int dialogRight;
-        private final int dialogBottom;
-        private final int dialogButtonY;
-        private final int dialogButtonWidth;
-        private final int dialogConfirmX;
-        private final int dialogCancelX;
-
         private Layout(int panelX, int panelY, int panelWidth, int panelHeight) {
             this.panelX = panelX;
             this.panelY = panelY;
@@ -579,16 +511,6 @@ public final class GuiTransportStation extends GuiScreen {
             this.renameX = contentRight - 74;
             this.renameFieldX = contentX + 88;
             this.renameFieldWidth = Math.max(20, renameX - renameFieldX - 4);
-            this.dialogWidth = Math.max(180, Math.min(224, contentRight - contentX - 12));
-            this.dialogX = (contentX + contentRight - dialogWidth) / 2;
-            int dialogHeight = dialogWidth * 166 / 248;
-            this.dialogY = panelY + (panelHeight - dialogHeight) / 2;
-            this.dialogRight = dialogX + dialogWidth;
-            this.dialogBottom = dialogY + dialogHeight;
-            this.dialogButtonY = dialogBottom - 26;
-            this.dialogButtonWidth = Math.max(40, (dialogWidth - 36) / 2);
-            this.dialogConfirmX = dialogX + 12;
-            this.dialogCancelX = dialogConfirmX + dialogButtonWidth + 12;
         }
 
         private static Layout create(int screenWidth, int screenHeight) {
@@ -598,6 +520,27 @@ public final class GuiTransportStation extends GuiScreen {
             int preferredHeight = Math.max(206, panelWidth * 166 / 248);
             int panelHeight = Math.min(availableHeight, preferredHeight);
             return new Layout((screenWidth - panelWidth) / 2, (screenHeight - panelHeight) / 2, panelWidth, panelHeight);
+        }
+    }
+
+    /** Native confirmation screen with only its existing Yes button availability adjusted. */
+    private static final class TransportConfirmationScreen extends GuiYesNo {
+        private final boolean canConfirm;
+
+        private TransportConfirmationScreen(GuiYesNoCallback callback, String title, String detail,
+                                            boolean canConfirm) {
+            super(callback, title, detail, VANILLA_CONFIRMATION_ID);
+            this.canConfirm = canConfirm;
+        }
+
+        @Override
+        public void initGui() {
+            super.initGui();
+            for (GuiButton button : buttonList) {
+                if (button.id == 0) {
+                    button.enabled = canConfirm;
+                }
+            }
         }
     }
 

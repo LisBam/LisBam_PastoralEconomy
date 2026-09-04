@@ -28,6 +28,14 @@ public final class GuiCrabTrap extends GuiContainer {
         ySize = 186;
     }
 
+    /** GuiContainer leaves tooltip rendering to concrete inventory screens. */
+    @Override
+    public void drawScreen(int mouseX, int mouseY, float partialTicks) {
+        drawDefaultBackground();
+        super.drawScreen(mouseX, mouseY, partialTicks);
+        renderHoveredToolTip(mouseX, mouseY);
+    }
+
     @Override
     protected void drawGuiContainerForegroundLayer(int mouseX, int mouseY) {
         fontRenderer.drawString(I18n.format("container.lisbam_pastoral_economy.crab_trap"), 8, 6,

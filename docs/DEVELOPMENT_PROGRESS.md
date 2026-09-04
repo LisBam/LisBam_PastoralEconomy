@@ -6,7 +6,17 @@
 
 - `env JAVA_HOME=/tmp/lbpe-jdk8 PATH=/tmp/lbpe-jdk8/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin ./gradlew --console=plain build`
 - 日期：2026-09-04
-- 结果：PASS（Forge 14.23.5.2859 / Temurin Java 8 `1.8.0_504`；`build` 包含 `reobfJar` 与 `exportReleaseJar`。`release/LisBam_PastoralEconomy-1.0.jar` 为 332,322 bytes，SHA-256 `efaa297f28b3d0f1a639a7275d22ead758b3c66026726da55ac97e6a2770d6d1`，`unzip -t` PASS。）
+- 结果：PASS（Forge 14.23.5.2859 / Temurin Java 8 `1.8.0_504`；`build` 包含 `reobfJar` 与 `exportReleaseJar`。`release/LisBam_PastoralEconomy-1.0.jar` 为 337,961 bytes，SHA-256 `42939b2030bf05d8895e8a48ee76693f019322a5904fb00c9699013877b654c0`，`unzip -t` PASS。）
+
+## 维护：原版确认、蟹笼 Tooltip 与金闪闪骨粉兼容（2026-09-04）
+
+实现：交通方块的“接入最近村庄”和“移出节点”不再缩放自定义 `demo_background` 确认层，改为直接使用 Java 1.12.2 原版 `GuiYesNo`：原版泥土背景、白色无重影文字及原版是/否按钮；接入费不足时仍禁用“是”，最终操作仍只在确认后发送既有 Packet 5 action。交通改名输入框改为白字，选中节点的名称、坐标和旅行费统一为绿色。蟹笼 GUI 明确走原版 `GuiChest` 的 `drawScreen` 悬停链，因而蟹笼内部和玩家背包的物品都显示原版 Tooltip。
+
+商人交易与行情书只为任意颜色羊毛建立显示用 `ItemStack`，将原版“白色羊毛”名称显示为“羊毛”，不更改商品 key、metadata、交易匹配或共享行情。金闪闪的骨粉 16×16 图标扩大了高对比金色、橙色和腐肉色颗粒覆盖；物品在 common preInit 注册为 `dyeWhite`，对白色羊毛羊转调原版白色 `ItemDye` 行为，并注册自己的发射器增强催熟行为，发射失败时仍按原版默认行为抛出物品。
+
+根因与兼容性：`GuiContainer#drawScreen` 本身不调用 `renderHoveredToolTip`，而原版 `GuiChest` 会显式补上该调用，这正是蟹笼没有提示框的根因。原先自绘确认层的缩放背景与标题色对比不足；改用实际原版确认 GUI 后不再复刻背景、按钮或字体。新兼容仅为注册表行为，不添加 NBT、Capability、WorldSavedData、registry ID 或 Packet；现有存档不需要迁移。
+
+验证：Temurin Java 8 `1.8.0_504` 下 `check_toolchain.py` 为 0 问题，严格 Forge audit 为 0 ERROR、5 条既有 `packet-thread` WARNING；`compileJava`、`processResources`、`goldenBoneMealSelfTest`、`crabTrapSelfTest`、`merchantCatalogSelfTest`、`marketCoreSelfTest`、`marketPacketSelfTest`、`transportCoreSelfTest`、`transportTravelSelfTest` 与最终 `build` 均 PASS。最终 release JAR 尺寸、SHA-256 与解压验证见本文件顶部最近成功构建。游戏内确认层、Tooltip、羊染色和发射器为 NOT RUN：当前环境没有可操作 Forge 客户端，服务器 EULA 未接受。
 
 ## 维护：原版标题直绘、交通确认与金闪闪的骨粉（2026-09-04）
 
