@@ -8,15 +8,6 @@ public final class MarketPriceGenerator {
     private static final long DIRECTION_RANDOM_SALT = 0x6d61726b65742d33L;
     private static final long MAGNITUDE_RANDOM_SALT = 0x6d61726b65742d34L;
     private static final double UNIT_53 = 0x1.0p-53;
-    /**
-     * Normal catalog prices are above one coin. Keep chained prices from
-     * collapsing into a one-coin dead zone while preserving the legacy
-     * stable-mode formula below.
-     */
-    private static final long LOW_PRICE_FLOOR = 2L;
-    /** A non-base price is more likely to move back toward its initial price. */
-    static final double RESTORE_DIRECTION_PROBABILITY = 0.65D;
-
     private MarketPriceGenerator() {
     }
 
@@ -29,7 +20,7 @@ public final class MarketPriceGenerator {
      * opt-in "more stable" configuration and for v7 compatibility checks.
      */
     public static long calculatePrice(long marketSeed, long worldDay, MarketCommodity commodity) {
-        long commodityHash = stableKeyHash(commodity.getKey());
+        long commodityHash = stableKeyHash(commodity.getVariantIdentity());
         double first = toUnit(mix64(marketSeed ^ mix64(worldDay) ^ commodityHash ^ FIRST_RANDOM_SALT));
         double second = toUnit(mix64(marketSeed ^ mix64(worldDay) ^ commodityHash ^ SECOND_RANDOM_SALT));
         return calculatePrice(commodity.getBasePrice(), commodity.getCategory(), first, second);
@@ -43,14 +34,14 @@ public final class MarketPriceGenerator {
 
     /**
      * Advances exactly one market day. The default branch intentionally uses
-     * yesterday's saved price; no fixed band around the base price is applied.
+     * yesterday's saved price and the category's explicit price band.
      */
     public static long calculateNextPrice(long marketSeed, long worldDay, MarketCommodity commodity,
                                           long previousPrice, boolean moreStableVolatility) {
         if (moreStableVolatility) {
             return calculatePrice(marketSeed, worldDay, commodity);
         }
-        long commodityHash = stableKeyHash(commodity.getKey());
+        long commodityHash = stableKeyHash(commodity.getVariantIdentity());
         double direction = toUnit(mix64(marketSeed ^ mix64(worldDay) ^ commodityHash ^ DIRECTION_RANDOM_SALT));
         double magnitude = toUnit(mix64(marketSeed ^ mix64(worldDay) ^ commodityHash ^ MAGNITUDE_RANDOM_SALT));
         return calculateChainedPrice(commodity.getBasePrice(), commodity.getCategory(), previousPrice,
@@ -67,7 +58,8 @@ public final class MarketPriceGenerator {
         if (scaled > Long.MAX_VALUE - 0.5D) {
             throw new IllegalStateException("Frozen market price overflows long.");
         }
-        return Math.max(1L, Math.round(scaled));
+        return clamp(Math.max(1L, Math.round(scaled)), minimumPrice(basePrice, category),
+                maximumPrice(basePrice, category));
     }
 
     /** Pure one-day chained step retained package-visible for deterministic regression checks. */
@@ -78,40 +70,84 @@ public final class MarketPriceGenerator {
             throw new IllegalArgumentException("Invalid chained market price input.");
         }
 
+        long minimum = minimumPrice(basePrice, category);
+        long maximum = maximumPrice(basePrice, category);
+        long oldPrice = clamp(previousPrice, minimum, maximum);
+        double deviation = Math.abs((double) oldPrice - (double) basePrice) / (double) basePrice;
+        double restoreProbability = restoreProbability(deviation);
+
         boolean increases;
-        if (previousPrice < basePrice) {
-            increases = direction < RESTORE_DIRECTION_PROBABILITY;
-        } else if (previousPrice > basePrice) {
-            increases = direction >= RESTORE_DIRECTION_PROBABILITY;
+        if (oldPrice <= minimum) {
+            increases = true;
+        } else if (oldPrice >= maximum) {
+            increases = false;
+        } else if (oldPrice < basePrice) {
+            increases = direction < restoreProbability;
+        } else if (oldPrice > basePrice) {
+            increases = direction >= restoreProbability;
         } else {
             increases = direction < 0.5D;
         }
 
-        // Individual steps remain legible for each commodity category, but
-        // repeated steps are not clamped to any permanent percentage band.
         double step = category.getVolatility() * (0.25D + magnitude * 0.75D);
         double multiplier = increases ? 1.0D + step : 1.0D - step;
-        double scaled = previousPrice * multiplier;
+        double scaled = oldPrice * multiplier;
         if (scaled > Long.MAX_VALUE - 0.5D) {
-            return Long.MAX_VALUE;
+            return maximum;
         }
         long rounded = Math.max(1L, Math.round(scaled));
-        if (basePrice > 1L && rounded < LOW_PRICE_FLOOR) {
-            rounded = LOW_PRICE_FLOOR;
+        if (increases && rounded <= oldPrice) {
+            rounded = oldPrice == Long.MAX_VALUE ? Long.MAX_VALUE : oldPrice + 1L;
+        } else if (!increases && rounded >= oldPrice) {
+            rounded = oldPrice <= 1L ? 1L : oldPrice - 1L;
         }
-        // At one or a few coins a valid upward percentage can round away.
-        // Preserve the direction so a low-price chain can always recover.
-        if (increases && rounded <= previousPrice) {
-            return previousPrice == Long.MAX_VALUE ? Long.MAX_VALUE : previousPrice + 1L;
+        return clamp(rounded, minimum, maximum);
+    }
+
+    static double restoreProbability(double deviation) {
+        if (deviation <= 0.0D) {
+            return 0.50D;
         }
-        return rounded;
+        if (deviation <= 0.10D) {
+            return 0.55D;
+        }
+        if (deviation <= 0.25D) {
+            return 0.65D;
+        }
+        if (deviation <= 0.50D) {
+            return 0.75D;
+        }
+        return 0.85D;
+    }
+
+    public static long minimumPrice(long basePrice, CommodityCategory category) {
+        if (!isBasePriceSupported(basePrice, category)) {
+            throw new IllegalArgumentException("Invalid market price input.");
+        }
+        return Math.max(1L, Math.round(basePrice * category.getMinimumMultiplier()));
+    }
+
+    public static long maximumPrice(long basePrice, CommodityCategory category) {
+        if (!isBasePriceSupported(basePrice, category)) {
+            throw new IllegalArgumentException("Invalid market price input.");
+        }
+        double scaled = basePrice * category.getMaximumMultiplier();
+        if (scaled > Long.MAX_VALUE - 0.5D) {
+            throw new IllegalStateException("Frozen market maximum overflows long.");
+        }
+        return Math.max(1L, Math.round(scaled));
+    }
+
+    private static long clamp(long value, long minimum, long maximum) {
+        return Math.max(minimum, Math.min(maximum, value));
     }
 
     static boolean isBasePriceSupported(long basePrice, CommodityCategory category) {
         if (basePrice <= 0L || category == null) {
             return false;
         }
-        return basePrice <= (long) ((Long.MAX_VALUE - 1.0D) / (1.0D + category.getVolatility()));
+        return basePrice <= (long) ((Long.MAX_VALUE - 1.0D) / Math.max(1.0D,
+                category.getMaximumMultiplier()));
     }
 
     private static long stableKeyHash(String key) {

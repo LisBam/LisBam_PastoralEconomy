@@ -16,8 +16,8 @@ public final class TransportTravelSelfTest {
 
     public static void main(String[] args) {
         long[] distances = {0L, 250L, 500L, 1000L, 2000L, 5000L, 10000L};
-        long[] travel = {40L, 70L, 100L, 160L, 280L, 640L, 1240L};
-        long[] connect = {400L, 700L, 1000L, 1600L, 2800L, 6400L, 12400L};
+        long[] travel = {400L, 700L, 1000L, 1600L, 2800L, 6400L, 12400L};
+        long[] connect = {4000L, 7000L, 10000L, 16000L, 28000L, 64000L, 124000L};
         for (int i = 0; i < distances.length; i++) {
             require(TransportCost.travelFee(distances[i]) == travel[i], "travel fee " + distances[i]);
             require(TransportCost.connectionFee(distances[i]) == connect[i], "connect fee " + distances[i]);

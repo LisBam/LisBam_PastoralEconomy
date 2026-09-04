@@ -64,7 +64,7 @@ public final class SyncMerchantTradeMessage implements IMessage {
             byte[] keyBytes = new byte[length];
             buffer.readBytes(keyBytes);
             String key = new String(keyBytes, StandardCharsets.UTF_8);
-            int groupSize = buffer.readInt();
+            int itemStackLimit = buffer.readInt();
             long price = buffer.readLong();
             boolean hasPrevious = buffer.readBoolean();
             Long previous = null;
@@ -78,7 +78,7 @@ public final class SyncMerchantTradeMessage implements IMessage {
             int enchantmentLevel = buffer.readInt();
             if (!enabled) {
                 key = "";
-                groupSize = 0;
+                itemStackLimit = 0;
                 price = 0L;
                 previous = null;
                 remaining = -1;
@@ -88,12 +88,14 @@ public final class SyncMerchantTradeMessage implements IMessage {
                 boolean validLevel = entry != null && (entry.isEnchantment()
                         ? enchantmentLevel >= 1 && enchantmentLevel <= entry.getEnchantmentDefinition().getMaxLevel()
                         : enchantmentLevel == 0);
-                if (key.length() == 0 || entry == null || groupSize <= 0 || price <= 0L || remaining < -1
+                if (key.length() == 0 || entry == null || itemStackLimit <= 0
+                        || (entry != null && itemStackLimit != entry.getItemStackLimit())
+                        || price <= 0L || remaining < -1
                         || !validLevel || (previous != null && previous.longValue() <= 0L)) {
                     return null;
                 }
             }
-            views.add(new MerchantTradeOfferView(enabled, key, groupSize, price, previous, remaining, enchantmentLevel));
+            views.add(new MerchantTradeOfferView(enabled, key, itemStackLimit, price, previous, remaining, enchantmentLevel));
         }
         return views;
     }
@@ -121,13 +123,13 @@ public final class SyncMerchantTradeMessage implements IMessage {
             }
             buffer.writeShort(key.length);
             buffer.writeBytes(key);
-            buffer.writeInt(view.getGroupSize());
+            buffer.writeInt(view.getItemStackLimit());
             buffer.writeLong(view.getCurrentPrice());
             buffer.writeBoolean(view.hasPreviousPrice());
             if (view.hasPreviousPrice()) {
                 buffer.writeLong(view.getPreviousPrice());
             }
-            buffer.writeInt(view.getRemainingGroups());
+            buffer.writeInt(view.getRemainingItems());
             buffer.writeInt(view.getEnchantmentLevel());
         }
     }

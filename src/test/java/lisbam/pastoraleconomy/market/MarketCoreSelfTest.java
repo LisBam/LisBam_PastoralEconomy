@@ -25,7 +25,20 @@ public final class MarketCoreSelfTest {
 
     private static void verifyCatalogAndFormula() {
         MarketCommodity wheat = MarketCatalog.get(WHEAT);
-        require(wheat != null && wheat.getBasePrice() == 5L, "wheat base sell price must stay frozen at five");
+        require(wheat != null && wheat.getBasePrice() == 50L, "wheat base sell price must be fifty after currency scaling");
+        require(base("lisbam_pastoral_economy:buy/common/iron_ingot") == 900L,
+                "iron ingot base buy price must be 900 per item");
+        require(base("lisbam_pastoral_economy:buy/common/cobblestone") == 240L
+                        && base("lisbam_pastoral_economy:buy/common/sand") == 240L
+                        && base("lisbam_pastoral_economy:buy/common/glass") == 400L
+                        && base("lisbam_pastoral_economy:buy/common/log_oak") == 500L
+                        && base("lisbam_pastoral_economy:buy/common/dirt") == 160L
+                        && base("lisbam_pastoral_economy:buy/common/obsidian") == 2000L,
+                "building material prices must use the frozen final values");
+        MarketCommodity carrotSell = MarketCatalog.get("lisbam_pastoral_economy:sell/crop/carrot");
+        MarketCommodity carrotBuy = MarketCatalog.get("lisbam_pastoral_economy:buy/common/carrot");
+        require(carrotSell.getVariantIdentity().equals(carrotBuy.getVariantIdentity()),
+                "matching buy and sell variants must share a market random identity");
         Set<String> expectedSellGoods = new HashSet<String>(Arrays.asList(
                 "lisbam_pastoral_economy:sell/crop/wheat",
                 "lisbam_pastoral_economy:sell/crop/carrot",
@@ -66,9 +79,9 @@ public final class MarketCoreSelfTest {
         for (CommodityCategory category : CommodityCategory.values()) {
             long low = MarketPriceGenerator.calculatePrice(1L, category, 0.0D, 0.0D);
             long high = MarketPriceGenerator.calculatePrice(1000L, category, 0.999999999999D, 0.999999999999D);
-            require(low >= 1L, "all volatility groups must retain the minimum price");
-            require(high <= Math.round(1000L * (1.0D + category.getVolatility())),
-                    "all volatility groups must stay inside their frozen upper range");
+            require(low >= MarketPriceGenerator.minimumPrice(1L, category), "category minimum must hold");
+            require(high <= MarketPriceGenerator.maximumPrice(1000L, category),
+                    "category maximum must hold");
         }
 
         long restoringDown = MarketPriceGenerator.calculateChainedPrice(100L, CommodityCategory.CORE_CROPS,
@@ -82,28 +95,28 @@ public final class MarketCoreSelfTest {
             chained = MarketPriceGenerator.calculateChainedPrice(100L, CommodityCategory.CORE_CROPS,
                     chained, 0.99D, 0.999999999D);
         }
-        require(chained > 135L,
-                "chained prices must not retain the legacy fixed 135-percent ceiling");
+        require(chained <= MarketPriceGenerator.maximumPrice(100L, CommodityCategory.CORE_CROPS),
+                "chained prices must stay below the category ceiling");
 
-        long lowDown = MarketPriceGenerator.calculateChainedPrice(5L, CommodityCategory.CORE_CROPS,
-                2L, 0.99D, 0.999999999D);
-        require(lowDown == 2L,
-                "a normal chained price must not fall below the two-coin low-price floor");
-        long recoveredFromOne = MarketPriceGenerator.calculateChainedPrice(5L, CommodityCategory.CORE_CROPS,
-                1L, 0.0D, 0.0D);
-        require(recoveredFromOne == 2L,
-                "a one-coin chained price must recover instead of rounding upward movement back to one");
-        long forcedUpwardStep = MarketPriceGenerator.calculateChainedPrice(100L, CommodityCategory.RARE_GOODS,
-                2L, 0.0D, 0.0D);
-        require(forcedUpwardStep == 3L,
-                "small positive chained moves must advance by at least one coin after rounding");
+        long minimum = MarketPriceGenerator.minimumPrice(100L, CommodityCategory.CORE_CROPS);
+        long maximum = MarketPriceGenerator.maximumPrice(100L, CommodityCategory.CORE_CROPS);
+        require(MarketPriceGenerator.calculateChainedPrice(100L, CommodityCategory.CORE_CROPS,
+                minimum, 0.99D, 0.0D) > minimum, "minimum boundary must rebound upward");
+        require(MarketPriceGenerator.calculateChainedPrice(100L, CommodityCategory.CORE_CROPS,
+                maximum, 0.0D, 0.0D) < maximum, "maximum boundary must rebound downward");
+        require(MarketPriceGenerator.restoreProbability(0.0D) == 0.50D
+                        && MarketPriceGenerator.restoreProbability(0.10D) == 0.55D
+                        && MarketPriceGenerator.restoreProbability(0.20D) == 0.65D
+                        && MarketPriceGenerator.restoreProbability(0.40D) == 0.75D
+                        && MarketPriceGenerator.restoreProbability(0.60D) == 0.85D,
+                "deeper deviations must have higher restoring probabilities");
     }
 
     private static void verifyWorldDataProgressionAndHistory() {
         PastoralWorldData data = new PastoralWorldData();
         data.ensureMarketDay(10L, 12345L);
         long dayTenPrice = price(data, WHEAT);
-        require(dayTenPrice == 5L, "a new chained market must start at the frozen base price");
+        require(dayTenPrice == 50L, "a new chained market must start at the frozen base price");
         require(!data.hasPreviousMarketSnapshot(), "the first market day must not invent yesterday");
         assertHistoryDays(data, 10L, 10L, 1);
 
@@ -192,6 +205,12 @@ public final class MarketCoreSelfTest {
             throw new AssertionError("missing current price for " + key);
         }
         return price.longValue();
+    }
+
+    private static long base(String key) {
+        MarketCommodity commodity = MarketCatalog.get(key);
+        require(commodity != null, "missing market commodity " + key);
+        return commodity.getBasePrice();
     }
 
     private static void require(boolean condition, String message) {

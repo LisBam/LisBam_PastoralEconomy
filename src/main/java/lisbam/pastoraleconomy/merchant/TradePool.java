@@ -1,6 +1,6 @@
 package lisbam.pastoraleconomy.merchant;
 
-/** Stable daily-offer groups. Only the first four pools are populated in batches 08--10. */
+/** Stable daily-offer pools. */
 public enum TradePool {
     SELL_CORE,
     SELL_SECONDARY,

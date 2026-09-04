@@ -52,10 +52,10 @@ public final class MarketPacketSelfTest {
 
     private static void verifySnapshotRoundTripAndBounds() {
         List<MarketHistoryPoint> points = new ArrayList<MarketHistoryPoint>();
-        points.add(new MarketHistoryPoint(40L, 5L, null));
-        points.add(new MarketHistoryPoint(41L, 6L, Long.valueOf(5L)));
+        points.add(new MarketHistoryPoint(40L, 50L, null));
+        points.add(new MarketHistoryPoint(41L, 60L, Long.valueOf(50L)));
         MarketHistorySnapshot snapshot = new MarketHistorySnapshot(
-                8, WHEAT, -1L, 41L, 6L, Long.valueOf(5L), points, false, false
+                8, WHEAT, -1L, 41L, 60L, Long.valueOf(50L), points, false, false
         );
         ByteBuf buffer = Unpooled.buffer();
         new SyncMarketHistoryMessage(snapshot).toBytes(buffer);
@@ -64,7 +64,7 @@ public final class MarketPacketSelfTest {
         MarketHistorySnapshot decoded = decodedMessage.getSnapshot();
         require(decoded != null && decoded.getPoints().size() == 2, "bounded snapshot must round-trip");
         require(decoded.getPoints().get(0).getPreviousPrice() == null
-                        && decoded.getPoints().get(1).getPreviousPrice().longValue() == 5L,
+                        && decoded.getPoints().get(1).getPreviousPrice().longValue() == 50L,
                 "the first visible point must retain its real prior-point state");
 
         ByteBuf oversizedPoints = Unpooled.buffer();
@@ -84,12 +84,12 @@ public final class MarketPacketSelfTest {
 
     private static void verifyStaleSnapshotDoesNotReplaceNewerWindow() {
         List<MarketHistoryPoint> points = new ArrayList<MarketHistoryPoint>();
-        points.add(new MarketHistoryPoint(1L, 5L, null));
+        points.add(new MarketHistoryPoint(1L, 50L, null));
         MarketHistorySnapshot stale = new MarketHistorySnapshot(
-                1, WHEAT, -1L, 1L, 5L, null, points, false, false
+                1, WHEAT, -1L, 1L, 50L, null, points, false, false
         );
         MarketHistorySnapshot fresh = new MarketHistorySnapshot(
-                2, WHEAT, -1L, 1L, 5L, null, points, false, false
+                2, WHEAT, -1L, 1L, 50L, null, points, false, false
         );
         ClientMarketState.clear();
         ClientMarketState.acceptSnapshot(fresh);
@@ -101,11 +101,11 @@ public final class MarketPacketSelfTest {
 
     private static void verifyBookSessionDropsLateSnapshots() {
         List<MarketHistoryPoint> points = new ArrayList<MarketHistoryPoint>();
-        points.add(new MarketHistoryPoint(1L, 5L, null));
+        points.add(new MarketHistoryPoint(1L, 50L, null));
         ClientMarketState.beginBookSession();
         int firstRequest = ClientMarketState.nextRequestId();
         MarketHistorySnapshot first = new MarketHistorySnapshot(
-                firstRequest, WHEAT, -1L, 1L, 5L, null, points, false, false
+                firstRequest, WHEAT, -1L, 1L, 50L, null, points, false, false
         );
         ClientMarketState.acceptSnapshot(first);
         require(ClientMarketState.getSnapshot(WHEAT, -1L, firstRequest) == first,
@@ -139,14 +139,14 @@ public final class MarketPacketSelfTest {
 
     private static void verifyOpeningRequestPrefetchesSelectableCommodities() {
         List<MarketHistoryPoint> points = new ArrayList<MarketHistoryPoint>();
-        points.add(new MarketHistoryPoint(1L, 5L, null));
+        points.add(new MarketHistoryPoint(1L, 50L, null));
         ClientMarketState.beginBookSession();
         int openingRequest = ClientMarketState.nextRequestId();
         MarketHistorySnapshot wheat = new MarketHistorySnapshot(
-                openingRequest, WHEAT, -1L, 1L, 5L, null, points, false, false
+                openingRequest, WHEAT, -1L, 1L, 50L, null, points, false, false
         );
         MarketHistorySnapshot carrot = new MarketHistorySnapshot(
-                openingRequest, CARROT, -1L, 1L, 6L, null, points, false, false
+                openingRequest, CARROT, -1L, 1L, 50L, null, points, false, false
         );
         ClientMarketState.acceptSnapshot(wheat);
         ClientMarketState.acceptSnapshot(carrot);
