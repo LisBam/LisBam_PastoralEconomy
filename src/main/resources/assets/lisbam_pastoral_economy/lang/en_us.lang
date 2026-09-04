@@ -53,7 +53,6 @@ gui.lisbam_pastoral_economy.merchant.unlimited=Unlimited
 gui.lisbam_pastoral_economy.merchant.quantity=Quantity: %s
 gui.lisbam_pastoral_economy.merchant.total=Expected total: %s
 tile.lisbam_pastoral_economy.transport_station=Transport Station
-tile.lisbam_pastoral_economy.transport_station.name=Transport Station
 gui.lisbam_pastoral_economy.transport.title=Transport Network
 gui.lisbam_pastoral_economy.transport.loading=Loading transport nodes...
 gui.lisbam_pastoral_economy.transport.current=Current station: %s

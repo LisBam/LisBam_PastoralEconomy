@@ -285,10 +285,10 @@ public final class GuiMerchantTrade extends GuiScreen implements GuiSlider.ISlid
     }
 
     private void updateControls(MerchantTradeSnapshot snapshot) {
-        // Keep every label in the same white GuiButton colour. The click handler
-        // still performs the local tradeability check before any request is sent.
-        setButtonEnabled(BUTTON_SELL_PAGE, true);
-        setButtonEnabled(BUTTON_BUY_PAGE, true);
+        // The current page is not an action, and an unavailable offer must use
+        // the standard 1.12.2 disabled GuiButton treatment.
+        setButtonEnabled(BUTTON_SELL_PAGE, buyPage);
+        setButtonEnabled(BUTTON_BUY_PAGE, !buyPage);
         for (int index = 0; index < quantityFields.length; index++) {
             MerchantTradeOfferView view = getView(snapshot, index);
             int quantity = clampQuantity(index, getQuantity(index), view);
@@ -302,7 +302,7 @@ public final class GuiMerchantTrade extends GuiScreen implements GuiSlider.ISlid
                 quantityFields[index].setFocused(false);
             }
             quantityFields[index].setEnabled(tradable);
-            setButtonEnabled(BUTTON_CONFIRM_OFFSET + index, true);
+            setButtonEnabled(BUTTON_CONFIRM_OFFSET + index, tradable);
         }
     }
 

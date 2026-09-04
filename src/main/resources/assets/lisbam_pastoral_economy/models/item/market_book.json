@@ -1,6 +1,6 @@
 {
   "parent": "item/generated",
   "textures": {
-    "layer0": "minecraft:items/book_normal"
+    "layer0": "lisbam_pastoral_economy:items/market_book"
   }
 }

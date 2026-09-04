@@ -1,13 +1,14 @@
 {
   "type": "minecraft:crafting_shaped",
   "pattern": [
-    " I ",
-    "ICI",
-    " I "
+    "IFI",
+    "FTF",
+    "IFI"
   ],
   "key": {
-    "I": { "item": "minecraft:iron_bars" },
-    "C": { "item": "minecraft:chest" }
+    "I": { "item": "minecraft:iron_ingot" },
+    "F": { "item": "minecraft:iron_bars" },
+    "T": { "item": "minecraft:trapped_chest" }
   },
   "result": {
     "item": "lisbam_pastoral_economy:crab_trap",

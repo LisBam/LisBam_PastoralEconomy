@@ -19,8 +19,6 @@ public final class ModItems {
     }
 
     private static ItemBlock createTransportStationItem() {
-        ItemBlock item = new ItemBlock(ModBlocks.TRANSPORT_STATION);
-        item.setRegistryName(ModBlocks.TRANSPORT_STATION.getRegistryName());
-        return item;
+        return new ItemTransportStation();
     }
 }

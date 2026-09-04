@@ -19,11 +19,15 @@ import net.minecraft.util.EnumFacing;
 import net.minecraft.util.EnumHand;
 import net.minecraft.util.NonNullList;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.text.translation.I18n;
 import net.minecraft.world.IBlockAccess;
 import net.minecraft.world.World;
 
 /** Collectible player-built transport node. The world registry owns its UUID. */
 public final class BlockTransportStation extends Block {
+    /** Explicit display key: neither block nor ItemBlock may append a second suffix. */
+    public static final String DISPLAY_NAME_KEY = "tile." + LisBamPastoralEconomy.MODID + ".transport_station";
+
     BlockTransportStation() {
         super(Material.ROCK);
         setRegistryName(LisBamPastoralEconomy.MODID, "transport_station");
@@ -36,6 +40,11 @@ public final class BlockTransportStation extends Block {
     @Override
     public boolean hasTileEntity(IBlockState state) {
         return true;
+    }
+
+    @Override
+    public String getLocalizedName() {
+        return I18n.translateToLocal(DISPLAY_NAME_KEY);
     }
 
     @Override

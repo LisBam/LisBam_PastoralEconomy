@@ -395,8 +395,9 @@ public final class VillageService {
     }
 
     public static int getTargetMerchantCount(int villagerCount) {
-        int ceiling = (Math.max(0, villagerCount) + 4) / 5;
-        return Math.max(3, Math.min(8, ceiling));
+        long villagers = Math.max(0L, (long) villagerCount);
+        long target = (villagers * 2L + 4L) / 5L;
+        return (int) Math.min((long) Integer.MAX_VALUE, Math.max(3L, target));
     }
 
     private static final class MerchantEntityIndex {
