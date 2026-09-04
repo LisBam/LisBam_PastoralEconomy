@@ -188,11 +188,11 @@
 
 ## DEC-025 UI 原版纹理与字体回归
 
-决定：替换 DEC-024 中手绘的灰色槽框和凸起面板。所有文字统一保留 Minecraft 1.12.2 原版 `FontRenderer`；`GuiCrabTrap` 与商人的可见物品格直接裁取 `minecraft:textures/gui/container/generic_54.png` 的原版 18×18 槽位像素。商人与交通面板直接使用 `minecraft:textures/gui/demo_background.png`，按钮、文本输入与数量滑条继续使用原版 `GuiButton`、`GuiTextField` 和 Forge 1.12.2 `GuiSlider`。交通选中项仅以原版字体的 `>` 前缀表示，不绘制自制列表框。
+决定：替换 DEC-024 中手绘的灰色槽框和凸起面板。所有文字统一保留 Minecraft 1.12.2 原版 `FontRenderer`；`GuiCrabTrap` 与商人的可见物品格直接裁取 `minecraft:textures/gui/container/generic_54.png` 的原版 18×18 槽位像素。商人与交通面板直接使用 `minecraft:textures/gui/demo_background.png`，按钮、文本输入与数量滑条继续使用原版 `GuiButton`、`GuiTextField` 和 Forge 1.12.2 `GuiSlider`。交通选中项仅以深灰原版字体的 `>` 前缀表示，不绘制自制列表框；节点列表区域的鼠标滚轮只改变本地显示偏移。
 
 原因：用 `drawRect` 模拟原版槽框/容器边缘即使颜色接近，也会在缩放和纹理细节上偏离原版视觉；这正是 UI 看起来“不像原版”的根因。原版纹理裁取既保留像素、阴影和边角，也不会重新引入蟹笼不存在的空槽。
 
-影响：纯客户端显示修复；不改 Container Slot 编号、交易/交通 Packet、存档、经济规则或服务端权威边界。
+影响：交通滚动和选中标记均为纯客户端显示，不改交易/交通 Packet、存档、经济规则或服务端权威边界。蟹笼保留 Slot 编号，0/1 的 Container、直接库存写入和 Hopper 插入统一使用 TileEntity 校验；旧存档中已有的错误功能槽物品仍会原样读入并可取出。
 
 ## DEC-026 原版面板边缘与实际库存文案
 

@@ -21,8 +21,8 @@ public final class ContainerCrabTrap extends Container {
 
     public ContainerCrabTrap(InventoryPlayer playerInventory, TileCrabTrap trap) {
         this.trap = trap;
-        addSlotToContainer(new Slot(trap, TileCrabTrap.ROD_SLOT, 26, 19));
-        addSlotToContainer(new Slot(trap, TileCrabTrap.BAIT_SLOT, 62, 19));
+        addSlotToContainer(new FunctionalTrapSlot(trap, TileCrabTrap.ROD_SLOT, 26, 19));
+        addSlotToContainer(new FunctionalTrapSlot(trap, TileCrabTrap.BAIT_SLOT, 62, 19));
 
         for (int row = 0; row < 2; row++) {
             for (int column = 0; column < 9; column++) {
@@ -106,4 +106,20 @@ public final class ContainerCrabTrap extends Container {
         return result;
     }
 
+    /** Makes the two functional GUI slots enforce the same rule as hoppers. */
+    private static final class FunctionalTrapSlot extends Slot {
+        private final TileCrabTrap trap;
+        private final int trapSlot;
+
+        private FunctionalTrapSlot(TileCrabTrap trap, int trapSlot, int xPosition, int yPosition) {
+            super(trap, trapSlot, xPosition, yPosition);
+            this.trap = trap;
+            this.trapSlot = trapSlot;
+        }
+
+        @Override
+        public boolean isItemValid(ItemStack stack) {
+            return trap.isItemValidForSlot(trapSlot, stack);
+        }
+    }
 }

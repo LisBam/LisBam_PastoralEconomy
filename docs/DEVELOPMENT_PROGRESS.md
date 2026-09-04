@@ -8,6 +8,14 @@
 - 日期：2026-09-04
 - 结果：PASS（Forge 14.23.5.2859 / Temurin Java 8 `1.8.0_504`；`build` 包含 `reobfJar` 与 `exportReleaseJar`。`release/LisBam_PastoralEconomy-1.0.jar` 为 324,313 bytes，SHA-256 `5c5dfa7073cec1251675e1f626b9672a9aa0ef388af11bbc505b6e19815ed2c3`，`unzip -t` PASS。）
 
+## 维护：蟹笼槽位闭环与交通界面滚动（2026-09-04）
+
+实现：蟹笼 0 号钓竿槽、1 号生肉槽在 `ContainerCrabTrap` 使用显式受限 Slot，与 TileEntity/Hopper 的同一物品规则一致；`TileCrabTrap#setInventorySlotContents` 也拒绝新放入的错误功能物品，2～19 号槽仍接受任意物品。读旧 NBT 使用内部兼容写入路径，既有错误功能槽物品保留并可取出。蟹笼 GUI 继续沿 `GuiContainer` 原版 Slot 悬停路径显示槽内和玩家背包物品 Tooltip。交通站改为紧凑的原版 `demo_background` 面板比例，取消绿色非按钮节点文字，选中节点以深灰 `>` 前缀表示；所有非按钮文字与商人交易界面同样使用原版工作台/熔炉标题深灰 `0x404040`，按钮恢复原版 `GuiButton` 绘制。列表区域加入鼠标滚轮逐行滚动，同时保留翻页箭头。
+
+根因与影响：功能槽此前依赖默认 Slot 转发，而直接库存写入未执行功能物品校验，形成可绕过的路径；现在 GUI、Hopper 和直接写入共享 TileEntity 规则。旧存档不迁移、不删物：历史错误物品只会继续留在原槽，供玩家取出。交通变更仅为客户端本地布局和 `scrollOffset`，没有修改 Packet、金币、旅行验证、TileEntity NBT、Capability 或 WorldSavedData。
+
+验证：Temurin Java 8 `1.8.0_504` 下 `check_toolchain.py` 为 0 问题，严格 Forge audit 为 0 ERROR、5 条既有 packet-thread WARNING；`compileJava`、`compileTestJava`、`crabTrapSelfTest`、`transportCoreSelfTest`、`transportTravelSelfTest`、`processResources` 和最终 `build` 均 PASS。`release/LisBam_PastoralEconomy-1.0.jar` 已重混淆导出，324,547 bytes，SHA-256 `1954d080fe12e8723e68a440f2e43c806cc4cda9deac5c6deed781d57f69b71a`，`unzip -t` PASS；包含更新后的 GUI、Container、TileEntity、双语资源、`mcmod.info` 与 `pack.mcmeta`。游戏内 GUI/鼠标滚轮/Tooltip 和 Dedicated Server 仍为 NOT RUN：当前环境没有可操作 Forge 客户端，服务器 EULA 未接受。
+
 ## 维护：蟹笼专用槽与交通交互（2026-09-04）
 
 实现：蟹笼 0 号槽恢复仅接收钓竿、1 号槽恢复仅接收合法生肉，2～19 保持通用；Container 和所有方向 Hopper 共用 `TileCrabTrap` 校验，任意槽仍可取出。蟹笼 GUI 继续继承 `GuiContainer` 原版物品悬停路径。交通方块配方改为四角红石块、上下左右铁块、中央指南针。商人和交通界面的非按钮文字改为原版工作台/熔炉标题深灰色；交通界面去除查找按钮与主面板村庄详情，自动获取候选并以单按钮打开距离/接入费确认层，余额不足时确认禁用。
