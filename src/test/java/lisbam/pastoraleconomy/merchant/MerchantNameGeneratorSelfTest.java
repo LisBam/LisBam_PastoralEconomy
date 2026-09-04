@@ -1,0 +1,42 @@
+package lisbam.pastoraleconomy.merchant;
+
+import lisbam.pastoraleconomy.entity.MerchantSkinCatalog;
+
+import java.nio.charset.StandardCharsets;
+import java.util.Random;
+
+/** Deterministic validation for merchant display-name generation and UTF-8 source data. */
+public final class MerchantNameGeneratorSelfTest {
+    private MerchantNameGeneratorSelfTest() {
+    }
+
+    public static void main(String[] args) {
+        Random random = new Random(0x4C495342414D4CL);
+        boolean sawOneCharacterGivenName = false;
+        boolean sawTwoCharacterGivenName = false;
+        for (int index = 0; index < 4096; index++) {
+            String name = MerchantNameGenerator.generate(random);
+            check(MerchantNameGenerator.isGeneratedName(name), "generated Chinese name " + index);
+            check(name.equals(new String(name.getBytes(StandardCharsets.UTF_8), StandardCharsets.UTF_8)),
+                    "UTF-8 round trip " + index);
+            if (name.length() == 2) {
+                sawOneCharacterGivenName = true;
+            } else if (name.length() == 3) {
+                sawTwoCharacterGivenName = true;
+            }
+        }
+        check(sawOneCharacterGivenName, "one-character given names");
+        check(sawTwoCharacterGivenName, "two-character given names");
+        check(MerchantSkinCatalog.isValid(MerchantSkinCatalog.DEFAULT_STEVE), "default Steve skin index");
+        check(MerchantSkinCatalog.isValid(MerchantSkinCatalog.SKIN_COUNT - 1), "last merchant skin index");
+        check(!MerchantSkinCatalog.isValid(-1) && !MerchantSkinCatalog.isValid(MerchantSkinCatalog.SKIN_COUNT),
+                "skin index bounds");
+        System.out.println("merchantNameSelfTest PASS");
+    }
+
+    private static void check(boolean value, String description) {
+        if (!value) {
+            throw new AssertionError("Failed: " + description);
+        }
+    }
+}

@@ -269,3 +269,11 @@
 原因：标准 Block/ItemBlock 本地化流程会追加 `.name`，而当前显示链出现了面向玩家的后缀；直接使用一个共享显示键可隔离该异常，同时不会影响稳定注册名。交易界面需要用原版 disabled 反馈不可成交状态；新的物品配方和简化像素材质均是明确玩法/视觉调整。村庄每 5 名村民仅增加一名商人会使大型村庄补充不足，新的 2/5 比例保留最低三人并按人口继续增长。
 
 兼容性与影响：没有新增 Packet、WorldSavedData、Capability、TileEntity NBT 或 registry ID。旧存档内已有交通节点、蟹笼、市场行情书和 MerchantRecord 无需迁移；下一次低频商人维护会自然补足因新公式增加的商人。资源路径保持不变，资源包覆盖点不变；行情书新增的内部纹理路径不会改变物品模型 ID。
+
+## DEC-035 商人中文显示姓名与作物商人皮肤
+
+决定：商人 UUID 和所有交易/库存状态继续只由 `MerchantRecord` 管理；姓名绝不作为键或网络请求字段。`MerchantNameGenerator` 只接受服务端随机源，随机选择一个百家姓姓氏和一至两个常用中文名字符。`EntityMerchant#bind` 为新生成实体赋值，`readEntityFromNBT` 为无姓名或旧版本通用“商人”名称的已加载实体补值；使用原版 `CustomName` 实体 NBT 机制持久化。皮肤改为实体 NBT 的附加整数 `merchantSkin`，新旧实体在服务端首次初始化时随机为 0--4；索引经 1.12.2 `EntityDataManager` 同步，0 固定渲染原版 `steve.png`，1--4 渲染四张 64×64 Steve 宽臂 UV 的内置农作服装。商人 GUI 标题和实体渲染器都只读取同步状态，不自行随机或写入权威数据。
+
+原因：中文姓名是显示属性，不应干扰商人重生、交易记录、库存共享或已有 UUID 绑定；原版实体自定义名称已能随实体区块 NBT 保存和发给客户端。皮肤索引同样属于单实体的展示状态，使用 DataManager 可以避免客户端与服务端独立随机而显示不同，也无需引入新的 Packet 或全局存档段。以原版 Steve PNG 为基底直接改绘保持 ModelPlayer(宽臂) 的像素尺寸和 UV 对应关系。
+
+兼容性与影响：`merchantSkin` 是可选的新增实体 NBT key，缺失、非法值或旧通用名称均在第一次服务端实体加载时只补生成一次；已存在的自定义姓名保持不变。没有改动 registry ID、WorldSavedData schema、MerchantRecord、Packet discriminator、金币、价格、库存或 UUID。允许重名；每个实体持久化自己的姓名和皮肤，Chunk unload/reload、退出重进及服务器重启均不会重新随机。

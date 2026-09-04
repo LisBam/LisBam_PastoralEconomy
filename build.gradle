@@ -159,6 +159,13 @@ task merchantCatalogSelfTest(type: JavaExec) {
     main = 'lisbam.pastoraleconomy.merchant.MerchantCatalogSelfTest'
 }
 
+task merchantNameSelfTest(type: JavaExec) {
+    group = 'verification'
+    description = 'Runs deterministic Chinese merchant-name and UTF-8 regression checks.'
+    classpath = sourceSets.test.runtimeClasspath
+    main = 'lisbam.pastoraleconomy.merchant.MerchantNameGeneratorSelfTest'
+}
+
 task crabTrapSelfTest(type: JavaExec) {
     group = 'verification'
     description = 'Runs deterministic batch 12/13 crab-trap rule and inventory regression checks.'

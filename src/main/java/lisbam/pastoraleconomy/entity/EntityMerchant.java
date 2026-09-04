@@ -1,6 +1,7 @@
 package lisbam.pastoraleconomy.entity;
 
 import com.google.common.base.Predicate;
+import lisbam.pastoraleconomy.merchant.MerchantNameGenerator;
 import lisbam.pastoraleconomy.merchant.MerchantTradeService;
 import lisbam.pastoraleconomy.merchant.StationRole;
 import net.minecraft.entity.Entity;
@@ -11,6 +12,9 @@ import net.minecraft.entity.ai.EntityAIWatchClosest;
 import net.minecraft.entity.ai.EntityAIWanderAvoidWater;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.network.datasync.DataParameter;
+import net.minecraft.network.datasync.DataSerializers;
+import net.minecraft.network.datasync.EntityDataManager;
 import net.minecraft.util.DamageSource;
 import net.minecraft.util.EnumHand;
 import net.minecraft.util.math.BlockPos;
@@ -29,6 +33,11 @@ public final class EntityMerchant extends EntityCreature {
     private static final String KEY_STATION_X = "stationX";
     private static final String KEY_STATION_Y = "stationY";
     private static final String KEY_STATION_Z = "stationZ";
+    private static final String KEY_SKIN_VARIANT = "merchantSkin";
+    /** Old releases wrote this generic custom name; it is treated as unnamed during migration. */
+    private static final String LEGACY_GENERIC_NAME = "商人";
+    private static final DataParameter<Integer> SKIN_VARIANT = EntityDataManager.createKey(EntityMerchant.class,
+            DataSerializers.VARINT);
     private static final int HOME_RADIUS = 12;
     private static final int RETURN_DISTANCE = 32;
     private static final int RETURN_REPATH_INTERVAL_TICKS = 20;
@@ -40,6 +49,8 @@ public final class EntityMerchant extends EntityCreature {
     private UUID villageId;
     private UUID stationId;
     private BlockPos stationPosition;
+    /** False only until an old NBT record or a new server spawn receives its persistent selection. */
+    private boolean skinVariantAssigned;
     /** Runtime-only pathfinding throttle; station identity remains fully persisted above. */
     private int nextReturnPathTick;
     /** Runtime-only open-trade ownership; it must never affect entity NBT or persistence. */
@@ -51,8 +62,13 @@ public final class EntityMerchant extends EntityCreature {
         super(worldIn);
         setSize(0.6F, 1.95F);
         enablePersistence();
-        setCustomNameTag("商人");
         setAlwaysRenderNameTag(false);
+    }
+
+    @Override
+    protected void entityInit() {
+        super.entityInit();
+        dataManager.register(SKIN_VARIANT, Integer.valueOf(MerchantSkinCatalog.DEFAULT_STEVE));
     }
 
     @Override
@@ -90,12 +106,29 @@ public final class EntityMerchant extends EntityCreature {
         stationId = newStationId;
         stationPosition = newStationPosition.toImmutable();
         setHomePosAndDistance(stationPosition.up(), HOME_RADIUS);
+        ensurePresentation();
     }
 
     public UUID getMerchantId() { return merchantId; }
     public UUID getVillageId() { return villageId; }
     public UUID getStationId() { return stationId; }
+    public int getSkinVariant() { return MerchantSkinCatalog.normalize(dataManager.get(SKIN_VARIANT).intValue()); }
     public boolean hasValidBinding() { return merchantId != null && villageId != null && stationId != null && stationPosition != null; }
+
+    /** Generates only on the logical server; DataManager handles the matching client render state. */
+    private void ensurePresentation() {
+        if (world.isRemote) {
+            return;
+        }
+        String currentName = getCustomNameTag();
+        if (currentName == null || currentName.trim().isEmpty() || LEGACY_GENERIC_NAME.equals(currentName)) {
+            setCustomNameTag(MerchantNameGenerator.generate(world.rand));
+        }
+        if (!skinVariantAssigned) {
+            dataManager.set(SKIN_VARIANT, Integer.valueOf(world.rand.nextInt(MerchantSkinCatalog.SKIN_COUNT)));
+            skinVariantAssigned = true;
+        }
+    }
 
     /** Freezes only this merchant while one or more server-authorized trade windows are open. */
     public void beginTrading(EntityPlayer player) {
@@ -221,6 +254,9 @@ public final class EntityMerchant extends EntityCreature {
             compound.setInteger(KEY_STATION_Y, stationPosition.getY());
             compound.setInteger(KEY_STATION_Z, stationPosition.getZ());
         }
+        if (skinVariantAssigned) {
+            compound.setInteger(KEY_SKIN_VARIANT, getSkinVariant());
+        }
     }
 
     @Override
@@ -236,5 +272,11 @@ public final class EntityMerchant extends EntityCreature {
         } else {
             stationPosition = null;
         }
+        skinVariantAssigned = compound.hasKey(KEY_SKIN_VARIANT)
+                && MerchantSkinCatalog.isValid(compound.getInteger(KEY_SKIN_VARIANT));
+        if (skinVariantAssigned) {
+            dataManager.set(SKIN_VARIANT, Integer.valueOf(compound.getInteger(KEY_SKIN_VARIANT)));
+        }
+        ensurePresentation();
     }
 }
