@@ -3,6 +3,7 @@ package lisbam.pastoraleconomy.client.gui;
 import lisbam.pastoraleconomy.client.ClientMerchantTradeState;
 import lisbam.pastoraleconomy.client.ClientMerchantTradeViewState;
 import lisbam.pastoraleconomy.client.ClientPlayerState;
+import lisbam.pastoraleconomy.entity.EntityMerchant;
 import lisbam.pastoraleconomy.market.MarketTrend;
 import lisbam.pastoraleconomy.merchant.MerchantTradeOfferView;
 import lisbam.pastoraleconomy.merchant.MerchantTradeSnapshot;
@@ -15,6 +16,7 @@ import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.client.gui.GuiTextField;
 import net.minecraft.client.resources.I18n;
 import net.minecraft.item.ItemStack;
+import net.minecraft.entity.Entity;
 import net.minecraft.util.ResourceLocation;
 import net.minecraftforge.fml.client.config.GuiSlider;
 import org.lwjgl.input.Keyboard;
@@ -196,7 +198,7 @@ public final class GuiMerchantTrade extends GuiScreen implements GuiSlider.ISlid
         drawNativePanel(layout.panelX, layout.panelY, layout.panelRight, layout.panelBottom);
 
         MerchantTradeSnapshot snapshot = ClientMerchantTradeState.get();
-        String title = I18n.format("entity.lisbam_pastoral_economy.merchant.name") + " - "
+        String title = getMerchantDisplayName() + " - "
                 + I18n.format("gui.lisbam_pastoral_economy.merchant.title");
         drawCenteredString(fontRenderer, title, width / 2, layout.panelY + 7, TEXT_COLOR);
         long balance = snapshot == null ? ClientPlayerState.getCoins() : snapshot.getBalance();
@@ -215,6 +217,19 @@ public final class GuiMerchantTrade extends GuiScreen implements GuiSlider.ISlid
             field.drawTextBox();
         }
         drawItemTooltip(mouseX, mouseY);
+    }
+
+    private String getMerchantDisplayName() {
+        if (mc.world != null) {
+            Entity entity = mc.world.getEntityByID(merchantEntityId);
+            if (entity instanceof EntityMerchant) {
+                String name = ((EntityMerchant) entity).getCustomNameTag();
+                if (name != null && !name.trim().isEmpty()) {
+                    return name;
+                }
+            }
+        }
+        return I18n.format("entity.lisbam_pastoral_economy.merchant.name");
     }
 
     private void drawOffer(MerchantTradeOfferView view, int index) {

@@ -96,6 +96,10 @@
 
 ### Village / Station / Merchant
 
+- [x] 商人服装 PNG 结构检查：4 张内置服装均为 64×64、8-bit RGBA，并保留 Steve UV 画布。PASS（2026-09-04）。
+- [ ] `./gradlew merchantNameSelfTest`：确定性姓名池、UTF-8 往返、1/2 字名字长度和皮肤索引边界。NOT RUN：当前环境没有可启动的 Linux JDK；Windows `java.exe` 受 WSL vsock 错误阻断。
+- [ ] 新商人服务端获得百家姓中文姓名与随机 Steve/四种农作服装之一；客户端不自行随机，GUI 标题与实体显示一致。NOT RUN：需要可进入世界。
+- [ ] 旧商人无姓名/旧“商人”名称、缺少或非法皮肤索引时只补生成一次；已有自定义姓名保持；Chunk unload/reload、退出重进、服务器重启后姓名/皮肤不变，UUID、交易、价格和库存不受影响。NOT RUN：需要旧存档与 Dedicated Server/世界。
 - [ ] Overworld 旧 VillageCollection、2 名村民门槛、128/64/160 去重、保存重启不重复 — NOT RUN：需要可进入的世界
 - [ ] 每有效村庄恰好一个安全站点、12 格搜索、不覆盖箱子/门/农田/TileEntity、异常恢复 — NOT RUN：需要可进入的世界
 - [ ] 商人 3～8 目标人数、人口变化收敛、死亡补足、>32 格归位、无自然 despawn — NOT RUN：需要可进入的世界
