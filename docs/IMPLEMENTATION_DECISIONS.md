@@ -313,3 +313,13 @@
 原因：上一版为通用容器错误地放宽了功能槽的插入规则，导致钓竿和饵料位置无法保证。交通移除只写入 inactive tombstone，物理方块拆除也不会清除个人引用，故快照会出现“已移出”或“节点无效”。村庄发现本来已经由服务端快照提供候选，额外查找按钮和主面板详情没有增加权威能力，却增加了交互步骤。
 
 兼容性与影响：没有 registry ID、Packet discriminator/NBT 字段名称、`PastoralWorldData` 根版本或费用公式变更。旧蟹笼槽中已有非钓竿/非生肉物品不主动删除，仍可取出；新插入会被校验拒绝。旧玩家 NBT 中 inactive 节点在下一次加载时丢弃，缺失世界记录在下一次交通快照构造时丢弃；这释放节点上限且不再向客户端同步假节点。已保存的自建交通方块 UUID、有效 Active 节点、村庄站和首次免费资格保持不变。
+
+## DEC-040 原版标题直绘、交通二次确认与金闪闪的骨粉
+
+决定：`GuiMerchantTrade`、`GuiTransportStation` 的静态非按钮文字统一由 `FontRenderer#drawString(text, x, y, 4210752)` 直接绘制；水平居中先用 `FontRenderer#getStringWidth` 计算左边界，禁止用 `GuiScreen#drawCenteredString`。`GuiCrabTrap` 的全部前景标签也使用相同的 `4210752`。交通节点列表起点下移，令“我的节点”标题完全位于“接入最近村庄”按钮之后。最近村庄和移出节点共用原版 `demo_background.png` 比例的本地确认层：移出层只保存待确认的 Station UUID，只有点击确认才发既有 `REMOVE` action；接入层仍只从 Packet 6 快照读取候选展示值并发既有 `CONNECT_VILLAGE` action。
+
+新增稳定物品 ID `lisbam_pastoral_economy:golden_bone_meal`。`ItemGoldenBoneMeal` 只在逻辑服务端工作：中心原版可耕作物最多重复 8 次临时白色染料的 `ItemDye.applyBonemeal`，5×5 其余作物或草层中的草方块各调用一次；其他目标也只调用一次。该物品自身仅在至少一次路径成功后消耗一次，创造模式不消耗。`GoldenBoneMealRules` 将作物/草花分类和 X/Z 半径 2 的 25 格范围从 Item 中分离，便于无世界自检；模型、双语键和两份 JSON 无序配方与注册同时加入。
+
+原因：`drawCenteredString` 在 1.12.2 走带阴影绘制，尽管颜色同为 `0x404040`，仍会造成工作台/熔炉标题没有的重影。移出是可恢复但会影响交通网络状态的操作，需要与村庄接入一致的确认节奏；客户端确认不能代替服务端的 Station/余额/候选验证。金闪闪的骨粉若自行复制 `IGrowable` 逻辑，会绕过 Forge 的原版骨粉钩子并容易与其他 1.12.2 模组不兼容，因此复用 `ItemDye.applyBonemeal`。
+
+兼容性与影响：没有更改 Packet discriminator、action ordinal、TileEntity NBT、Capability、WorldSavedData 或金币/交通计算。确认层和列表排版仅是客户端暂态；任何绕过或过期确认仍由既有服务端拒绝。新物品不读写长期状态；旧存档可直接加载，新增配方/物品会按 Forge 正常注册出现。

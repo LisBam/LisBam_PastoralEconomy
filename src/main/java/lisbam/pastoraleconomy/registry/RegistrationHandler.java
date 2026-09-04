@@ -23,7 +23,8 @@ public final class RegistrationHandler {
 
     @SubscribeEvent
     public static void registerItems(RegistryEvent.Register<Item> event) {
-        event.getRegistry().registerAll(ModItems.MARKET_BOOK, ModItems.CRAB_TRAP_ITEM, ModItems.TRANSPORT_STATION_ITEM);
+        event.getRegistry().registerAll(ModItems.MARKET_BOOK, ModItems.GOLDEN_BONE_MEAL,
+                ModItems.CRAB_TRAP_ITEM, ModItems.TRANSPORT_STATION_ITEM);
     }
 
     @SubscribeEvent

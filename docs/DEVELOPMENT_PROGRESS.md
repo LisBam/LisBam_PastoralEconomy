@@ -6,7 +6,17 @@
 
 - `env JAVA_HOME=/tmp/lbpe-jdk8 PATH=/tmp/lbpe-jdk8/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin ./gradlew --console=plain build`
 - 日期：2026-09-04
-- 结果：PASS（Forge 14.23.5.2859 / Temurin Java 8 `1.8.0_504`；`build` 包含 `reobfJar` 与 `exportReleaseJar`。`release/LisBam_PastoralEconomy-1.0.jar` 为 324,313 bytes，SHA-256 `5c5dfa7073cec1251675e1f626b9672a9aa0ef388af11bbc505b6e19815ed2c3`，`unzip -t` PASS。）
+- 结果：PASS（Forge 14.23.5.2859 / Temurin Java 8 `1.8.0_504`；`build` 包含 `reobfJar` 与 `exportReleaseJar`。`release/LisBam_PastoralEconomy-1.0.jar` 为 332,322 bytes，SHA-256 `efaa297f28b3d0f1a639a7275d22ead758b3c66026726da55ac97e6a2770d6d1`，`unzip -t` PASS。）
+
+## 维护：原版标题直绘、交通确认与金闪闪的骨粉（2026-09-04）
+
+实现：商人与交通的每个静态非按钮字符串现直接调用原版 `FontRenderer.drawString(..., 4210752)`；居中文字手动按字符串宽度定位，因此不再经过带阴影的 `drawCenteredString`。蟹笼状态文字也统一该颜色。交通面板把节点列表和“我的节点”标题下移到“接入最近村庄”按钮之后；最近村庄确认层改为留白更均衡的完整原版背景比例，并增加“服务端最终结算”说明。移出节点现在先显示相同风格的本地确认层，确认后才发送既有 `REMOVE` action。
+
+新增 `lisbam_pastoral_economy:golden_bone_meal`：骨粉/腐肉/萤石粉无序合成 1 个，或骨头/三腐肉/三萤石粉无序合成 3 个。其 16×16 图标以原版骨粉轮廓为底，加入金色、橙色和少量腐肉色颗粒。逻辑服务端对中心可耕作物最多重复 8 次原版骨粉至成熟、对同层 5×5 其余作物各执行一次；草方块/花则对对应草层 5×5 的每个草方块各执行一次。普通目标仍保留一次原版骨粉路径，只有实际生效才消耗一份。
+
+根因与兼容性：`GuiScreen#drawCenteredString` 的阴影通道是重影根因，颜色常量相同并不能等同工作台/熔炉标题。确认层只是客户端输入节流，Packet 5 action ordinal、服务端重新验证、金币/交通数据和存档结构均未改。新物品没有 NBT、Capability 或 WorldSavedData 状态；旧存档不需迁移。
+
+验证：Temurin Java 8 `1.8.0_504` 下 `check_toolchain.py` 为 0 问题，严格 Forge audit 为 0 ERROR、5 条既有 `packet-thread` WARNING；`compileJava`、`compileTestJava`、`processResources`、`goldenBoneMealSelfTest`、`crabTrapSelfTest`、`transportCoreSelfTest`、`transportTravelSelfTest` 和最终 `build` 均 PASS。最终重混淆 `release/LisBam_PastoralEconomy-1.0.jar` 为 332,322 bytes，SHA-256 `efaa297f28b3d0f1a639a7275d22ead758b3c66026726da55ac97e6a2770d6d1`，`unzip -t` PASS；已确认包含新增物品类、模型、两份配方、16×16 PNG、GUI 类与双语资源，生产 class major version 为 52。游戏内与 Dedicated Server 为 NOT RUN：当前环境没有可操作 Forge 客户端，服务器 EULA 未接受。
 
 ## 维护：蟹笼槽位闭环与交通界面滚动（2026-09-04）
 

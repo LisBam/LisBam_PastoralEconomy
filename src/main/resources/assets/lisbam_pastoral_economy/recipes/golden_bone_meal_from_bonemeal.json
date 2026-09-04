@@ -1,0 +1,12 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "ingredients": [
+    { "item": "minecraft:dye", "data": 15 },
+    { "item": "minecraft:rotten_flesh" },
+    { "item": "minecraft:glowstone_dust" }
+  ],
+  "result": {
+    "item": "lisbam_pastoral_economy:golden_bone_meal",
+    "count": 1
+  }
+}
