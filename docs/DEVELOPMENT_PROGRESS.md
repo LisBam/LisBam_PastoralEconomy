@@ -4,9 +4,17 @@
 
 最近成功构建：
 
-- `env JAVA_HOME=/tmp/lisbam-jdk8-UlgK66/jdk8u504-b01 PATH=<Temurin-8-bin> ./gradlew build`
+- `env JAVA_HOME=/tmp/lbpe-jdk8 "PATH=/tmp/lbpe-jdk8/bin:$PATH" ./gradlew build`
 - 日期：2026-09-04
-- 结果：PASS（Forge 14.23.5.2859 / Temurin Java 8 `1.8.0_504`；`build` 包含 `reobfJar` 与 `exportReleaseJar`。`release/LisBam_PastoralEconomy-1.0.jar` 为 335,340 bytes，SHA-256 `57abbb324cd260231a29e9ae92b5a4338433d5ca42dad14a3a7ae3c5988edfa0`，`unzip -t` PASS。）
+- 结果：PASS（Forge 14.23.5.2859 / Temurin Java 8 `1.8.0_504`；`build` 包含 `reobfJar` 与 `exportReleaseJar`。`release/LisBam_PastoralEconomy-1.0.jar` 为 335,340 bytes，SHA-256 `98de865d634ddfbdc1d25e54c72349cff2531f32e4cd1cf214819771075d0690`，`unzip -t` PASS。）
+
+## 维护：内容书与实际实现核对（2026-09-04）
+
+实现：以当前 Java、资源和配方为事实来源，修正《聆竹の休闲田园经济》内容书中的过期或不准确说明。行情书历史改为准确描述实际的最近 30 个世界日保留窗口与按需读取；商人改为中文姓名、四种农作服装、无上限的 `max(ceil(村民数/5),3)` 规模和现有受击/游泳/无声行为；蟹笼配方改为铁锭、铁栅栏与陷阱箱，工作条件改为直接接触相邻水方块。同时补充普通蜘蛛与洞穴蜘蛛的边界、农田骚扰的 `mobGriefing`/无掉落规则，以及无图标金币 HUD。`AGENTS.md` 现要求每次更新后同步更新内容书。
+
+兼容性与影响：本次只更新维护规则、内容书、构建日志和重新导出的发布 JAR；没有变更游戏代码、资源、注册 ID、Packet、NBT、Capability、WorldSavedData 或玩家可体验行为，现有存档无需迁移。
+
+验证：Temurin Java 8 `1.8.0_504` 下 `check_toolchain.py` 为 0 issue；Forge 1.12.2 static audit 为 0 ERROR、5 条既有 `packet-thread` WARNING。`compileJava`、`processResources`、`marketCoreSelfTest`、`marketPacketSelfTest`、`merchantCatalogSelfTest`、`merchantNameSelfTest`、`crabTrapSelfTest` 与最终 `build` 均 PASS。正式 JAR 已导出为 `release/LisBam_PastoralEconomy-1.0.jar`，`unzip -t` PASS，且已确认包含语言、蟹笼配方、商人服装和元数据。游戏内与 Dedicated Server 未运行：本次未改动运行时行为，且当前环境没有可操作 Forge 客户端，服务器 EULA 也未接受。
 
 ## 发行：版本 1.0（2026-09-04）
 
