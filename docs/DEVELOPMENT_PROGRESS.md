@@ -5,8 +5,16 @@
 最近成功构建：
 
 - `JDK8_HOME=/tmp/lbpe-jdk8; env JAVA_HOME="$JDK8_HOME" PATH="$JDK8_HOME/bin:$PATH" ./gradlew compileJava processResources build`
-- 日期：2026-09-04
-- 结果：PASS（Forge 14.23.5.2859 / Temurin Java 8 `1.8.0_504`；`build` 包含 `reobfJar` 与 `exportReleaseJar`。`release/LisBam_PastoralEconomy-1.0.jar` 为 344,635 bytes，SHA-256 `34ddca6a5f64e5e71eadecb36ffd8293d949874c60d9d6a8c99fb321462ff775`，`unzip -t` PASS。）
+- 日期：2026-09-05
+- 结果：PASS（Forge 14.23.5.2859 / Temurin Java 8 `1.8.0_504`；`build` 包含 `reobfJar` 与 `exportReleaseJar`。`release/LisBam_PastoralEconomy-1.0.jar` 为 344,747 bytes，SHA-256 `6be402b55305362b6a7e02b6f4cc1680298e4edb2825a9aaa2a789d341fcbc5a`，`unzip -t` PASS。）
+
+## 维护：链式市场低价保护（2026-09-05）
+
+实现：默认链式市场在基础价大于 1 金币时使用 2 金币低价保护，避免正常下跌把价格反复压到 1；若旧存档或异常状态中的链式价格已经是 1，下一次日推进至少回到 2。对取整后没有增长的正向小波动，额外保证至少增加 1 金币，因此低价不会因百分比步长小于半枚金币而永久不动。`moreStableMarketVolatility=true` 的旧独立三角分布公式保持不变，设置切换仍只影响未来跨日。
+
+根因与兼容性：原链式公式直接 `Math.round(previousPrice * (1 + step))`，价格为 1 或 2 时正向结果常被取整回原值；下跌结果又被 `max(1, ...)` 固定在 1。保护逻辑只位于默认链式单日计算，不新增 NBT、Packet、registry ID 或 WorldSavedData 字段；已保存的当天快照不重算，旧的 1 金币快照会在下一次自然推进时恢复。
+
+验证：`marketCoreSelfTest` 新增低价下跌不低于 2、1 金币恢复、正向最小增量三项回归；Forge 1.12.2 strict audit、Java 8 编译和最终 `build` 结果记录在本文顶部，游戏内跨日与旧存档实测仍需可用运行环境。
 
 ## 维护：链式市场波动、设置与界面输入（2026-09-04）
 

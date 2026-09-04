@@ -3,8 +3,14 @@
 ## 构建
 
 - [x] `./gradlew compileJava`、`compileTestJava` — PASS（2026-09-04，Temurin Java 8 `1.8.0_504`）
-- [x] `./gradlew processResources`、`build` — PASS（2026-09-04，Temurin Java 8 `1.8.0_504`；含 `reobfJar`、`exportReleaseJar`；release JAR 344,635 bytes，SHA-256 `34ddca6a5f64e5e71eadecb36ffd8293d949874c60d9d6a8c99fb321462ff775`，`unzip -t` PASS）
+- [x] `./gradlew processResources`、`build` — PASS（2026-09-05，Temurin Java 8 `1.8.0_504`；含 `reobfJar`、`exportReleaseJar`；release JAR 344,747 bytes，SHA-256 `6be402b55305362b6a7e02b6f4cc1680298e4edb2825a9aaa2a789d341fcbc5a`，`unzip -t` PASS）
 - [x] Forge 1.12.2 static audit — 0 ERROR；5 条 `packet-thread` WARNING 已审查（通用注册不处理消息；四个 S2C Proxy 桥没有直接修改状态，客户端实际写入均调度至主线程；交通 C2S handler 调度至服务端主线程）。
+
+## 维护：链式市场低价保护
+
+- [x] 默认链式市场的基础价大于 1 金币商品不会因正常下跌低于 2；1 金币快照下一次推进至少恢复到 2；取整抹掉的正向小波动至少增加 1。PASS：`marketCoreSelfTest`。
+- [x] `moreStableMarketVolatility=true` 仍调用旧独立公式并保留 1 金币下限；配置切换不重算同日快照。PASS：代码审查、市场核心/世界数据自检。
+- [ ] 游戏内跨日和旧存档 1 金币快照的实际曲线观察。NOT RUN：当前环境无法创建可操作 Forge 客户端或进入 Dedicated Server 世界。
 
 ## 维护：链式市场与界面关闭
 
