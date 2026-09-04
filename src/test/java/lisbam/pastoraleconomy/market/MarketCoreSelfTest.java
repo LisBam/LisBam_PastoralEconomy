@@ -84,6 +84,19 @@ public final class MarketCoreSelfTest {
         }
         require(chained > 135L,
                 "chained prices must not retain the legacy fixed 135-percent ceiling");
+
+        long lowDown = MarketPriceGenerator.calculateChainedPrice(5L, CommodityCategory.CORE_CROPS,
+                2L, 0.99D, 0.999999999D);
+        require(lowDown == 2L,
+                "a normal chained price must not fall below the two-coin low-price floor");
+        long recoveredFromOne = MarketPriceGenerator.calculateChainedPrice(5L, CommodityCategory.CORE_CROPS,
+                1L, 0.0D, 0.0D);
+        require(recoveredFromOne == 2L,
+                "a one-coin chained price must recover instead of rounding upward movement back to one");
+        long forcedUpwardStep = MarketPriceGenerator.calculateChainedPrice(100L, CommodityCategory.RARE_GOODS,
+                2L, 0.0D, 0.0D);
+        require(forcedUpwardStep == 3L,
+                "small positive chained moves must advance by at least one coin after rounding");
     }
 
     private static void verifyWorldDataProgressionAndHistory() {

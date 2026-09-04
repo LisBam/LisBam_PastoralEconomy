@@ -8,6 +8,12 @@ public final class MarketPriceGenerator {
     private static final long DIRECTION_RANDOM_SALT = 0x6d61726b65742d33L;
     private static final long MAGNITUDE_RANDOM_SALT = 0x6d61726b65742d34L;
     private static final double UNIT_53 = 0x1.0p-53;
+    /**
+     * Normal catalog prices are above one coin. Keep chained prices from
+     * collapsing into a one-coin dead zone while preserving the legacy
+     * stable-mode formula below.
+     */
+    private static final long LOW_PRICE_FLOOR = 2L;
     /** A non-base price is more likely to move back toward its initial price. */
     static final double RESTORE_DIRECTION_PROBABILITY = 0.65D;
 
@@ -89,7 +95,16 @@ public final class MarketPriceGenerator {
         if (scaled > Long.MAX_VALUE - 0.5D) {
             return Long.MAX_VALUE;
         }
-        return Math.max(1L, Math.round(scaled));
+        long rounded = Math.max(1L, Math.round(scaled));
+        if (basePrice > 1L && rounded < LOW_PRICE_FLOOR) {
+            rounded = LOW_PRICE_FLOOR;
+        }
+        // At one or a few coins a valid upward percentage can round away.
+        // Preserve the direction so a low-price chain can always recover.
+        if (increases && rounded <= previousPrice) {
+            return previousPrice == Long.MAX_VALUE ? Long.MAX_VALUE : previousPrice + 1L;
+        }
+        return rounded;
     }
 
     static boolean isBasePriceSupported(long basePrice, CommodityCategory category) {
