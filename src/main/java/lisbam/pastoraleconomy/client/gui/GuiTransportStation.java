@@ -31,8 +31,6 @@ public final class GuiTransportStation extends GuiScreen {
     private static final int ROW_HEIGHT = 14;
     private static final ResourceLocation VANILLA_PANEL_TEXTURE = new ResourceLocation(
             "minecraft", "textures/gui/demo_background.png");
-    private static final int VANILLA_PANEL_WIDTH = 248;
-    private static final int VANILLA_PANEL_HEIGHT = 166;
 
     private final BlockPos stationPosition;
     private GuiTextField renameField;
@@ -336,26 +334,11 @@ public final class GuiTransportStation extends GuiScreen {
         return String.format(java.util.Locale.ROOT, "%,d", value);
     }
 
-    /** Preserves every original panel edge pixel while expanding only its flat center. */
+    /** Draw the complete vanilla panel in one operation; never assemble it from texture fragments. */
     private void drawNativePanel(int left, int top, int right, int bottom) {
         mc.getTextureManager().bindTexture(VANILLA_PANEL_TEXTURE);
-        int width = right - left;
-        int height = bottom - top;
-        drawTexturedModalRect(left, top, 0, 0, 1, 1);
-        drawScaledCustomSizeModalRect(left + 1, top, 1.0F, 0.0F, VANILLA_PANEL_WIDTH - 2, 1,
-                width - 2, 1, 256.0F, 256.0F);
-        drawTexturedModalRect(right - 1, top, VANILLA_PANEL_WIDTH - 1, 0, 1, 1);
-        drawScaledCustomSizeModalRect(left, top + 1, 0.0F, 1.0F, 1, VANILLA_PANEL_HEIGHT - 2,
-                1, height - 2, 256.0F, 256.0F);
-        drawScaledCustomSizeModalRect(left + 1, top + 1, 1.0F, 1.0F, 1, 1,
-                width - 2, height - 2, 256.0F, 256.0F);
-        drawScaledCustomSizeModalRect(right - 1, top + 1, VANILLA_PANEL_WIDTH - 1, 1.0F, 1,
-                VANILLA_PANEL_HEIGHT - 2, 1, height - 2, 256.0F, 256.0F);
-        drawTexturedModalRect(left, bottom - 1, 0, VANILLA_PANEL_HEIGHT - 1, 1, 1);
-        drawScaledCustomSizeModalRect(left + 1, bottom - 1, 1.0F, VANILLA_PANEL_HEIGHT - 1,
-                VANILLA_PANEL_WIDTH - 2, 1, width - 2, 1, 256.0F, 256.0F);
-        drawTexturedModalRect(right - 1, bottom - 1, VANILLA_PANEL_WIDTH - 1,
-                VANILLA_PANEL_HEIGHT - 1, 1, 1);
+        drawScaledCustomSizeModalRect(left, top, 0.0F, 0.0F, 248, 166,
+                right - left, bottom - top, 256.0F, 256.0F);
     }
 
     /** All action controls fit inside even Minecraft's 320x240 scaled screen. */

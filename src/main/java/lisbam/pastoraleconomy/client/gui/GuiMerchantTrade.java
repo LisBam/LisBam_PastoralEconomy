@@ -35,8 +35,6 @@ public final class GuiMerchantTrade extends GuiScreen implements GuiSlider.ISlid
             "minecraft", "textures/gui/container/generic_54.png");
     private static final int VANILLA_SLOT_U = 7;
     private static final int VANILLA_SLOT_V = 17;
-    private static final int VANILLA_PANEL_WIDTH = 248;
-    private static final int VANILLA_PANEL_HEIGHT = 166;
 
     private final int merchantEntityId;
     private final int[] sellQuantities = new int[MerchantTradeSnapshot.SELL_COUNT];
@@ -427,26 +425,11 @@ public final class GuiMerchantTrade extends GuiScreen implements GuiSlider.ISlid
         return String.format(java.util.Locale.ROOT, "%,d", value);
     }
 
-    /** Preserves every original panel edge pixel while expanding only its flat center. */
+    /** Draw the complete vanilla panel in one operation; never assemble it from texture fragments. */
     private void drawNativePanel(int left, int top, int right, int bottom) {
         mc.getTextureManager().bindTexture(VANILLA_PANEL_TEXTURE);
-        int width = right - left;
-        int height = bottom - top;
-        drawTexturedModalRect(left, top, 0, 0, 1, 1);
-        drawScaledCustomSizeModalRect(left + 1, top, 1.0F, 0.0F, VANILLA_PANEL_WIDTH - 2, 1,
-                width - 2, 1, 256.0F, 256.0F);
-        drawTexturedModalRect(right - 1, top, VANILLA_PANEL_WIDTH - 1, 0, 1, 1);
-        drawScaledCustomSizeModalRect(left, top + 1, 0.0F, 1.0F, 1, VANILLA_PANEL_HEIGHT - 2,
-                1, height - 2, 256.0F, 256.0F);
-        drawScaledCustomSizeModalRect(left + 1, top + 1, 1.0F, 1.0F, 1, 1,
-                width - 2, height - 2, 256.0F, 256.0F);
-        drawScaledCustomSizeModalRect(right - 1, top + 1, VANILLA_PANEL_WIDTH - 1, 1.0F, 1,
-                VANILLA_PANEL_HEIGHT - 2, 1, height - 2, 256.0F, 256.0F);
-        drawTexturedModalRect(left, bottom - 1, 0, VANILLA_PANEL_HEIGHT - 1, 1, 1);
-        drawScaledCustomSizeModalRect(left + 1, bottom - 1, 1.0F, VANILLA_PANEL_HEIGHT - 1,
-                VANILLA_PANEL_WIDTH - 2, 1, width - 2, 1, 256.0F, 256.0F);
-        drawTexturedModalRect(right - 1, bottom - 1, VANILLA_PANEL_WIDTH - 1,
-                VANILLA_PANEL_HEIGHT - 1, 1, 1);
+        drawScaledCustomSizeModalRect(left, top, 0.0F, 0.0F, 248, 166,
+                right - left, bottom - top, 256.0F, 256.0F);
     }
 
     /** The 18x18 cell is copied directly from the vanilla chest texture. */
