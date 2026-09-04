@@ -251,3 +251,13 @@
 原因：普通 `GuiScreen` 会暂停单人集成服务端，使 C2S 交易包、库存修改和 S2C 快照只能在关闭窗口后处理。商人 Container 有意不放玩家背包 Slot，因此常规 `openContainer.detectAndSendChanges()` 不会观察到交易服务直接改动的 `InventoryPlayer`；显式发送 `inventoryContainer` 才能让客户端在同一事务 tick 收到物品变化。交易者和受击逃跑均是实体当前生命周期行为，不应污染稳定商人身份或世界存档。此前为禁用状态选用深灰色会造成同一面板字体不一致。
 
 兼容性与影响：没有新增或变更 Packet discriminator、NBT key、WorldSavedData、Capability、registry ID 或经济数值。玩家物品、金币、库存和价格仍只在逻辑服务端校验及修改；客户端只接收同步和发起请求。交易者集合、逃跑目标和倒计时随实体卸载/重启自然丢弃，下一次实体加载不会残留冻结或仇恨。
+
+## DEC-033 交通资源一致性与商人延迟补生
+
+决定：交通 GUI 所有手绘文字和重绘后的原版 `GuiButton` 标签统一采用原版按钮正常浅色；即使按钮因状态不可用而禁用，仍保留浅色文字、原版禁用背景与既有点击限制。`village_station` 的模型和方块 Material 改为石质交通站，并复用 `transport_station.png`。蟹笼和交通站贴图替换为简约像素风 32×32 RGB PNG；两个交通站名称都提供正确的 `.name` lang key。
+
+`VillageService` 不再在 `WorldEvent.Load` 强制执行商人补生；启动后的首次周期维护只观察/修复站点，并再等待一个 200 tick 周期让 chunk NBT 中的实体加入世界。`MerchantRecord` 可选保存最近观察到的实体 chunk。补生前必须确认村庄站区块以及该记录的最后实体区块都已加载；实体索引还会拒绝 inactive、缺少 roster、Village ID 或 Station ID 不匹配的旧实体 NBT。
+
+原因：村庄站模型曾直接引用原版 `planks_oak`，导致玩家抵达村庄时看见木板；交通方块的实际本地化查找会追加 `.name`，旧键无法命中。原有 1254×1254 贴图远高于原版方块需要，既增加发行包体积也无法保持像素边缘。更严重的是世界加载和目标村庄区块刚载入时，`loadedEntityList` 可能尚未包含已有商人；旧补生逻辑据此生成重复实体，随后区块 NBT 中的原实体加入后才被去重删除，表现为短暂多出又被刷新掉。
+
+兼容性与影响：没有改 registry ID、blockstate ID、Packet discriminator、价格或玩家数据。MerchantRecord 新增的 `entityChunkX/Z` 是可选 NBT 字段，旧存档可直接读取，第一次观察到对应实体后才保存；没有提升根 `PastoralWorldData` dataVersion。首次加载的村庄商人最多延后两个维护周期（约 20 秒）才会在确实缺失时补生，换取不与尚未加入世界的持久实体重复。纹理替换和方块 Material 只改变显示、声音/粒子材质和保护站观感，不改变站点 UUID 或传送规则。

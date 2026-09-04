@@ -6,7 +6,15 @@
 
 - `env JAVA_HOME=/tmp/lisbam-jdk8-UlgK66/jdk8u504-b01 PATH=<Temurin-8-bin> ./gradlew build`
 - 日期：2026-09-04
-- 结果：PASS（Forge 14.23.5.2859 / Temurin Java 8 `1.8.0_504`；`build` 包含 `reobfJar` 与 `exportReleaseJar`。`release/LisBam_PastoralEconomy-0.1.0.jar` 为 2,556,234 bytes，SHA-256 `881f0c8762af30076a07c0d1bee2db48477c1eddd3072794aa1d9d554ec4569a`，`unzip -t` PASS。）
+- 结果：PASS（Forge 14.23.5.2859 / Temurin Java 8 `1.8.0_504`；`build` 包含 `reobfJar` 与 `exportReleaseJar`。`release/LisBam_PastoralEconomy-0.1.0.jar` 为 322,635 bytes，SHA-256 `e1a67f2c183b7e7d158c2748a4dc4cd72e7deae8ced5dc5490fe811198152e45`，`unzip -t` PASS。）
+
+## 维护：交通界面/资源与村庄商人重复补生（2026-09-04）
+
+实现：交通界面所有文字统一为商人界面使用的原版按钮正常浅色；不可用按钮仍不可点击，但通过客户端重绘保持文字不加深。交通站输入框同样覆盖普通/禁用两种颜色。村庄交通站从原版橡木木板改为石质交通站模型与 Material，并与玩家交通方块共享新 32×32 罗盘贴图；蟹笼换为同尺寸的木框铁栅贴图。中英文补齐 `tile...transport_station.name`，中文恢复为“交通方块”。
+
+根因与修复：`Block#getLocalizedName` 查找 `getUnlocalizedName() + ".name"`，旧语言资源只有无后缀键。村庄站模型又硬编码 `minecraft:blocks/planks_oak`。商人则在世界 Load 期间立即扫描短暂为空的 `loadedEntityList` 并补生；持久化的原商人稍后随 Chunk NBT 加入时才去重死亡。初始化路径现不补生，首次周期多等待一轮；MerchantRecord 记录最后实体 Chunk，补生前必须确认其已加载，且索引严格验证 active/roster/village/station 绑定。
+
+验证：Temurin Java 8 `1.8.0_504` 下 `check_toolchain.py`、`compileJava`、`compileTestJava`、`merchantCatalogSelfTest`、`transportCoreSelfTest`、`transportTravelSelfTest`、`processResources` 与 `build` 均 PASS。Forge 1.12.2 strict audit 为 0 ERROR、5 条既有 `packet-thread` WARNING。release JAR 非空、可解压，内部两张贴图均确认是 32×32 PNG，村庄模型和中文 `.name` 键均已确认。游戏内/旧存档/Dedicated Server 为 NOT RUN：无可操作 Forge 客户端，且没有接受 EULA。
 
 ## 维护：商人交易实时同步、实体行为与字体一致性（2026-09-04）
 

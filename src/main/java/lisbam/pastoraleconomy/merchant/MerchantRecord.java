@@ -14,6 +14,8 @@ public final class MerchantRecord {
     private static final String KEY_ACTIVE = "active";
     private static final String KEY_DAILY = "dailyOffer";
     private static final String KEY_ROTATIONS = "rotations";
+    private static final String KEY_ENTITY_CHUNK_X = "entityChunkX";
+    private static final String KEY_ENTITY_CHUNK_Z = "entityChunkZ";
 
     private final UUID merchantId;
     private final UUID villageId;
@@ -21,6 +23,10 @@ public final class MerchantRecord {
     private boolean active = true;
     private DailyOfferState dailyOfferState;
     private final Map<TradePool, OfferRotationState> rotations = new EnumMap<TradePool, OfferRotationState>(TradePool.class);
+    /** Last observed live entity chunk; absent in older saves until that entity is loaded once. */
+    private boolean hasKnownEntityChunk;
+    private int knownEntityChunkX;
+    private int knownEntityChunkZ;
 
     public MerchantRecord(UUID merchantId, UUID villageId, UUID stationId) {
         if (merchantId == null || villageId == null || stationId == null) {
@@ -38,6 +44,19 @@ public final class MerchantRecord {
     public void setActive(boolean value) { active = value; }
     public DailyOfferState getDailyOfferState() { return dailyOfferState; }
     public void setDailyOfferState(DailyOfferState value) { dailyOfferState = value; }
+    public boolean hasKnownEntityChunk() { return hasKnownEntityChunk; }
+    public int getKnownEntityChunkX() { return knownEntityChunkX; }
+    public int getKnownEntityChunkZ() { return knownEntityChunkZ; }
+
+    public boolean updateKnownEntityChunk(int chunkX, int chunkZ) {
+        if (hasKnownEntityChunk && knownEntityChunkX == chunkX && knownEntityChunkZ == chunkZ) {
+            return false;
+        }
+        hasKnownEntityChunk = true;
+        knownEntityChunkX = chunkX;
+        knownEntityChunkZ = chunkZ;
+        return true;
+    }
 
     public OfferRotationState getRotation(TradePool pool) {
         OfferRotationState state = rotations.get(pool);
@@ -62,6 +81,10 @@ public final class MerchantRecord {
             rotationTags.setTag(entry.getKey().name(), entry.getValue().writeToNBT());
         }
         tag.setTag(KEY_ROTATIONS, rotationTags);
+        if (hasKnownEntityChunk) {
+            tag.setInteger(KEY_ENTITY_CHUNK_X, knownEntityChunkX);
+            tag.setInteger(KEY_ENTITY_CHUNK_Z, knownEntityChunkZ);
+        }
         return tag;
     }
 
@@ -80,6 +103,9 @@ public final class MerchantRecord {
             if (rotationTags.hasKey(pool.name(), 10)) {
                 record.rotations.put(pool, OfferRotationState.readFromNBT(rotationTags.getCompoundTag(pool.name())));
             }
+        }
+        if (tag.hasKey(KEY_ENTITY_CHUNK_X) && tag.hasKey(KEY_ENTITY_CHUNK_Z)) {
+            record.updateKnownEntityChunk(tag.getInteger(KEY_ENTITY_CHUNK_X), tag.getInteger(KEY_ENTITY_CHUNK_Z));
         }
         return record;
     }

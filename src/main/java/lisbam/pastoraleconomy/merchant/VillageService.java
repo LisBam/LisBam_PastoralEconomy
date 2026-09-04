@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.WeakHashMap;
 
 /**
  * Bounded Overworld maintenance for legacy 1.12.2 villages. It only observes
@@ -35,29 +36,40 @@ public final class VillageService {
     public static final int VILLAGE_DEDUP_DISTANCE = 160;
     public static final int STATION_SEARCH_RADIUS = 12;
     public static final int MAINTENANCE_INTERVAL_TICKS = 200;
+    /** Lets persisted chunk entities join their world before records are allowed to replace them. */
+    private static final Map<WorldServer, Long> INITIAL_ENTITY_SETTLE_TICKS = new WeakHashMap<WorldServer, Long>();
 
     private VillageService() {
     }
 
     public static void tick(WorldServer overworld) {
-        tick(overworld, false);
-    }
-
-    public static void tick(WorldServer overworld, boolean force) {
         if (overworld == null || overworld.isRemote || overworld.provider.getDimension() != 0) {
             return;
         }
-        if (!force && overworld.getTotalWorldTime() % MAINTENANCE_INTERVAL_TICKS != 0L) {
+        long worldTime = overworld.getTotalWorldTime();
+        if (worldTime < MAINTENANCE_INTERVAL_TICKS || worldTime % MAINTENANCE_INTERVAL_TICKS != 0L) {
             return;
         }
         PastoralWorldData data = PastoralWorldData.get(overworld);
         MerchantWorldState state = data.getMerchantWorldState();
         boolean changed = observeLegacyVillages(overworld, state);
         changed |= ensureStations(overworld, state);
-        changed |= reconcileMerchants(overworld, state);
+        if (isInitialEntitySettleComplete(overworld, worldTime)) {
+            changed |= reconcileMerchants(overworld, state);
+        }
         if (changed) {
             data.markDirty();
         }
+    }
+
+    /** World load precedes chunk-entity joining; defer its first replacement pass by one maintenance interval. */
+    private static boolean isInitialEntitySettleComplete(WorldServer world, long worldTime) {
+        Long readyAt = INITIAL_ENTITY_SETTLE_TICKS.get(world);
+        if (readyAt == null) {
+            INITIAL_ENTITY_SETTLE_TICKS.put(world, worldTime + MAINTENANCE_INTERVAL_TICKS);
+            return false;
+        }
+        return worldTime >= readyAt;
     }
 
     private static boolean observeLegacyVillages(WorldServer overworld, MerchantWorldState state) {
@@ -250,7 +262,8 @@ public final class VillageService {
                 continue;
             }
             StationRecord station = village.getStationId() == null ? null : state.getStation(village.getStationId());
-            if (station == null || station.getDimension() != 0 || !isCorrectStation(world, station.getPosition(), village, station)) {
+            if (station == null || station.getDimension() != 0 || !world.isBlockLoaded(station.getPosition())
+                    || !isCorrectStation(world, station.getPosition(), village, station)) {
                 continue;
             }
             int target = getTargetMerchantCount(village.getVillagerCount());
@@ -287,9 +300,14 @@ public final class VillageService {
                 if (merchant == null || !merchant.isActive() || entities.containsKey(merchantId)) {
                     continue;
                 }
+                if (merchant.hasKnownEntityChunk() && !isKnownEntityChunkLoaded(world, merchant)) {
+                    continue;
+                }
                 EntityMerchant spawned = spawnMerchant(world, merchant, station);
                 if (spawned != null) {
                     entities.put(merchantId, spawned);
+                    changed |= merchant.updateKnownEntityChunk(spawned.getPosition().getX() >> 4,
+                            spawned.getPosition().getZ() >> 4);
                 }
             }
         }
@@ -308,14 +326,37 @@ public final class VillageService {
             EntityMerchant merchant = (EntityMerchant) value;
             UUID merchantId = merchant.getMerchantId();
             MerchantRecord record = merchantId == null ? null : state.getMerchant(merchantId);
-            if (record == null || !merchant.hasValidBinding() || !seen.add(merchantId)) {
+            if (!isCurrentMerchantEntity(state, merchant, record) || !seen.add(merchantId)) {
                 merchant.setDead();
                 changed = true;
             } else if (!merchant.isDead) {
                 result.put(merchantId, merchant);
+                changed |= record.updateKnownEntityChunk(merchant.getPosition().getX() >> 4,
+                        merchant.getPosition().getZ() >> 4);
             }
         }
         return new MerchantEntityIndex(result, changed);
+    }
+
+    /** Reject stale, inactive, or cross-village entity NBT before it can count toward a roster. */
+    private static boolean isCurrentMerchantEntity(MerchantWorldState state, EntityMerchant merchant,
+                                                   MerchantRecord record) {
+        if (state == null || merchant == null || record == null || !record.isActive() || !merchant.hasValidBinding()
+                || !record.getMerchantId().equals(merchant.getMerchantId())
+                || !record.getVillageId().equals(merchant.getVillageId())
+                || !record.getStationId().equals(merchant.getStationId())) {
+            return false;
+        }
+        VillageRecord village = state.getVillage(record.getVillageId());
+        StationRecord station = state.getStation(record.getStationId());
+        return village != null && village.getMerchantRoster().contains(record.getMerchantId())
+                && station != null && station.getVillageId().equals(record.getVillageId());
+    }
+
+    /** An unloaded last-known entity chunk may still contain the persistent entity in its chunk NBT. */
+    private static boolean isKnownEntityChunkLoaded(WorldServer world, MerchantRecord merchant) {
+        return world.isBlockLoaded(new BlockPos(merchant.getKnownEntityChunkX() << 4, 0,
+                merchant.getKnownEntityChunkZ() << 4));
     }
 
     private static EntityMerchant spawnMerchant(WorldServer world, MerchantRecord merchant, StationRecord station) {

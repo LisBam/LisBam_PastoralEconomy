@@ -47,7 +47,6 @@ public final class PersistenceEventHandler {
         World world = event.getWorld();
         if (!world.isRemote && world instanceof WorldServer && world.provider.getDimension() == 0) {
             PastoralWorldData.get(world).completeFirstInitialization((WorldServer) world);
-            VillageService.tick((WorldServer) world, true);
         }
     }
 
