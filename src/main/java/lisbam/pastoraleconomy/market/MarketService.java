@@ -4,6 +4,8 @@ import lisbam.pastoraleconomy.data.world.PastoralWorldData;
 import net.minecraft.world.World;
 
 import javax.annotation.Nullable;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -92,6 +94,27 @@ public final class MarketService {
             throw new IllegalArgumentException("Market history cursor is outside the current world day.");
         }
 
+        return createHistorySnapshot(data, commodity, beforeExclusiveDay, limit, requestId);
+    }
+
+    /**
+     * Builds every selectable newest window from one ready WorldSavedData view.
+     * A book only needs this once per open session, so crop switching can stay
+     * entirely client-side without creating one packet round trip per button.
+     */
+    public static List<MarketHistorySnapshot> getNewestHistorySnapshots(World world, int requestId) {
+        PastoralWorldData data = getReadyData(world);
+        List<MarketHistorySnapshot> snapshots = new ArrayList<MarketHistorySnapshot>(MarketCatalog.getHistoryTracked().size());
+        for (MarketCommodity commodity : MarketCatalog.getHistoryTracked()) {
+            snapshots.add(createHistorySnapshot(data, commodity, -1L, DEFAULT_HISTORY_DAYS, requestId));
+        }
+        return Collections.unmodifiableList(snapshots);
+    }
+
+    private static MarketHistorySnapshot createHistorySnapshot(
+            PastoralWorldData data, MarketCommodity commodity, long beforeExclusiveDay, int limit, int requestId
+    ) {
+        long currentDay = data.getCurrentMarketDay();
         List<MarketHistoryPoint> points = beforeExclusiveDay == -1L
                 ? data.getCropHistory(commodity.getKey(), currentDay, limit, null)
                 : data.getCropHistory(commodity.getKey(), currentDay, limit, Long.valueOf(beforeExclusiveDay));

@@ -82,6 +82,9 @@ public final class GuiMarketBook extends GuiScreen {
         if (button.id >= CROP_BUTTON_OFFSET && button.id < CROP_BUTTON_OFFSET + CROPS.size()) {
             selectedCommodity = CROPS.get(button.id - CROP_BUTTON_OFFSET);
             newerCursors.clear();
+            if (useCachedNewestWindow()) {
+                return;
+            }
             requestWindow(-1L, true);
             return;
         }
@@ -350,6 +353,18 @@ public final class GuiMarketBook extends GuiScreen {
 
     private MarketHistorySnapshot getActiveSnapshot() {
         return ClientMarketState.getSnapshot(selectedCommodity.getKey(), requestedBeforeExclusiveDay, activeRequestId);
+    }
+
+    /** All fourteen newest windows arrive with the opening request id. */
+    private boolean useCachedNewestWindow() {
+        MarketHistorySnapshot snapshot = ClientMarketState.getSnapshot(selectedCommodity.getKey(), -1L, activeRequestId);
+        if (snapshot == null) {
+            return false;
+        }
+        requestedBeforeExclusiveDay = -1L;
+        waitingForSnapshot = false;
+        updateNavigation(snapshot);
+        return true;
     }
 
     private void updateNavigation(MarketHistorySnapshot snapshot) {

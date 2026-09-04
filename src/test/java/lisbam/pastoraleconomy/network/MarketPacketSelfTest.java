@@ -15,6 +15,7 @@ import java.util.List;
 /** Standalone regression checks for bounded packet decoding and stale GUI snapshots. */
 public final class MarketPacketSelfTest {
     private static final String WHEAT = "lisbam_pastoral_economy:sell/crop/wheat";
+    private static final String CARROT = "lisbam_pastoral_economy:sell/crop/carrot";
 
     private MarketPacketSelfTest() {
     }
@@ -24,6 +25,7 @@ public final class MarketPacketSelfTest {
         verifySnapshotRoundTripAndBounds();
         verifyStaleSnapshotDoesNotReplaceNewerWindow();
         verifyBookSessionDropsLateSnapshots();
+        verifyOpeningRequestPrefetchesSelectableCommodities();
         verifyBookRequestCoalescing();
     }
 
@@ -133,6 +135,24 @@ public final class MarketPacketSelfTest {
         book.queueMarketRequest(latest);
         require(book.pollMarketRequest(101L) == null, "the latest request must remain queued until the cooldown expires");
         require(book.pollMarketRequest(102L) == latest, "only the latest rapid crop selection must be served");
+    }
+
+    private static void verifyOpeningRequestPrefetchesSelectableCommodities() {
+        List<MarketHistoryPoint> points = new ArrayList<MarketHistoryPoint>();
+        points.add(new MarketHistoryPoint(1L, 5L, null));
+        ClientMarketState.beginBookSession();
+        int openingRequest = ClientMarketState.nextRequestId();
+        MarketHistorySnapshot wheat = new MarketHistorySnapshot(
+                openingRequest, WHEAT, -1L, 1L, 5L, null, points, false, false
+        );
+        MarketHistorySnapshot carrot = new MarketHistorySnapshot(
+                openingRequest, CARROT, -1L, 1L, 6L, null, points, false, false
+        );
+        ClientMarketState.acceptSnapshot(wheat);
+        ClientMarketState.acceptSnapshot(carrot);
+        require(ClientMarketState.getSnapshot(CARROT, -1L, openingRequest) == carrot,
+                "all crop windows sent with the opening request id must be selectable without another request");
+        ClientMarketState.endBookSession();
     }
 
     private static void writeKey(ByteBuf buffer, String key) {

@@ -6,7 +6,7 @@
 
 - `env JAVA_HOME=/tmp/lisbam-jdk8-UlgK66/jdk8u504-b01 PATH=<Temurin-8-bin> ./gradlew build`
 - 日期：2026-09-04
-- 结果：PASS（Forge 14.23.5.2859 / Temurin Java 8 `1.8.0_504`；`build` 包含 `reobfJar` 与 `exportReleaseJar`。`release/LisBam_PastoralEconomy-0.1.0.jar` 为 2,553,027 bytes，SHA-256 `b3371df35c3438b527deefe44f9c6a5a3e3a75c3a75e12c07b873a8eb2411505`，`unzip -t` PASS。）
+- 结果：PASS（Forge 14.23.5.2859 / Temurin Java 8 `1.8.0_504`；`build` 包含 `reobfJar` 与 `exportReleaseJar`。`release/LisBam_PastoralEconomy-0.1.0.jar` 为 2,553,820 bytes，SHA-256 `620a6213a4846b807a34aabcaba0f9b14922e591e340727f48e5904dfbdfaeb6`，`unzip -t` PASS。）
 
 ## 维护：市场、经济与商人性能（2026-09-04）
 
@@ -28,6 +28,12 @@
 根因与修复：上一轮的 2 tick 服务端限流会静默丢弃冷却内的合法作物切换；客户端已先进入读取状态，因此没有回包即可永久卡住。`ContainerMarketBook` 现保留冷却内最新请求，并在其自身下一次服务端 Container tick 处理；首个请求仍立即处理。由此维持每会话最多每 2 tick 一次快照的性能边界，同时保证每次界面选择最终都有回应。
 
 验证：`marketPacketSelfTest`、`compileJava`、`compileTestJava`、`processResources` 与 `build` 均 PASS（Temurin Java 8 `1.8.0_504`）；发布 JAR 非空且 `unzip -t` PASS。Forge 1.12.2 strict audit 实际运行结果为 0 ERROR、5 条既有保守 packet-thread WARNING；本次 C2S Handler 仍先调度到服务端主线程，S2C 警告均为既有 Proxy/客户端主线程桥接。
+
+## 维护：行情书作物切换仍卡住（2026-09-04）
+
+根因与修复：实机反馈证明“先显示小麦、再为所选作物单独发 C2S 请求”的路径仍不可靠。现在书本打开时的首个最新窗口请求会一次准备并用既有 Packet 2 下发 14 种作物的 30 天快照，全部共享首个 requestId；作物按钮只从会话缓存读取，不再触发网络/限流路径。若批量包异常未到，才保留既有合并后备请求。
+
+验证：`compileJava`、`compileTestJava`、`marketPacketSelfTest`、`processResources` 与 `build` PASS；发布 JAR 非空且 `unzip -t` PASS。Forge 1.12.2 strict audit 实际运行结果为 0 ERROR、5 条既有保守 packet-thread WARNING；C2S 行情请求仍先切到逻辑服务端主线程，S2C 缓存写入仍经 ClientProxy 调度。
 
 # 批次记录
 

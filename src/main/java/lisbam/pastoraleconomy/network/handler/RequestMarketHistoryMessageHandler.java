@@ -13,6 +13,8 @@ import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
 import net.minecraftforge.fml.common.network.simpleimpl.IMessageHandler;
 import net.minecraftforge.fml.common.network.simpleimpl.MessageContext;
 
+import java.util.List;
+
 /** Validates C2S market display requests and reads market state only on the server thread. */
 public final class RequestMarketHistoryMessageHandler
         implements IMessageHandler<RequestMarketHistoryMessage, IMessage> {
@@ -59,10 +61,20 @@ public final class RequestMarketHistoryMessageHandler
             return;
         }
 
+        long cursor = request.getBeforeExclusiveDay();
+        if (cursor == -1L) {
+            List<MarketHistorySnapshot> snapshots = MarketService.getNewestHistorySnapshots(
+                    player.getServerWorld(), request.getRequestId()
+            );
+            for (MarketHistorySnapshot snapshot : snapshots) {
+                ModNetwork.CHANNEL.sendTo(new SyncMarketHistoryMessage(snapshot), player);
+            }
+            return;
+        }
+
         WorldServer playerWorld = player.getServerWorld();
         long currentDay = MarketService.getCurrentMarketDay(playerWorld);
-        long cursor = request.getBeforeExclusiveDay();
-        if (cursor < -1L || (cursor >= 0L && cursor > currentDay)) {
+        if (cursor > currentDay) {
             return;
         }
 
