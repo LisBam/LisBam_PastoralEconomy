@@ -10,7 +10,6 @@ import lisbam.pastoraleconomy.merchant.MerchantWorldState;
 import lisbam.pastoraleconomy.transport.TransportWorldState;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.nbt.NBTTagList;
-import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 import net.minecraft.world.WorldServer;
 import net.minecraft.world.storage.MapStorage;
@@ -19,8 +18,8 @@ import net.minecraft.nbt.NBTTagCompound;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.LinkedHashMap;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
@@ -36,21 +35,11 @@ public final class PastoralWorldData extends WorldSavedData {
     public static final long MARKET_DAY_TICKS = 24000L;
     /** The market book has one 30-day window, so older points must never grow the save. */
     public static final int MARKET_HISTORY_RETENTION_DAYS = 30;
-    public static final long FARM_HARASSMENT_WINDOW_TICKS = 6000L;
-    public static final int FARM_HARASSMENT_MAXIMUM = 6;
-    public static final int FARM_HARASSMENT_RADIUS = 32;
-
     private static final String KEY_DATA_VERSION = "dataVersion";
     private static final String KEY_INITIALIZED = "firstInitializationCompleted";
     private static final String KEY_MARKET = "market";
     private static final String KEY_MERCHANT = "merchant";
     private static final String KEY_TRANSPORT = "transport";
-    private static final String KEY_FARM_HARASSMENT = "farmHarassment";
-    private static final String KEY_RECORD_DIMENSION = "dimension";
-    private static final String KEY_RECORD_X = "x";
-    private static final String KEY_RECORD_Y = "y";
-    private static final String KEY_RECORD_Z = "z";
-    private static final String KEY_RECORD_TICK = "tick";
     private static final String KEY_MARKET_INITIALIZED = "initialized";
     private static final String KEY_MARKET_SEED = "seed";
     private static final String KEY_FIRST_MARKET_DAY = "firstDay";
@@ -66,7 +55,6 @@ public final class PastoralWorldData extends WorldSavedData {
 
     private int dataVersion = DATA_VERSION;
     private boolean firstInitializationCompleted;
-    private final List<FarmHarassmentRecord> farmHarassmentRecords = new ArrayList<FarmHarassmentRecord>();
     private boolean marketInitialized;
     private long marketSeed;
     private long firstMarketDay = -1L;
@@ -99,15 +87,7 @@ public final class PastoralWorldData extends WorldSavedData {
             data = new PastoralWorldData();
             storage.setData(DATA_NAME, data);
         }
-        if (data.pruneFarmHarassment(overworld.getTotalWorldTime())) {
-            data.markDirty();
-        }
         return data;
-    }
-
-    /** Shared server tick source used by cross-dimension harassment quota data. */
-    public static long getAuthoritativeTick(World world) {
-        return getOverworld(world).getTotalWorldTime();
     }
 
     /** Minecraft day, deliberately based on the shared overworld's day/night time rather than total ticks. */
@@ -284,69 +264,14 @@ public final class PastoralWorldData extends WorldSavedData {
         return transportWorldState;
     }
 
-    /** True when this dimension/position still has room under the shared six-event quota. */
-    public boolean canRecordFarmHarassment(int dimension, BlockPos position, long currentTick) {
-        if (pruneFarmHarassment(currentTick)) {
-            markDirty();
-        }
-
-        int nearbyCount = 0;
-        long radiusSq = (long) FARM_HARASSMENT_RADIUS * (long) FARM_HARASSMENT_RADIUS;
-        for (FarmHarassmentRecord record : farmHarassmentRecords) {
-            if (record.dimension != dimension) {
-                continue;
-            }
-            long deltaX = (long) record.x - (long) position.getX();
-            long deltaZ = (long) record.z - (long) position.getZ();
-            if (deltaX * deltaX + deltaZ * deltaZ <= radiusSq) {
-                nearbyCount++;
-                if (nearbyCount >= FARM_HARASSMENT_MAXIMUM) {
-                    return false;
-                }
-            }
-        }
-        return true;
-    }
-
-    /** Records only a block change that has already succeeded on the logical server. */
-    public void recordFarmHarassment(int dimension, BlockPos position, long currentTick) {
-        if (pruneFarmHarassment(currentTick)) {
-            markDirty();
-        }
-        farmHarassmentRecords.add(new FarmHarassmentRecord(
-                dimension,
-                position.getX(),
-                position.getY(),
-                position.getZ(),
-                currentTick
-        ));
-        markDirty();
-    }
-
     @Override
     public void readFromNBT(NBTTagCompound compound) {
         int storedVersion = compound.hasKey(KEY_DATA_VERSION) ? compound.getInteger(KEY_DATA_VERSION) : 1;
         firstInitializationCompleted = compound.getBoolean(KEY_INITIALIZED);
-        farmHarassmentRecords.clear();
         clearMarketData();
         merchantWorldState.readFromNBT(new NBTTagCompound());
         transportWorldState.readFromNBT(new NBTTagCompound());
 
-        // v1 contains no farmHarassment section. Its keepInventory marker and
-        // all reserved sections remain intact while v2 starts with no records.
-        if (storedVersion >= 2) {
-            NBTTagList serializedRecords = compound.getTagList(KEY_FARM_HARASSMENT, 10);
-            for (int index = 0; index < serializedRecords.tagCount(); index++) {
-                NBTTagCompound serializedRecord = serializedRecords.getCompoundTagAt(index);
-                farmHarassmentRecords.add(new FarmHarassmentRecord(
-                        serializedRecord.getInteger(KEY_RECORD_DIMENSION),
-                        serializedRecord.getInteger(KEY_RECORD_X),
-                        serializedRecord.getInteger(KEY_RECORD_Y),
-                        serializedRecord.getInteger(KEY_RECORD_Z),
-                        serializedRecord.getLong(KEY_RECORD_TICK)
-                ));
-            }
-        }
         if (storedVersion >= 3 && compound.hasKey(KEY_MARKET, 10)) {
             readMarket(compound.getCompoundTag(KEY_MARKET));
         }
@@ -367,22 +292,7 @@ public final class PastoralWorldData extends WorldSavedData {
         compound.setTag(KEY_MARKET, writeMarket());
         compound.setTag(KEY_MERCHANT, merchantWorldState.writeToNBT());
         compound.setTag(KEY_TRANSPORT, transportWorldState.writeToNBT());
-        compound.setTag(KEY_FARM_HARASSMENT, writeFarmHarassmentRecords());
         return compound;
-    }
-
-    private NBTTagList writeFarmHarassmentRecords() {
-        NBTTagList serializedRecords = new NBTTagList();
-        for (FarmHarassmentRecord record : farmHarassmentRecords) {
-            NBTTagCompound serializedRecord = new NBTTagCompound();
-            serializedRecord.setInteger(KEY_RECORD_DIMENSION, record.dimension);
-            serializedRecord.setInteger(KEY_RECORD_X, record.x);
-            serializedRecord.setInteger(KEY_RECORD_Y, record.y);
-            serializedRecord.setInteger(KEY_RECORD_Z, record.z);
-            serializedRecord.setLong(KEY_RECORD_TICK, record.tick);
-            serializedRecords.appendTag(serializedRecord);
-        }
-        return serializedRecords;
     }
 
     private void setCurrentSnapshot(long day, Map<String, Long> existingPrices) {
@@ -556,32 +466,4 @@ public final class PastoralWorldData extends WorldSavedData {
         }
     }
 
-    private boolean pruneFarmHarassment(long currentTick) {
-        boolean removed = false;
-        Iterator<FarmHarassmentRecord> iterator = farmHarassmentRecords.iterator();
-        while (iterator.hasNext()) {
-            FarmHarassmentRecord record = iterator.next();
-            if (record.tick > currentTick || currentTick - record.tick > FARM_HARASSMENT_WINDOW_TICKS) {
-                iterator.remove();
-                removed = true;
-            }
-        }
-        return removed;
-    }
-
-    private static final class FarmHarassmentRecord {
-        private final int dimension;
-        private final int x;
-        private final int y;
-        private final int z;
-        private final long tick;
-
-        private FarmHarassmentRecord(int dimension, int x, int y, int z, long tick) {
-            this.dimension = dimension;
-            this.x = x;
-            this.y = y;
-            this.z = z;
-            this.tick = tick;
-        }
-    }
 }

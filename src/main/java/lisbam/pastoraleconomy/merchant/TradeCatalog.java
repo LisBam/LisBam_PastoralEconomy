@@ -121,7 +121,7 @@ public final class TradeCatalog {
     private static void addUncommonBuyDefinitions(Map<String, TradeCatalogEntry> definitions) {
         String[][] rows = {
                 {"gold_ingot", "buy/rare/gold_ingot", "4", "800", "16"}, {"lava_bucket", "buy/rare/lava_bucket", "1", "600", "16"},
-                {"gunpowder", "buy/rare/gunpowder", "8", "400"}, {"slime_ball", "buy/rare/slime_ball", "4", "480"},
+                {"gunpowder", "buy/rare/gunpowder", "8", "400"},
                 {"magma_cream", "buy/rare/magma_cream", "4", "640", "16"}, {"glowstone_dust", "buy/rare/glowstone_dust", "8", "480"},
                 {"nether_quartz", "buy/rare/nether_quartz", "8", "480"}, {"end_stone", "buy/rare/end_stone", "16", "320"},
                 {"prismarine_shard", "buy/rare/prismarine_shard", "8", "400"}, {"prismarine_crystals", "buy/rare/prismarine_crystals", "4", "400"},
@@ -153,6 +153,7 @@ public final class TradeCatalog {
     private static void addRareBuyDefinitions(Map<String, TradeCatalogEntry> definitions) {
         String[][] rows = {
                 {"diamond", "1", "1600", "16", "0.18"}, {"emerald", "1", "700", "16", "0.18"},
+                {"slime_ball", "4", "480", "8", "0.18"},
                 {"blaze_rod", "1", "900", "16", "0.18"}, {"ghast_tear", "1", "1200", "16", "0.18"},
                 {"ender_pearl", "1", "800", "16", "0.18"}, {"wither_skeleton_skull", "1", "4000", "4", "0.18"},
                 {"shulker_shell", "1", "5000", "8", "0.12"}, {"dragon_breath", "1", "1800", "16", "0.12"},

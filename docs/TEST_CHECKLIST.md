@@ -32,18 +32,19 @@
 - [x] 连接/断开后客户端金币缓存清空，不残留上一服务器余额。PASS：`PlayerDataSelfTest`。
 - [ ] Dedicated Server 无 `net.minecraft.client.*` 加载异常。NOT RUN：Dedicated Server 未完成 Forge 引导；静态审查确认客户端 import 仅在 `client` 包和 `ClientProxy`。
 
-## 第 03 批怪物休闲规则
+## 维护：敌对生成与动物骨头
 
-- [x] `PastoralWorldDataSelfTest`：6 次同区域成功允许、第 7 次拒绝、半径外与其他维度独立、NBT 重载、6,000 Tick 过期、v1→v2 迁移。PASS。
-- [x] 第 03 批生产类在 reobf Jar 中，测试自检类不在 Jar 中。PASS。
-- [x] Forge 1.12.2 static audit：0 ERROR；本批没有客户端 import、Packet 或现代 Forge/Java API。PASS。
-- [ ] 指定八种原版类不自然锁定玩家；Cave Spider、Pig Zombie、其他怪物保持原版。NOT RUN：无可进入的世界。
-- [ ] 直接攻击仅使攻击者可被反击，非攻击者不能吸引仇恨；Enderman 注视不触发仇恨而直接攻击可反击。NOT RUN：无可进入的世界。
-- [ ] Creeper 不自然追逐/引爆玩家，直接攻击反击和手动点燃保留；其爆炸不破坏方块但仍伤害/击退实体，TNT 等不受影响。NOT RUN：无可进入的世界。
-- [ ] 六类非 Creeper 怪物只在严格前置条件下按 200--320 Tick 候选、75/25 选择、900--1,500 Tick 成功冷却骚扰一格目标。NOT RUN：无可进入的世界。
-- [ ] 仅列出的作物/空耕地可被变更、无掉落、`mobGriefing=false` 完全跳过；扫描/执行距离、同维度半径 32 和 6,000 Tick/6 次配额均符合规则。NOT RUN：无可进入的世界；配额、半径、维度、过期和迁移由自检覆盖。
-- [ ] 实体冷却、世界配额和 v1 存档迁移在真实保存、退出重进、维度切换后正确。NOT RUN：无可进入的世界；WorldSavedData NBT 往返与迁移由自检覆盖。
-- [ ] Dedicated Server 完整加载本批 common 代码。NOT RUN：本次实际启动至 `MinecraftServer` 后因 `eula=false` 退出；未代为接受 Mojang EULA。
+- [x] `compileJava`、`processResources`、最终 `build`（含 `test`、`reobfJar`、`exportReleaseJar`）— PASS：2026-09-04，Temurin Java 8 `1.8.0_504`。
+- [x] Forge 1.12.2 严格审计 — PASS：0 ERROR；5 条既有 `packet-thread` WARNING 已复核，未由本次引入。
+- [x] `release/LisBam_PastoralEconomy-1.0.jar` — PASS：325,829 bytes、SHA-256 `ece4347f519d2adab909099d8772f720e3225c95df1d5d11584300b6aa95e961`、`unzip -t` 通过；包含新的事件类与两个配方，不含已删除的敌对行为类。
+- [ ] 主世界夜间、洞穴和区块首次生成均不出现自然 `MONSTER`；下界、末地、动物、水生生物和环境生物保持原版自然生成。NOT RUN：需要可进入的世界。
+- [ ] 主世界刷怪笼仍可生成怪物；刷怪蛋、命令与模组直接生成不被拦截。NOT RUN：需要可进入的世界。
+- [ ] 已生成的僵尸、骷髅、蜘蛛、末影人、苦力怕及充能苦力怕的索敌、反击、爆炸方块破坏与实体伤害均为 Java 1.12.2 原版行为。NOT RUN：需要可进入的世界。
+- [x] `animalBoneDropSelfTest`：大体型 20% 双骨/50% 单骨边界、小体型 25% 单骨边界、成功基础掉落的 Looting `0..等级` 附加量及失败不被 Looting 变为掉落。PASS：2026-09-04，Temurin Java 8。
+- [x] `merchantCatalogSelfTest`：粘液球位于 28 项稀有池、4 个/组、8 组库存；读取旧当天罕见槽的无限库存粘液球时，只替换该槽位且保留现有稀有商品。PASS：2026-09-04，Temurin Java 8。
+- [x] `pastoralWorldDataSelfTest`：旧 v1 初始化标记保留，已删除的 `farmHarassment` 字段不再写出。PASS：2026-09-04，Temurin Java 8。
+- [ ] 牛/哞菇/猪/羊/马/驴/骡/羊驼与鸡/兔/狼/豹猫/鹦鹉按表掉落骨头；抢夺与屠宰的顺序、外部强制并存时的组合、非白名单实体均符合内容书。NOT RUN：需要可进入的世界。
+- [ ] Dedicated Server 完整加载新增 common 事件处理器且不加载客户端类。NOT RUN：`timeout 60s ./gradlew runServer` 已进入 Forge/FML 1.12.2 引导与 coremod 阶段，但在模组发现前到达时限；`run/eula.txt` 保持 `eula=false`，未接受 EULA。静态审计为 0 ERROR。
 
 ## 第 04 批世界日市场核心
 
