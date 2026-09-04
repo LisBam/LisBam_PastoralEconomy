@@ -1,6 +1,6 @@
 {
   "parent": "block/cube_all",
   "textures": {
-    "all": "minecraft:blocks/planks_oak"
+    "all": "lisbam_pastoral_economy:blocks/transport_station"
   }
 }

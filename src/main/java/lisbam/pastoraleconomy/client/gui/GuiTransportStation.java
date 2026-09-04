@@ -7,6 +7,7 @@ import lisbam.pastoraleconomy.transport.TransportAction;
 import lisbam.pastoraleconomy.transport.TransportNodeView;
 import lisbam.pastoraleconomy.transport.TransportStateSnapshot;
 import lisbam.pastoraleconomy.transport.VillageTransportCandidate;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiButton;
 import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.client.gui.GuiTextField;
@@ -31,6 +32,8 @@ public final class GuiTransportStation extends GuiScreen {
     private static final int ROW_HEIGHT = 14;
     private static final ResourceLocation VANILLA_PANEL_TEXTURE = new ResourceLocation(
             "minecraft", "textures/gui/demo_background.png");
+    /** Matches the normal light text of Minecraft 1.12.2's standard GuiButton. */
+    private static final int TEXT_COLOR = 0xFFE0E0E0;
 
     private final BlockPos stationPosition;
     private GuiTextField renameField;
@@ -46,26 +49,28 @@ public final class GuiTransportStation extends GuiScreen {
     public void initGui() {
         buttonList.clear();
         layout = Layout.create(width, height);
-        buttonList.add(new GuiButton(BUTTON_CONNECT, layout.connectX, layout.actionRowOneY, layout.connectWidth, 18,
+        buttonList.add(new LightTextButton(BUTTON_CONNECT, layout.connectX, layout.actionRowOneY, layout.connectWidth, 18,
                 I18n.format("gui.lisbam_pastoral_economy.transport.connect")));
-        buttonList.add(new GuiButton(BUTTON_REFRESH, layout.refreshX, layout.actionRowOneY, layout.refreshWidth, 18,
+        buttonList.add(new LightTextButton(BUTTON_REFRESH, layout.refreshX, layout.actionRowOneY, layout.refreshWidth, 18,
                 I18n.format("gui.lisbam_pastoral_economy.transport.refresh")));
-        buttonList.add(new GuiButton(BUTTON_TRAVEL, layout.travelX, layout.actionRowOneY, layout.travelWidth, 18,
+        buttonList.add(new LightTextButton(BUTTON_TRAVEL, layout.travelX, layout.actionRowOneY, layout.travelWidth, 18,
                 I18n.format("gui.lisbam_pastoral_economy.transport.travel")));
-        buttonList.add(new GuiButton(BUTTON_FIND_VILLAGE, layout.contentX, layout.actionRowTwoY, layout.villageButtonWidth, 18,
+        buttonList.add(new LightTextButton(BUTTON_FIND_VILLAGE, layout.contentX, layout.actionRowTwoY, layout.villageButtonWidth, 18,
                 I18n.format("gui.lisbam_pastoral_economy.transport.find_village")));
-        buttonList.add(new GuiButton(BUTTON_CONNECT_VILLAGE, layout.contentX + layout.villageButtonWidth + 4,
+        buttonList.add(new LightTextButton(BUTTON_CONNECT_VILLAGE, layout.contentX + layout.villageButtonWidth + 4,
                 layout.actionRowTwoY, layout.villageButtonWidth, 18,
                 I18n.format("gui.lisbam_pastoral_economy.transport.connect_village")));
-        buttonList.add(new GuiButton(BUTTON_PREVIOUS, layout.previousX, layout.listY - 16, 30, 14, "<"));
-        buttonList.add(new GuiButton(BUTTON_NEXT, layout.nextX, layout.listY - 16, 30, 14, ">"));
-        buttonList.add(new GuiButton(BUTTON_REMOVE, layout.contentX, layout.footerY, 82, 18,
+        buttonList.add(new LightTextButton(BUTTON_PREVIOUS, layout.previousX, layout.listY - 16, 30, 14, "<"));
+        buttonList.add(new LightTextButton(BUTTON_NEXT, layout.nextX, layout.listY - 16, 30, 14, ">"));
+        buttonList.add(new LightTextButton(BUTTON_REMOVE, layout.contentX, layout.footerY, 82, 18,
                 I18n.format("gui.lisbam_pastoral_economy.transport.remove")));
-        buttonList.add(new GuiButton(BUTTON_RENAME, layout.renameX, layout.footerY, 74, 18,
+        buttonList.add(new LightTextButton(BUTTON_RENAME, layout.renameX, layout.footerY, 74, 18,
                 I18n.format("gui.lisbam_pastoral_economy.transport.rename")));
         renameField = new GuiTextField(0, fontRenderer, layout.renameFieldX, layout.footerY + 2,
                 layout.renameFieldWidth, 14);
         renameField.setMaxStringLength(96);
+        renameField.setTextColor(TEXT_COLOR);
+        renameField.setDisabledTextColour(TEXT_COLOR);
         updateControls(currentSnapshot());
     }
 
@@ -145,11 +150,11 @@ public final class GuiTransportStation extends GuiScreen {
         drawDefaultBackground();
         drawNativePanel(layout.panelX, layout.panelY, layout.panelRight, layout.panelBottom);
         drawCenteredString(fontRenderer, I18n.format("gui.lisbam_pastoral_economy.transport.title"), width / 2,
-                layout.panelY + 8, 0xFF404040);
+                layout.panelY + 8, TEXT_COLOR);
         TransportStateSnapshot snapshot = currentSnapshot();
         if (snapshot == null) {
             drawCenteredString(fontRenderer, I18n.format("gui.lisbam_pastoral_economy.transport.loading"), width / 2,
-                    (layout.panelY + layout.panelBottom) / 2, 0xFF404040);
+                    (layout.panelY + layout.panelBottom) / 2, TEXT_COLOR);
         } else {
             drawCurrentStation(snapshot);
             drawNodeList(snapshot);
@@ -168,12 +173,12 @@ public final class GuiTransportStation extends GuiScreen {
         String current = I18n.format("gui.lisbam_pastoral_economy.transport.current", alias);
         drawString(fontRenderer, fontRenderer.trimStringToWidth(current,
                 layout.contentRight - layout.contentX - fontRenderer.getStringWidth(coins) - 10),
-                layout.contentX, layout.panelY + 22, 0xFF404040);
+                layout.contentX, layout.panelY + 22, TEXT_COLOR);
         drawTrimmed(I18n.format("gui.lisbam_pastoral_economy.transport.position",
                 Integer.toString(snapshot.getX()), Integer.toString(snapshot.getY()), Integer.toString(snapshot.getZ()),
-                Integer.toString(snapshot.getDimension())), layout.contentX, layout.panelY + 34, 0xFF404040);
+                Integer.toString(snapshot.getDimension())), layout.contentX, layout.panelY + 34, TEXT_COLOR);
         drawString(fontRenderer, coins, layout.contentRight - fontRenderer.getStringWidth(coins), layout.panelY + 22,
-                0xFF404040);
+                TEXT_COLOR);
         String status;
         if (!snapshot.currentStationExists()) {
             status = I18n.format("gui.lisbam_pastoral_economy.transport.invalid");
@@ -187,13 +192,13 @@ public final class GuiTransportStation extends GuiScreen {
             status = I18n.format("gui.lisbam_pastoral_economy.transport.fee", format(snapshot.getConnectionFee()));
         }
         drawTrimmed(I18n.format("gui.lisbam_pastoral_economy.transport.status", status), layout.contentX,
-                layout.panelY + 46, 0xFF404040);
+                layout.panelY + 46, TEXT_COLOR);
         VillageTransportCandidate village = snapshot.getNearestVillage();
         String villageText = village == null ? "" : I18n.format("gui.lisbam_pastoral_economy.transport.nearest_village",
                 village.getDisplayName(), format(village.getDistance()), format(village.getConnectionFee()));
-        drawTrimmed(villageText, layout.contentX, layout.villageInfoY, 0xFF404040);
+        drawTrimmed(villageText, layout.contentX, layout.villageInfoY, TEXT_COLOR);
         drawString(fontRenderer, I18n.format("gui.lisbam_pastoral_economy.transport.nodes"), layout.contentX,
-                layout.listY - 14, 0xFF404040);
+                layout.listY - 14, TEXT_COLOR);
     }
 
     private void drawNodeList(TransportStateSnapshot snapshot) {
@@ -215,9 +220,9 @@ public final class GuiTransportStation extends GuiScreen {
             int textWidth = layout.contentRight - layout.contentX - feeWidth - (feeWidth == 0 ? 0 : 6);
             String selectedPrefix = index == selectedIndex ? "> " : "";
             drawString(fontRenderer, fontRenderer.trimStringToWidth(selectedPrefix + node.getAlias() + " [" + state + "]  " + location,
-                    Math.max(1, textWidth)), layout.contentX, y, 0xFF404040);
+                    Math.max(1, textWidth)), layout.contentX, y, TEXT_COLOR);
             if (!fee.isEmpty()) {
-                drawString(fontRenderer, fee, layout.contentRight - feeWidth, y, 0xFF404040);
+                drawString(fontRenderer, fee, layout.contentRight - feeWidth, y, TEXT_COLOR);
             }
         }
     }
@@ -339,6 +344,22 @@ public final class GuiTransportStation extends GuiScreen {
         mc.getTextureManager().bindTexture(VANILLA_PANEL_TEXTURE);
         drawScaledCustomSizeModalRect(left, top, 0.0F, 0.0F, 248, 166,
                 right - left, bottom - top, 256.0F, 256.0F);
+    }
+
+    /** Retains vanilla button behaviour while drawing disabled labels in the same normal light colour. */
+    private static final class LightTextButton extends GuiButton {
+        private LightTextButton(int buttonId, int x, int y, int width, int height, String text) {
+            super(buttonId, x, y, width, height, text);
+        }
+
+        @Override
+        public void drawButton(Minecraft minecraft, int mouseX, int mouseY, float partialTicks) {
+            super.drawButton(minecraft, mouseX, mouseY, partialTicks);
+            if (visible) {
+                drawCenteredString(minecraft.fontRenderer, displayString, x + width / 2, y + (height - 8) / 2,
+                        TEXT_COLOR);
+            }
+        }
     }
 
     /** All action controls fit inside even Minecraft's 320x240 scaled screen. */

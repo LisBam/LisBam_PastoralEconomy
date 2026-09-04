@@ -21,7 +21,7 @@ import java.util.Random;
 /** Server-created protected anchor for one legacy-village merchant roster. */
 public final class BlockVillageStation extends Block {
     BlockVillageStation() {
-        super(Material.WOOD);
+        super(Material.ROCK);
         setRegistryName(LisBamPastoralEconomy.MODID, "village_station");
         setUnlocalizedName(LisBamPastoralEconomy.MODID + ".village_station");
         setHardness(-1.0F);

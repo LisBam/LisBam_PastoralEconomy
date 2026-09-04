@@ -125,6 +125,13 @@ public final class MerchantCatalogSelfTest {
                 "resolved enchantment level persistence");
         NBTTagCompound oldPlaceholder = new DailyOffer("", false, TradeCatalogEntry.UNLIMITED_STOCK).writeToNBT();
         check(DailyOffer.readFromNBT(oldPlaceholder).getEnchantmentLevel() == 0, "legacy placeholder level");
+        MerchantRecord merchantRecord = new MerchantRecord(java.util.UUID.randomUUID(), java.util.UUID.randomUUID(),
+                java.util.UUID.randomUUID());
+        check(merchantRecord.updateKnownEntityChunk(-3, 7), "merchant entity chunk first observation");
+        check(!merchantRecord.updateKnownEntityChunk(-3, 7), "merchant entity chunk duplicate observation");
+        MerchantRecord restoredMerchantRecord = MerchantRecord.readFromNBT(merchantRecord.writeToNBT());
+        check(restoredMerchantRecord.hasKnownEntityChunk() && restoredMerchantRecord.getKnownEntityChunkX() == -3
+                && restoredMerchantRecord.getKnownEntityChunkZ() == 7, "merchant entity chunk persistence");
         System.out.println("merchantCatalogSelfTest PASS");
     }
 
