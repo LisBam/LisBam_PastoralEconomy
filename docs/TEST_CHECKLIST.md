@@ -60,14 +60,14 @@
 ## 第 05 批市场行情书与历史 GUI
 
 - [x] `market_book` 具有稳定 registry/unlocalized name；书 + 小麦使用无序 JSON 配方、输出严格为 1；模型引用已确认存在的 1.12.2 原版 `minecraft:items/book_normal`。PASS：编译、`processResources`、成品 Jar 资源检查。
-- [x] Packet 1/2 使用既有 `lb_pastoral` channel、稳定不重排的 discriminator 1/2；商品 key 限制为 128 UTF-8 bytes，历史点计数最大 30；C2S 仅接收 key/游标/请求号，服务端验证实际打开的 `ContainerMarketBook`、14 种历史作物、非负/非未来游标并调度主线程，单会话最少间隔 2 tick。PASS：代码审查、Forge audit 与编译。
+- [x] Packet 1/2 使用既有 `lb_pastoral` channel、稳定不重排的 discriminator 1/2；商品 key 限制为 128 UTF-8 bytes，历史点计数最大 30；C2S 仅接收 key/游标/请求号，服务端验证实际打开的 `ContainerMarketBook`、14 种历史作物、非负/非未来游标并调度主线程。单会话最多每 2 tick 生成一次快照；冷却内的快速切换合并为最后一个请求而非静默丢弃。PASS：代码审查、Forge audit 与编译。
 - [x] S2C 快照包含当前日、商品 key、窗口游标、今日/可选昨日价、最多 30 个日/价格/真实前一点价格、前后翻页标记；客户端缓存仅在打开书本期间接收，关闭立即清空并拒绝迟到包，连接内请求号不复用。PASS：代码审查、`marketPacketSelfTest`、编译。
-- [x] `marketPacketSelfTest`：合法请求/快照可往返，129-byte key 与 31 点快照被拒绝，首个可见点保留无前日状态，较旧同窗口快照不会替换较新缓存。PASS。
+- [x] `marketPacketSelfTest`：合法请求/快照可往返，129-byte key 与 31 点快照被拒绝，首个可见点保留无前日状态，较旧同窗口快照不会替换较新缓存；首个请求立即处理、冷却内快速切换只保留最后一项并在到期后处理。PASS。
 - [x] 行情书打开/经济实际读取才经 `MarketService` 服务端惰性刷新市场；主世界 tick 不再调用市场服务。关闭书本后没有客户端市场缓存或新请求。PASS：代码审查、市场核心自检回归。
 - [x] 成品 Jar 包含 `GuiMarketBook`、Packet、行情书 Item、模型、配方、语言、`mcmod.info` 与 `pack.mcmeta`。PASS：Jar 检查。
 - [ ] 开发客户端实际进入世界后：获得物品、中文名、模型、无序配方、主/副手无限使用、默认小麦、14 项切换、今日/昨日/趋势、折线、悬停、30 天窗口、GUI Scale 和小窗口。NOT RUN：`runClient` 已实际进入 Forge/FML 与 coremod 发现，但本 WSL 环境在本模组加载/窗口创建前终止。
 - [ ] 市场按需初始化、跨日重开、v6 存档首次访问迁移、多人和主世界/下界/末地一致性。NOT RUN：需要可进入测试世界；实现路径均经服务端主世界 `WorldSavedData` 解析，且市场没有后台 tick。
-- [ ] 恶意包（无书本 Container、非法商品、负/超大/未来日期、快速切换、低于 2 tick 间隔、关书后的迟到回包）端到端。NOT RUN：需要已连接客户端；代码路径已验证 Container、边界、限速和会话缓存。
+- [ ] 恶意包（无书本 Container、非法商品、负/超大/未来日期、快速切换、低于 2 tick 间隔、关书后的迟到回包）端到端。NOT RUN：需要已连接客户端；代码路径已验证 Container、边界、合并限速和会话缓存。
 - [ ] Dedicated Server 完整加载、玩家连接、GUI 请求和无客户端类加载错误。NOT RUN：`runServer` 已实际进入 Forge/FML Server 与 coremod 阶段，但未完成模组加载；`run/eula.txt` 保持 `false`，未接受 EULA。
 
 ## 第 06、07 批附魔农业与工具战斗

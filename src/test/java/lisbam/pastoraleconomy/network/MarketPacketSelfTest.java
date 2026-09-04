@@ -3,6 +3,7 @@ package lisbam.pastoraleconomy.network;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import lisbam.pastoraleconomy.client.ClientMarketState;
+import lisbam.pastoraleconomy.gui.ContainerMarketBook;
 import lisbam.pastoraleconomy.market.MarketHistoryPoint;
 import lisbam.pastoraleconomy.market.MarketHistorySnapshot;
 import lisbam.pastoraleconomy.network.message.RequestMarketHistoryMessage;
@@ -23,6 +24,7 @@ public final class MarketPacketSelfTest {
         verifySnapshotRoundTripAndBounds();
         verifyStaleSnapshotDoesNotReplaceNewerWindow();
         verifyBookSessionDropsLateSnapshots();
+        verifyBookRequestCoalescing();
     }
 
     private static void verifyRequestRoundTripAndBounds() {
@@ -116,6 +118,21 @@ public final class MarketPacketSelfTest {
         int secondRequest = ClientMarketState.nextRequestId();
         require(secondRequest > firstRequest, "reopened books must not reuse request ids in one connection");
         ClientMarketState.endBookSession();
+    }
+
+    private static void verifyBookRequestCoalescing() {
+        ContainerMarketBook book = new ContainerMarketBook();
+        RequestMarketHistoryMessage first = new RequestMarketHistoryMessage(WHEAT, -1L, 1);
+        RequestMarketHistoryMessage second = new RequestMarketHistoryMessage("lisbam_pastoral_economy:sell/crop/carrot", -1L, 2);
+        RequestMarketHistoryMessage latest = new RequestMarketHistoryMessage("lisbam_pastoral_economy:sell/crop/potato", -1L, 3);
+
+        book.queueMarketRequest(first);
+        require(book.pollMarketRequest(100L) == first, "the first open-book request must be served immediately");
+        book.queueMarketRequest(second);
+        require(book.pollMarketRequest(100L) == null, "the cooldown must defer rapid requests instead of dropping them");
+        book.queueMarketRequest(latest);
+        require(book.pollMarketRequest(101L) == null, "the latest request must remain queued until the cooldown expires");
+        require(book.pollMarketRequest(102L) == latest, "only the latest rapid crop selection must be served");
     }
 
     private static void writeKey(ByteBuf buffer, String key) {

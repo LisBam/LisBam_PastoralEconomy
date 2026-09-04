@@ -6,7 +6,7 @@
 
 - `env JAVA_HOME=/tmp/lisbam-jdk8-UlgK66/jdk8u504-b01 PATH=<Temurin-8-bin> ./gradlew build`
 - 日期：2026-09-04
-- 结果：PASS（Forge 14.23.5.2859 / Temurin Java 8 `1.8.0_504`；`build` 包含 `reobfJar` 与 `exportReleaseJar`。`release/LisBam_PastoralEconomy-0.1.0.jar` 为 2,552,264 bytes，SHA-256 `0d5a22726c2713ff8a72934a93b467a84740b11d1a5258c3c664012977d4c116`，`unzip -t` PASS。）
+- 结果：PASS（Forge 14.23.5.2859 / Temurin Java 8 `1.8.0_504`；`build` 包含 `reobfJar` 与 `exportReleaseJar`。`release/LisBam_PastoralEconomy-0.1.0.jar` 为 2,553,027 bytes，SHA-256 `b3371df35c3438b527deefe44f9c6a5a3e3a75c3a75e12c07b873a8eb2411505`，`unzip -t` PASS。）
 
 ## 维护：市场、经济与商人性能（2026-09-04）
 
@@ -22,6 +22,12 @@
 - Forge 1.12.2 strict audit：PASS（0 ERROR；5 条既有 packet-thread WARNING 已人工复核为 Proxy/S2C 主线程桥接或通用注册器）。
 - 临时 Temurin Java 8 `1.8.0_504`：`compileJava`、`compileTestJava`、`marketCoreSelfTest`、`marketPacketSelfTest`、`merchantCatalogSelfTest`、`crabTrapSelfTest`、`pastoralWorldDataSelfTest`、`processResources`、`build`：PASS。`merchantCatalogSelfTest` 的八条 FML alternative-prefix 提示为既有模组附魔注册警告，任务仍 PASS。
 - 游戏内/ Dedicated Server：NOT RUN。本环境没有可用图形显示；`run/eula.txt` 保持 `eula=false`，未代为接受 EULA。仍需手测书本关闭后无迟到显示、跨日重开、v6 存档首次迁移、商人返航与非正常退出后的蟹笼倒计时最多 19 tick 回退。
+
+## 维护：行情书快速切换读取卡住（2026-09-04）
+
+根因与修复：上一轮的 2 tick 服务端限流会静默丢弃冷却内的合法作物切换；客户端已先进入读取状态，因此没有回包即可永久卡住。`ContainerMarketBook` 现保留冷却内最新请求，并在其自身下一次服务端 Container tick 处理；首个请求仍立即处理。由此维持每会话最多每 2 tick 一次快照的性能边界，同时保证每次界面选择最终都有回应。
+
+验证：`marketPacketSelfTest`、`compileJava`、`compileTestJava`、`processResources` 与 `build` 均 PASS（Temurin Java 8 `1.8.0_504`）；发布 JAR 非空且 `unzip -t` PASS。Forge 1.12.2 strict audit 实际运行结果为 0 ERROR、5 条既有保守 packet-thread WARNING；本次 C2S Handler 仍先调度到服务端主线程，S2C 警告均为既有 Proxy/客户端主线程桥接。
 
 # 批次记录
 

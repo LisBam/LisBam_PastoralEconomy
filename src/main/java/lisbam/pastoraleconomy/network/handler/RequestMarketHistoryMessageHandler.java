@@ -41,10 +41,19 @@ public final class RequestMarketHistoryMessageHandler
             return;
         }
         ContainerMarketBook book = (ContainerMarketBook) player.openContainer;
-        if (!book.acceptMarketRequest(player.getServerWorld().getTotalWorldTime())) {
+        book.queueMarketRequest(request);
+        RequestMarketHistoryMessage queued = book.pollMarketRequest(player.getServerWorld().getTotalWorldTime());
+        if (queued != null) {
+            handleAcceptedRequest(player, queued);
+        }
+    }
+
+    /** Invoked by the open book container on the logical server after rate limiting. */
+    public static void handleAcceptedRequest(EntityPlayerMP player, RequestMarketHistoryMessage request) {
+        if (player.connection == null || player.world == null || player.world.isRemote
+                || !(player.openContainer instanceof ContainerMarketBook)) {
             return;
         }
-
         MarketCommodity commodity = MarketService.getCommodity(request.getCommodityKey());
         if (commodity == null || !commodity.isHistoryTracked()) {
             return;
