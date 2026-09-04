@@ -63,6 +63,7 @@ release/LisBam_PastoralEconomy-<version>.jar
 - `DEVELOPMENT_PROGRESS.md`：维护记录、构建和遗留测试。
 - `IMPLEMENTATION_DECISIONS.md`：重要边界或兼容性决定。
 - `TEST_CHECKLIST.md`：新增系统的回归项与真实验证结果。
+- 每次完成任何更新后，都必须同步更新 `聆竹の休闲田园经济_模组内容书.md`，使其准确反映当前磁盘中实际可体验的玩法、配方、规则与冻结数值；已删除或已变更的内容必须同时修正，不得滞后于实现。
 
 ## Git 工作区提交
 
