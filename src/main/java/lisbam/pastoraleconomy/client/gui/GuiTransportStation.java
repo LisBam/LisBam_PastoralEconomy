@@ -12,6 +12,7 @@ import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.client.gui.GuiTextField;
 import net.minecraft.client.resources.I18n;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.ResourceLocation;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -28,6 +29,8 @@ public final class GuiTransportStation extends GuiScreen {
     private static final int BUTTON_CONNECT_VILLAGE = 8;
     private static final int BUTTON_TRAVEL = 9;
     private static final int ROW_HEIGHT = 14;
+    private static final ResourceLocation VANILLA_PANEL_TEXTURE = new ResourceLocation(
+            "minecraft", "textures/gui/demo_background.png");
 
     private final BlockPos stationPosition;
     private GuiTextField renameField;
@@ -140,7 +143,7 @@ public final class GuiTransportStation extends GuiScreen {
     @Override
     public void drawScreen(int mouseX, int mouseY, float partialTicks) {
         drawDefaultBackground();
-        drawVanillaPanel(layout.panelX, layout.panelY, layout.panelRight, layout.panelBottom);
+        drawNativePanel(layout.panelX, layout.panelY, layout.panelRight, layout.panelBottom);
         drawCenteredString(fontRenderer, I18n.format("gui.lisbam_pastoral_economy.transport.title"), width / 2,
                 layout.panelY + 8, 0xFF404040);
         TransportStateSnapshot snapshot = currentSnapshot();
@@ -202,10 +205,6 @@ public final class GuiTransportStation extends GuiScreen {
             }
             TransportNodeView node = nodes.get(index);
             int y = layout.listY + row * ROW_HEIGHT;
-            if (index == selectedIndex) {
-                drawRect(layout.contentX - 2, y - 1, layout.contentRight + 2, y + ROW_HEIGHT - 1, 0xFF8B8B8B);
-                drawRect(layout.contentX - 1, y, layout.contentRight + 1, y + ROW_HEIGHT - 2, 0xFFC6C6C6);
-            }
             String state = node.isActive() ? I18n.format("gui.lisbam_pastoral_economy.transport.active")
                     : I18n.format("gui.lisbam_pastoral_economy.transport.removed");
             String location = node.exists() ? node.getX() + "," + node.getY() + "," + node.getZ() + " d" + node.getDimension()
@@ -214,7 +213,8 @@ public final class GuiTransportStation extends GuiScreen {
                     ? I18n.format("gui.lisbam_pastoral_economy.transport.travel_fee", format(node.getTravelFee())) : "";
             int feeWidth = fee.isEmpty() ? 0 : fontRenderer.getStringWidth(fee);
             int textWidth = layout.contentRight - layout.contentX - feeWidth - (feeWidth == 0 ? 0 : 6);
-            drawString(fontRenderer, fontRenderer.trimStringToWidth(node.getAlias() + " [" + state + "]  " + location,
+            String selectedPrefix = index == selectedIndex ? "> " : "";
+            drawString(fontRenderer, fontRenderer.trimStringToWidth(selectedPrefix + node.getAlias() + " [" + state + "]  " + location,
                     Math.max(1, textWidth)), layout.contentX, y, 0xFF404040);
             if (!fee.isEmpty()) {
                 drawString(fontRenderer, fee, layout.contentRight - feeWidth, y, 0xFF555500);
@@ -334,14 +334,11 @@ public final class GuiTransportStation extends GuiScreen {
         return String.format(java.util.Locale.ROOT, "%,d", value);
     }
 
-    /** Reuses the neutral raised/inset treatment of vanilla container screens. */
-    private void drawVanillaPanel(int left, int top, int right, int bottom) {
-        drawRect(left, top, right, bottom, 0xFF373737);
-        drawRect(left + 1, top + 1, right - 1, bottom - 1, 0xFFC6C6C6);
-        drawRect(left + 2, top + 2, right - 2, top + 3, 0xFFFFFFFF);
-        drawRect(left + 2, top + 2, left + 3, bottom - 2, 0xFFFFFFFF);
-        drawRect(left + 2, bottom - 3, right - 2, bottom - 2, 0xFF555555);
-        drawRect(right - 3, top + 2, right - 2, bottom - 2, 0xFF555555);
+    /** Draws Mojang's untouched demo-panel artwork rather than a hand-made frame. */
+    private void drawNativePanel(int left, int top, int right, int bottom) {
+        mc.getTextureManager().bindTexture(VANILLA_PANEL_TEXTURE);
+        drawScaledCustomSizeModalRect(left, top, 0.0F, 0.0F, 248, 166,
+                right - left, bottom - top, 256.0F, 256.0F);
     }
 
     /** All action controls fit inside even Minecraft's 320x240 scaled screen. */

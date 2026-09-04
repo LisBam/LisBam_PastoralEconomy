@@ -15,6 +15,7 @@ import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.client.gui.GuiTextField;
 import net.minecraft.client.resources.I18n;
 import net.minecraft.item.ItemStack;
+import net.minecraft.util.ResourceLocation;
 import net.minecraftforge.fml.client.config.GuiSlider;
 import org.lwjgl.input.Keyboard;
 
@@ -28,6 +29,12 @@ public final class GuiMerchantTrade extends GuiScreen implements GuiSlider.ISlid
     private static final int BUTTON_CONFIRM_OFFSET = 100;
     private static final int BUTTON_SLIDER_OFFSET = 200;
     private static final int MAX_QUANTITY = 4096;
+    private static final ResourceLocation VANILLA_PANEL_TEXTURE = new ResourceLocation(
+            "minecraft", "textures/gui/demo_background.png");
+    private static final ResourceLocation VANILLA_SLOT_TEXTURE = new ResourceLocation(
+            "minecraft", "textures/gui/container/generic_54.png");
+    private static final int VANILLA_SLOT_U = 7;
+    private static final int VANILLA_SLOT_V = 17;
 
     private final int merchantEntityId;
     private final int[] sellQuantities = new int[MerchantTradeSnapshot.SELL_COUNT];
@@ -164,7 +171,7 @@ public final class GuiMerchantTrade extends GuiScreen implements GuiSlider.ISlid
     @Override
     public void drawScreen(int mouseX, int mouseY, float partialTicks) {
         drawDefaultBackground();
-        drawVanillaPanel(layout.panelX, layout.panelY, layout.panelRight, layout.panelBottom);
+        drawNativePanel(layout.panelX, layout.panelY, layout.panelRight, layout.panelBottom);
 
         MerchantTradeSnapshot snapshot = ClientMerchantTradeState.get();
         String title = I18n.format("entity.lisbam_pastoral_economy.merchant.name") + " - "
@@ -193,10 +200,6 @@ public final class GuiMerchantTrade extends GuiScreen implements GuiSlider.ISlid
         int y = layout.cardY(index, buyPage);
         int cardHeight = layout.cardHeight(buyPage);
         boolean tradable = isTradable(view, index);
-        drawVanillaPanel(x, y, x + layout.cardWidth, y + cardHeight);
-        if (!tradable) {
-            drawRect(x + 2, y + 2, x + layout.cardWidth - 2, y + cardHeight - 2, 0xAA555555);
-        }
         if (view == null || !view.isEnabled()) {
             drawCenteredString(fontRenderer, I18n.format("gui.lisbam_pastoral_economy.merchant.future"),
                     x + layout.cardWidth / 2, y + (cardHeight - 8) / 2, 0xFF555555);
@@ -208,6 +211,7 @@ public final class GuiMerchantTrade extends GuiScreen implements GuiSlider.ISlid
             return;
         }
         ItemStack stack = entry.createStack(1, view.getEnchantmentLevel());
+        drawNativeSlot(x + 3, y + 3);
         mc.getRenderItem().renderItemAndEffectIntoGUI(stack, x + 4, y + 4);
         mc.getRenderItem().renderItemOverlayIntoGUI(fontRenderer, stack, x + 4, y + 4, null);
 
@@ -417,14 +421,17 @@ public final class GuiMerchantTrade extends GuiScreen implements GuiSlider.ISlid
         return String.format(java.util.Locale.ROOT, "%,d", value);
     }
 
-    /** Reuses the neutral raised/inset treatment of vanilla container screens. */
-    private void drawVanillaPanel(int left, int top, int right, int bottom) {
-        drawRect(left, top, right, bottom, 0xFF373737);
-        drawRect(left + 1, top + 1, right - 1, bottom - 1, 0xFFC6C6C6);
-        drawRect(left + 2, top + 2, right - 2, top + 3, 0xFFFFFFFF);
-        drawRect(left + 2, top + 2, left + 3, bottom - 2, 0xFFFFFFFF);
-        drawRect(left + 2, bottom - 3, right - 2, bottom - 2, 0xFF555555);
-        drawRect(right - 3, top + 2, right - 2, bottom - 2, 0xFF555555);
+    /** Draws Mojang's untouched demo-panel artwork rather than a hand-made frame. */
+    private void drawNativePanel(int left, int top, int right, int bottom) {
+        mc.getTextureManager().bindTexture(VANILLA_PANEL_TEXTURE);
+        drawScaledCustomSizeModalRect(left, top, 0.0F, 0.0F, 248, 166,
+                right - left, bottom - top, 256.0F, 256.0F);
+    }
+
+    /** The 18x18 cell is copied directly from the vanilla chest texture. */
+    private void drawNativeSlot(int x, int y) {
+        mc.getTextureManager().bindTexture(VANILLA_SLOT_TEXTURE);
+        drawTexturedModalRect(x, y, VANILLA_SLOT_U, VANILLA_SLOT_V, 18, 18);
     }
 
     /** Coordinates are derived from ScaledResolution, including the 320x240 minimum. */
