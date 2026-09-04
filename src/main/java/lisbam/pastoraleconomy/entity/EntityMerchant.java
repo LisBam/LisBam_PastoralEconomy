@@ -8,6 +8,7 @@ import net.minecraft.entity.Entity;
 import net.minecraft.entity.SharedMonsterAttributes;
 import net.minecraft.entity.ai.EntityAIAvoidEntity;
 import net.minecraft.entity.ai.EntityAIMoveTowardsRestriction;
+import net.minecraft.entity.ai.EntityAISwimming;
 import net.minecraft.entity.ai.EntityAIWatchClosest;
 import net.minecraft.entity.ai.EntityAIWanderAvoidWater;
 import net.minecraft.entity.player.EntityPlayer;
@@ -17,9 +18,11 @@ import net.minecraft.network.datasync.DataSerializers;
 import net.minecraft.network.datasync.EntityDataManager;
 import net.minecraft.util.DamageSource;
 import net.minecraft.util.EnumHand;
+import net.minecraft.util.SoundEvent;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 import net.minecraft.entity.EntityCreature;
+import net.minecraft.pathfinding.PathNavigateGround;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -44,6 +47,9 @@ public final class EntityMerchant extends EntityCreature {
     private static final int FLEE_DURATION_TICKS = 200;
     private static final float FLEE_DISTANCE = 12.0F;
     private static final float PLAYER_LOOK_DISTANCE = 8.0F;
+    private static final double PLAYER_MAX_HEALTH = 20.0D;
+    private static final double PLAYER_MOVEMENT_SPEED = 0.1D;
+    private static final double PLAYER_ATTACK_DAMAGE = 1.0D;
 
     private UUID merchantId;
     private UUID villageId;
@@ -61,6 +67,7 @@ public final class EntityMerchant extends EntityCreature {
     public EntityMerchant(World worldIn) {
         super(worldIn);
         setSize(0.6F, 1.95F);
+        ((PathNavigateGround) getNavigator()).setCanSwim(true);
         enablePersistence();
         setAlwaysRenderNameTag(false);
     }
@@ -68,28 +75,32 @@ public final class EntityMerchant extends EntityCreature {
     @Override
     protected void entityInit() {
         super.entityInit();
-        dataManager.register(SKIN_VARIANT, Integer.valueOf(MerchantSkinCatalog.DEFAULT_STEVE));
+        dataManager.register(SKIN_VARIANT, Integer.valueOf(MerchantSkinCatalog.FIRST_FARMER_SKIN));
     }
 
     @Override
     protected void initEntityAI() {
+        tasks.addTask(0, new EntityAISwimming(this));
         tasks.addTask(1, new EntityAIAvoidEntity<EntityPlayer>(this, EntityPlayer.class, new Predicate<EntityPlayer>() {
             @Override
             public boolean apply(EntityPlayer player) {
                 return shouldFleeFrom(player);
             }
         }, FLEE_DISTANCE, 0.8D, 1.2D));
-        tasks.addTask(5, new EntityAIMoveTowardsRestriction(this, 0.5D));
-        tasks.addTask(6, new EntityAIWanderAvoidWater(this, 0.5D));
+        tasks.addTask(5, new EntityAIMoveTowardsRestriction(this, 1.0D));
+        tasks.addTask(6, new EntityAIWanderAvoidWater(this, 1.0D));
         tasks.addTask(7, new EntityAIWatchClosest(this, EntityPlayer.class, PLAYER_LOOK_DISTANCE));
     }
 
     @Override
     protected void applyEntityAttributes() {
         super.applyEntityAttributes();
-        getEntityAttribute(SharedMonsterAttributes.MAX_HEALTH).setBaseValue(20.0D);
-        getEntityAttribute(SharedMonsterAttributes.MOVEMENT_SPEED).setBaseValue(0.5D);
-        getEntityAttribute(SharedMonsterAttributes.FOLLOW_RANGE).setBaseValue(10.0D);
+        getEntityAttribute(SharedMonsterAttributes.MAX_HEALTH).setBaseValue(PLAYER_MAX_HEALTH);
+        getEntityAttribute(SharedMonsterAttributes.MOVEMENT_SPEED).setBaseValue(PLAYER_MOVEMENT_SPEED);
+        if (getAttributeMap().getAttributeInstance(SharedMonsterAttributes.ATTACK_DAMAGE) == null) {
+            getAttributeMap().registerAttribute(SharedMonsterAttributes.ATTACK_DAMAGE);
+        }
+        getEntityAttribute(SharedMonsterAttributes.ATTACK_DAMAGE).setBaseValue(PLAYER_ATTACK_DAMAGE);
     }
 
     @Override
@@ -125,9 +136,25 @@ public final class EntityMerchant extends EntityCreature {
             setCustomNameTag(MerchantNameGenerator.generate(world.rand));
         }
         if (!skinVariantAssigned) {
-            dataManager.set(SKIN_VARIANT, Integer.valueOf(world.rand.nextInt(MerchantSkinCatalog.SKIN_COUNT)));
+            dataManager.set(SKIN_VARIANT, Integer.valueOf(MerchantSkinCatalog.randomSkin(world.rand)));
             skinVariantAssigned = true;
         }
+    }
+
+    /** This custom entity must never inherit villager ambience, hurt, or death sounds. */
+    @Override
+    protected SoundEvent getAmbientSound() {
+        return null;
+    }
+
+    @Override
+    protected SoundEvent getHurtSound(DamageSource damageSourceIn) {
+        return null;
+    }
+
+    @Override
+    protected SoundEvent getDeathSound() {
+        return null;
     }
 
     /** Freezes only this merchant while one or more server-authorized trade windows are open. */
@@ -203,7 +230,7 @@ public final class EntityMerchant extends EntityCreature {
         }
         nextReturnPathTick = ticksExisted + RETURN_REPATH_INTERVAL_TICKS;
         boolean pathing = getNavigator().tryMoveToXYZ(stationPosition.getX() + 0.5D, stationPosition.getY() + 1.0D,
-                stationPosition.getZ() + 0.5D, 0.8D);
+                stationPosition.getZ() + 0.5D, 1.0D);
         if (!pathing && world.isBlockLoaded(stationPosition)) {
             BlockPos standing = stationPosition.up();
             if (world.isAirBlock(standing) && world.isAirBlock(standing.up())) {

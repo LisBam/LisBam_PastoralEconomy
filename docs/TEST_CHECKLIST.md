@@ -96,13 +96,13 @@
 
 ### Village / Station / Merchant
 
-- [x] 商人服装 PNG 结构检查：4 张内置服装均为 64×64、8-bit RGBA，并保留 Steve UV 画布。PASS（2026-09-04）。
-- [ ] `./gradlew merchantNameSelfTest`：确定性姓名池、UTF-8 往返、1/2 字名字长度和皮肤索引边界。NOT RUN：当前环境没有可启动的 Linux JDK；Windows `java.exe` 受 WSL vsock 错误阻断。
-- [ ] 新商人服务端获得百家姓中文姓名与随机 Steve/四种农作服装之一；客户端不自行随机，GUI 标题与实体显示一致。NOT RUN：需要可进入世界。
-- [ ] 旧商人无姓名/旧“商人”名称、缺少或非法皮肤索引时只补生成一次；已有自定义姓名保持；Chunk unload/reload、退出重进、服务器重启后姓名/皮肤不变，UUID、交易、价格和库存不受影响。NOT RUN：需要旧存档与 Dedicated Server/世界。
+- [x] 商人服装 PNG 结构检查：4 张内置服装均为 64×64、8-bit RGBA，并保留 Steve UV 画布；运行时皮肤池只接受 1--4，绝不引用原版 Steve 贴图。PASS：源码/资源检查。
+- [x] `./gradlew merchantNameSelfTest`：确定性姓名池、UTF-8 往返、1/2 字名字长度、高频姓氏人口权重和皮肤索引迁移边界。PASS（2026-09-04，Temurin Java 8）。
+- [ ] 新商人服务端获得按高频百家姓人口比例加权的中文姓名与四种农作服装之一；客户端不自行随机，GUI 标题与实体显示一致。NOT RUN：需要可进入世界。
+- [ ] 旧商人无姓名/旧“商人”名称、缺少或 legacy 索引 0 的皮肤时只补生成一次；已有自定义姓名与现有 1--4 农作服装保持；Chunk unload/reload、退出重进、服务器重启后姓名/皮肤不变，UUID、交易、价格和库存不受影响。NOT RUN：需要旧存档与 Dedicated Server/世界。
 - [ ] Overworld 旧 VillageCollection、2 名村民门槛、128/64/160 去重、保存重启不重复 — NOT RUN：需要可进入的世界
 - [ ] 每有效村庄恰好一个安全站点、12 格搜索、不覆盖箱子/门/农田/TileEntity、异常恢复 — NOT RUN：需要可进入的世界
-- [ ] 商人 3～8 目标人数、人口变化收敛、死亡补足、>32 格归位、无自然 despawn — NOT RUN：需要可进入的世界
+- [ ] 商人按 `max(ceil(villagers / 5),3)` 的目标人数、人口变化收敛、死亡补足、>32 格归位、无自然 despawn；生命 20、移速 0.1、水中上浮且无村民环境/受伤/死亡声音 — NOT RUN：需要可进入的世界
 - [ ] 商人离站后最多每 20 tick 重算一次返航路径，仍能回到站点；高实体数下维护不会重复扫描 merchant 实体。NOT RUN：需要可进入的世界；代码审查确认单次索引扫描。
 - [ ] 商人靠近玩家时面向最近的 8 格内玩家；打开有效交易窗口期间原地站住，关闭后恢复常规 AI；实际受该玩家伤害后避开其 200 tick。NOT RUN：需要可进入的世界。
 - [x] 商人记录的可选最后实体区块字段可 NBT 往返，重复观测不重复标脏。PASS：`merchantCatalogSelfTest`。
@@ -213,6 +213,6 @@
 - [x] 蟹笼、玩家交通站与村庄交通站资源：交通站和蟹笼两张实际 PNG 都是 32×32，村庄模型不再引用 `planks_oak`；玩家交通方块与 ItemBlock 都从无后缀 `tile...transport_station` 显示键得到“交通方块”，不会显示 `.name`。行情书自有绿皮书 32×32 Item PNG；蟹笼配方为铁锭/铁栅栏交错外框和中央陷阱箱。PASS：源码、`processResources`、release JAR 检查。
 - [x] 发行版本 `1.0`：`build.gradle`、处理后的 `mcmod.info` 和 JAR Manifest 的 Specification/Implementation Version 均为 `1.0`；重混淆文件导出为 `release/LisBam_PastoralEconomy-1.0.jar`。PASS：`processResources`、`build`、JAR 检查。
 - [x] 购买有限库存显示实际剩余物品数量（剩余包数 × 每包数），而非包数；不限量保持显示不限量。PASS：`GuiMerchantTrade` 代码审查、双语资源处理与 `build`。
-- [x] `merchantCatalogSelfTest`：村民 2/7 的最低 3 名、8/10/11/15/16/20/21/35/36 的 `ceil(2n/5)` 边界及 100/1000 村民的无上限增长均通过。PASS：2026-09-04。
+- [x] `merchantCatalogSelfTest`：村民 2/15 的最低 3 名、16/20/21/35/36 的 `ceil(n/5)` 边界及 100/1000 村民的无上限增长。PASS（2026-09-04，Temurin Java 8）。
 - [ ] 游戏内：在 320x240、常规 GUI Scale 和高分辨率下验证所有四种 GUI 的文字、按钮、滚动、物品 Tooltip、蟹笼点击/Shift-click、无虚假顶部格子、商人余额/背包不足深色禁用态和当前页签禁用、交通费用与余额暗置，以及商人连续切换后的默认页。NOT RUN：当前环境无法创建可操作的 Forge 客户端窗口。
 - [ ] 游戏内：交通方块物品/方块名精确为“交通方块”、两种交通站显示简约石质罗盘贴图、蟹笼显示简约木框铁栅贴图、行情书为绿皮书，且蟹笼新配方正确；传送、重进和 Chunk unload/reload 后没有短暂重复商人。NOT RUN：当前环境无法创建可操作的 Forge 客户端窗口。

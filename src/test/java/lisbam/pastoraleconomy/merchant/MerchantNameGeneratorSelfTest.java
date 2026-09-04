@@ -27,9 +27,17 @@ public final class MerchantNameGeneratorSelfTest {
         }
         check(sawOneCharacterGivenName, "one-character given names");
         check(sawTwoCharacterGivenName, "two-character given names");
-        check(MerchantSkinCatalog.isValid(MerchantSkinCatalog.DEFAULT_STEVE), "default Steve skin index");
-        check(MerchantSkinCatalog.isValid(MerchantSkinCatalog.SKIN_COUNT - 1), "last merchant skin index");
-        check(!MerchantSkinCatalog.isValid(-1) && !MerchantSkinCatalog.isValid(MerchantSkinCatalog.SKIN_COUNT),
+        check(MerchantNameGenerator.surnameWeight('王') == 794, "Wang population weight");
+        check(MerchantNameGenerator.surnameWeight('李') == 741, "Li population weight");
+        check(MerchantNameGenerator.surnameWeight('王') > MerchantNameGenerator.surnameWeight('赵'),
+                "top surname order");
+        check(MerchantNameGenerator.surnameWeight('赵') > MerchantNameGenerator.surnameWeight('钱'),
+                "common surname exceeds traditional tail");
+        check(MerchantNameGenerator.surnameWeight('不') == 0, "unknown surname rejected");
+        check(MerchantSkinCatalog.isValid(MerchantSkinCatalog.FIRST_FARMER_SKIN), "first farmer skin index");
+        check(MerchantSkinCatalog.isValid(MerchantSkinCatalog.LAST_FARMER_SKIN), "last farmer skin index");
+        check(!MerchantSkinCatalog.isValid(0) && !MerchantSkinCatalog.isValid(-1)
+                        && !MerchantSkinCatalog.isValid(MerchantSkinCatalog.LAST_FARMER_SKIN + 1),
                 "skin index bounds");
         System.out.println("merchantNameSelfTest PASS");
     }

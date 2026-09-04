@@ -6,7 +6,7 @@
 
 - `env JAVA_HOME=/tmp/lisbam-jdk8-UlgK66/jdk8u504-b01 PATH=<Temurin-8-bin> ./gradlew build`
 - 日期：2026-09-04
-- 结果：PASS（Forge 14.23.5.2859 / Temurin Java 8 `1.8.0_504`；`build` 包含 `reobfJar` 与 `exportReleaseJar`。`release/LisBam_PastoralEconomy-1.0.jar` 为 322,628 bytes，SHA-256 `a167aeaa18064cf090acfc233929632fb0490f4acda827cc146e1ef5ed957e1f`，`unzip -t` PASS。）
+- 结果：PASS（Forge 14.23.5.2859 / Temurin Java 8 `1.8.0_504`；`build` 包含 `reobfJar` 与 `exportReleaseJar`。`release/LisBam_PastoralEconomy-1.0.jar` 为 335,340 bytes，SHA-256 `57abbb324cd260231a29e9ae92b5a4338433d5ca42dad14a3a7ae3c5988edfa0`，`unzip -t` PASS。）
 
 ## 发行：版本 1.0（2026-09-04）
 
@@ -14,13 +14,19 @@
 
 验证：Temurin Java 8 `1.8.0_504` 下 `check_toolchain.py`、`compileJava`、`processResources` 与 `build` PASS。Forge 1.12.2 strict audit 为 0 ERROR、5 条既有 `packet-thread` WARNING。正式重混淆 JAR 已导出为 `release/LisBam_PastoralEconomy-1.0.jar`，`mcmod.info` 和 Manifest 均确认显示 `1.0`，压缩包完整性检查通过。
 
+## 维护：商人属性、姓名权重、皮肤与密度（2026-09-04）
+
+实现：商人姓名的前十常见百家姓按人口比例加权，余下传统姓氏构成低频池；姓名仍只在逻辑服务端产生。商人的最大生命、移动速度与攻击伤害改为原版玩家基础值 20、0.1、1；新增原版 `EntityAISwimming` 与可游泳导航以在水中上浮，并明确移除环境、受伤和死亡声音。Steve 原皮退出运行时皮肤池，四种农作服装保持 1--4 的稳定索引，旧索引 0 读取后随机迁移到其中一种。商人目标数量从 `max(ceil(2n/5),3)` 回调为 `max(ceil(n/5),3)`，仍无上限。
+
+兼容性与影响：没有变更 registry ID、Packet、WorldSavedData、MerchantRecord 或交易规则；旧存档只会对 `merchantSkin=0` 执行一次展示迁移，已有 1--4 服装和自定义姓名保留。下一轮商人维护会按新的半数目标停止多余商人。验证：Temurin Java 8 `1.8.0_504` 下 `check_toolchain.py` 为 0 issue，严格 Forge audit 为 0 ERROR、5 条既有 `packet-thread` WARNING；`compileJava`、`processResources`、`merchantCatalogSelfTest`、`merchantNameSelfTest` 与最终 `build` 均 PASS。正式 JAR 为 335,340 bytes，SHA-256 `57abbb324cd260231a29e9ae92b5a4338433d5ca42dad14a3a7ae3c5988edfa0`，`unzip -t` PASS；确认包含实体、姓名/皮肤类和四张服装 PNG，且不含原版 Steve 贴图引用。游戏内水面上浮、音效、旧皮肤迁移、实体密度收敛与 Dedicated Server 仍为 NOT RUN：当前环境无法创建可操作 Forge 客户端，且没有接受 EULA。
+
 ## 维护：商人中文姓名与作物商人皮肤（2026-09-04）
 
-实现：新增服务端 `MerchantNameGenerator`，从常用百家姓和常用中文名字符池生成“1 姓 + 1--2 名”显示姓名。`EntityMerchant` 在新绑定和旧实体 NBT 读取时只在逻辑服务端补齐缺失/旧通用“商人”名称，直接复用原版 `CustomName` 实体 NBT；UUID、`MerchantRecord`、交易、价格和库存均未改动。实体 NBT 新增可选 `merchantSkin`，服务端随机选择 0--4 后由 1.12.2 `EntityDataManager` 同步；0 是原版 Steve，另外四张内置 64×64 PNG 分别为草帽工装、绿格衬衫、蓝围裙和收获背心。交易 GUI 标题显示实体已同步姓名，客户端不会生成名称或皮肤随机数。
+实现：新增服务端 `MerchantNameGenerator`，从常用百家姓和常用中文名字符池生成“1 姓 + 1--2 名”显示姓名。`EntityMerchant` 在新绑定和旧实体 NBT 读取时只在逻辑服务端补齐缺失/旧通用“商人”名称，直接复用原版 `CustomName` 实体 NBT；UUID、`MerchantRecord`、交易、价格和库存均未改动。实体 NBT 新增可选 `merchantSkin`，其后续兼容索引与抽样规则由上方维护记录取代；交易 GUI 标题显示实体已同步姓名，客户端不会生成名称或皮肤随机数。
 
 兼容性与影响：旧存档中没有姓名/皮肤字段的商人在首次服务端加载时补写一次，已有非通用自定义姓名原样保留；`merchantSkin` 缺失或非法也只补写一次。没有新 Packet、registry ID、WorldSavedData schema 或 MerchantRecord 字段；重名允许，姓名不参与任何主键或交易验证。贴图基于原版 Steve 宽臂 64×64 UV 改绘，未修改模型、像素尺寸或贴图布局。
 
-验证：源码/PNG 结构检查 PASS：四张服装均为 64×64、8-bit RGBA PNG，且均实际改绘原版 Steve 像素。Forge 1.12.2 strict audit PASS：0 ERROR、5 条既有 packet-thread WARNING。`merchantNameSelfTest`、`compileJava`、`processResources` 和最终 `build` 实际执行但未能启动，均因 `JAVA_HOME`/`java` 缺失而失败；当前环境没有可启动的 Linux JDK，尝试 Windows JBR/DBeaver `java.exe` 也均因 WSL `UtilBindVsockAnyPort` 失败。现有 `release/LisBam_PastoralEconomy-1.0.jar` 和 `build/libs` JAR 未含本次类或贴图，不能作为本次发行包；尚未生成本次 release JAR。游戏内的旧商人首次加载、Chunk reload、重启、姓名显示、四种服装和 Dedicated Server 均待可运行的 Forge 环境验证。
+验证：源码/PNG 结构检查 PASS：四张服装均为 64×64、8-bit RGBA PNG，且均实际改绘原版 Steve 像素。此记录的初次构建环境问题已被后续可用 Temurin Java 8 环境取代；当前源码、资源、姓名自检与发行 JAR 验证状态以本文件上方最新维护记录为准。游戏内的旧商人首次加载、Chunk reload、重启、姓名显示、四种服装和 Dedicated Server 均待可运行的 Forge 环境验证。
 
 ## 维护：交通名称、交易禁用态、资源与商人规模（2026-09-04）
 
