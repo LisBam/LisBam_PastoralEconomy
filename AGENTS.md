@@ -57,6 +57,8 @@ release/LisBam_PastoralEconomy-<version>.jar
 
 `build.gradle` 的 `exportReleaseJar` 已作为 `build` 的 finalizer 自动执行；完成时仍须检查该文件真实存在、非空，并在最终报告中说明导出结果。不得把开发环境的未重混淆 JAR 当作 release 成品。
 
+即使 `release/LisBam_PastoralEconomy-<version>.jar` 已经存在，也不得跳过构建或导出。每次完成代码、资源、Gradle 或配置更新后，都必须实际执行最终 `build`，并由 `exportReleaseJar` 直接覆盖导出同名 release JAR；禁止沿用上一次构建留下的 JAR 作为本次成品。
+
 ### Forge 1.12.2 JDK 8 构建关键词
 
 当用户说出 `FORGE1122_JDK8_BUILD_EXPORT`、"用 JDK 8 构建并导出 JAR"，或构建窗口报告缺少 JDK/JAVA_HOME 时，必须先按以下规则处理，不能只因默认 `java` 不在 PATH 就声称无法导出：
