@@ -422,7 +422,7 @@ Reforged 对有右输入的修理、合并和附魔书操作通过 `AnvilUpdateE
 
 ## DEC-051 商人局部范围、原版命名牌与交通费缩放（2026-09-05）
 
-决定：保留 `VillageService` 的 128/64/160 村庄识别与交通去重参数；新增独立的商人活动/出生半径 32 和强制返回阈值 64。`EntityMerchant` 以村庄中心设置 32 格原版限制，超过 32 格时继续按 20 tick 节流寻路，超过 64 格时调用 1.12.2 `Entity#setPositionAndUpdate` 传送到持久村庄站上方。村庄维护节流统一为 60 tick。对手持 `Items.NAME_TAG` 的交互返回 `false`，让 `EntityLiving` 转交 `EntityLivingBase` 的原版命名牌流程；不自行解析、同步或存储名称。交通费用统一缩放为旧曲线的 1/10：旅行 `round5(40 + 0.12D)`、接入 `round10(400 + 1.20D)`。
+决定：保留 `VillageService` 的 128/64/160 村庄识别与交通去重参数；新增独立的商人活动/出生半径 32 和强制返回阈值 64。`EntityMerchant` 以村庄中心设置 32 格原版限制，超过 32 格时继续按 20 tick 节流寻路，超过 64 格时调用 1.12.2 `Entity#setPositionAndUpdate` 传送到持久村庄站上方。村庄维护节流为 200 tick（10 秒）。对手持 `Items.NAME_TAG` 的交互返回 `false`，让 `EntityLiving` 转交 `EntityLivingBase` 的原版命名牌流程；不自行解析、同步或存储名称。交通费用统一缩放为旧曲线的 1/10：旅行 `round5(40 + 0.12D)`、接入 `round10(400 + 1.20D)`。
 
 原因：村庄身份的宽范围同时服务于旧版 `VillageCollection` 观察和交通站去重，不应因实体活动区缩小而改变；站点已是受保护、持久且安全的返还位置。交还命名牌给 1.12.2 原版路径可保留显示名校验、物品消耗和 `CustomName` 持久化，避免复制物品交互。按公式与最低值同步缩小费用，确保客户端展示和全部服务端接入/旅行结算一致。
 
