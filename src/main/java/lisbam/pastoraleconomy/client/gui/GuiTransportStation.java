@@ -174,7 +174,7 @@ public final class GuiTransportStation extends GuiScreen implements GuiYesNoCall
 
     @Override
     protected void keyTyped(char typedChar, int keyCode) throws java.io.IOException {
-        if (ModGuiInput.closeWithInventoryKey(mc, keyCode)) {
+        if (ModGuiInput.closeWithExitKey(mc, keyCode)) {
             return;
         }
         if (!renameField.textboxKeyTyped(typedChar, keyCode)) {
@@ -551,7 +551,7 @@ public final class GuiTransportStation extends GuiScreen implements GuiYesNoCall
 
         @Override
         protected void keyTyped(char typedChar, int keyCode) throws java.io.IOException {
-            if (ModGuiInput.closeWithInventoryKey(mc, keyCode)) {
+            if (ModGuiInput.closeWithExitKey(mc, keyCode)) {
                 return;
             }
             super.keyTyped(typedChar, keyCode);

@@ -7,6 +7,15 @@
 - [x] Forge 1.12.2 static audit — 0 ERROR；6 条 `packet-thread` WARNING 已审查（通用注册不处理消息；五个 S2C Proxy 桥没有直接修改状态，客户端实际写入均调度至主线程；交通与市场 Tooltip C2S handler 调度至服务端主线程）。
 - [x] 本次 FOV/Tooltip 修复后的 `./gradlew compileJava processResources build` — PASS（Temurin Java 8 `1.8.0_504`；release JAR 已覆盖导出并通过 `unzip -t`）。
 
+## 紧急修复：自定义 GUI 的 Esc 关闭（2026-09-06）
+
+- [x] `modGuiInputSelfTest`：Esc 与改键后的背包键均进入 `EntityPlayerSP#closeScreen` 路径；无关键不关闭界面。PASS（Temurin Java 8 `1.8.0_504`）。
+- [x] `marketPacketSelfTest`、`merchantCatalogSelfTest`：行情书与商人既有服务端会话/包边界回归通过。PASS（Temurin Java 8 `1.8.0_504`；商人自检有 12 条既有 Forge alternative-prefix 警告，任务成功）。
+- [x] `transportCoreSelfTest`、`transportTravelSelfTest`：交通节点、NBT、同步包及冻结费用检查点通过；`TransportCoreSelfTest` 已从废弃十倍价格断言同步为运行时 `round20(160 + 0.48D)` / `round10(400 + 1.20D)` 数值。PASS（Temurin Java 8 `1.8.0_504`）。
+- [x] Forge 1.12.2 strict audit：0 ERROR；6 条既有 `packet-thread` 保守 WARNING 已复核为通用注册或 Proxy 主线程桥接。PASS（2026-09-06）。
+- [x] `./gradlew compileJava processResources build`：PASS（Temurin Java 8 `1.8.0_504`；含 `test`、`reobfJar`、`exportReleaseJar`）。`release/LisBam_PastoralEconomy-1.5.jar` 已覆盖导出，406,009 bytes，SHA-256 `d0b1d35a707fb03eb6489bc3d9ebbb6d1a7f61b1dd707b4939124223b276138d`，`unzip -t` PASS。
+- [ ] 游戏内单人/多人：分别以 Esc 和默认/改键后的背包键关闭行情书、商人、交通站及交通确认层；随后拾取物品、使用骨粉、打开背包、四格合成并关闭背包，确认服务器已回到玩家背包 Container、合成格物品返回背包且商人 `endTrading` 正常执行。NOT RUN：当前环境无法创建可操作 Forge 客户端或进入 Dedicated Server 世界。
+
 ## 维护：行情 Tooltip、附魔与前往费（2026-09-05）
 
 - [x] `marketCoreSelfTest`：29 类可出售 Item/meta 可反查唯一市场条目；任意羊毛色归入共享羊毛行情；不可出售物品不产生提示价格。PASS（Temurin Java 8 `1.8.0_504`）。

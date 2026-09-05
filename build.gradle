@@ -154,6 +154,13 @@ task pinyinSearchSelfTest(type: JavaExec) {
     main = 'lisbam.pastoraleconomy.client.gui.PinyinSearchSelfTest'
 }
 
+task modGuiInputSelfTest(type: JavaExec) {
+    group = 'verification'
+    description = 'Runs custom GUI close-key regression checks.'
+    classpath = sourceSets.test.runtimeClasspath
+    main = 'lisbam.pastoraleconomy.client.gui.ModGuiInputSelfTest'
+}
+
 task enchantmentSelfTest(type: JavaExec) {
     group = 'verification'
     description = 'Runs deterministic batch 06/07 enchantment definition and formula checks.'
