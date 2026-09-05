@@ -1,15 +1,15 @@
 package lisbam.pastoraleconomy.core;
 
+import net.minecraft.init.Enchantments;
 import net.minecraft.init.Items;
 import net.minecraft.item.Item;
-import net.minecraft.item.ItemStack;
 
 /** Values injected into Item's Forge 1.12.2 enchanting-table hook. */
 public final class EnchantingCompatibilityHooks {
     private EnchantingCompatibilityHooks() {
     }
 
-    public static int getItemEnchantability(Item item, ItemStack stack, int vanillaValue) {
+    public static int getItemEnchantability(Object item, int vanillaValue) {
         if (item == Items.SHEARS) {
             return Item.ToolMaterial.IRON.getEnchantability();
         }
@@ -29,5 +29,13 @@ public final class EnchantingCompatibilityHooks {
             return Item.ToolMaterial.DIAMOND.getEnchantability();
         }
         return vanillaValue;
+    }
+
+    /**
+     * Object parameters keep the emitted Coremod instruction independent of
+     * MCP/SRG Minecraft class descriptors.
+     */
+    public static boolean isShearsEfficiency(Object item, Object enchantment) {
+        return item == Items.SHEARS && enchantment == Enchantments.EFFICIENCY;
     }
 }

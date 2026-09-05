@@ -2,11 +2,11 @@
 
 当前发行版本：`1.5`；既有第 15 批功能完成，1.5 为维护更新。
 
-最近一次成功构建记录（本次原版效率附魔台兼容与挤奶路径修复后）：
+最近一次成功构建记录（本次 Forge 14.23.5.2847 Coremod 启动修复后）：
 
 - `JDK8_HOME=/tmp/lbpe-jdk8; env JAVA_HOME="$JDK8_HOME" PATH="$JDK8_HOME/bin:$PATH" ./gradlew compileJava processResources build`
 - 日期：2026-09-05
-- 结果：PASS（Forge 14.23.5.2859 / Temurin Java 8 `1.8.0_504`；`build` 包含 `test`、`reobfJar` 与 `exportReleaseJar`。`release/LisBam_PastoralEconomy-1.5.jar` 为 404,092 bytes，SHA-256 `a0b82c6dcfbc5e680c39d18f9f4e0643f7f77635521fc4c9bdff5fadc5efb641`，`unzip -t` PASS。）
+- 结果：PASS（Forge 14.23.5.2859 / Temurin Java 8 `1.8.0_504`；`build` 包含 `test`、`reobfJar` 与 `exportReleaseJar`。`release/LisBam_PastoralEconomy-1.5.jar` 为 404,746 bytes，SHA-256 `670e7a2b83162ae7db1cba304ae08168ced52da2277101771fc0a5dbe23dcd7a`，`unzip -t` PASS。）
 
 ## 维护：行情展示、附魔节奏与旅行费（2026-09-05）
 
@@ -655,3 +655,11 @@
 挤奶问题来自事件处理器自行扣桶、造桶并取消原版 `EntityCow` 交互，因而干扰了原版库存/饮用状态同步。现在处理器只在逻辑服务端、冷却命中时取消；不在冷却的成年牛/哞菇只写入该牛的持久最近成功 tick，随后完全交回原版桶替换路径。计时器降为 `LOWEST` 优先级，避免其他交互处理器已取消时错误记录冷却。
 
 验证：Temurin Java 8 `1.8.0_504` 下 `enchantmentSelfTest`、`milkCooldownSelfTest`、`merchantCatalogSelfTest`、`marketCoreSelfTest`、`compileJava` 与 `compileTestJava` PASS；附魔自测会对补丁后的 `Item` 字节码确认剪刀/锄头附魔力钩子和原版效率筛选，并通过 ASM verifier。Forge 1.12.2 audit 为 0 ERROR、6 条既有 `packet-thread` WARNING。带 `JAVA_TOOL_OPTIONS=-Dfml.coreMods.load=...` 的 60 秒 `runServer` 启动已实际发现并入队该 Coremod，时限到达前尚未完成模组/世界加载；未接受 EULA。最终 `compileJava processResources build` PASS，确认 release JAR 含 Coremod manifest/三项 core 类、不含已删除的剪刀专属效率类，大小 404,092 bytes，SHA-256 `a0b82c6dcfbc5e680c39d18f9f4e0643f7f77635521fc4c9bdff5fadc5efb641`，`unzip -t` PASS。
+
+## 2026-09-05 修复：Forge 14.23.5.2847 启动 Coremod 错误
+
+根因：前一版 Coremod 假定所有 1.12.2 Forge 都已在 `Item` 中加入较新的 `getItemEnchantability(ItemStack)` 与 `canApplyAtEnchantingTable` 钩子。用户实际使用的 Forge `14.23.5.2847` 没有该 `Item` 布局，原先的 fail-fast 误将兼容性差异变成启动时 `IllegalStateException`，继而导致 `NoClassDefFoundError: net.minecraft.item.Item`。
+
+修复：Coremod 现在按已发现的 `Item` 方法布局选择路径。新布局继续补丁两个 Forge 钩子；2847 旧布局只补丁原版无参附魔力，而该版本的 `EnchantmentDigging#canApply` 已原生允许剪刀。所有注入 helper 采用 `Object` 参数描述符，消除 MCP/SRG 内部类名差异；未知布局改为记录错误且返回原字节码，不再阻止客户端或服务端启动。自测新增 SRG 名称和 Forge 2847 旧布局模拟，分别验证当前/旧两条字节码注入路径。
+
+验证：Temurin Java 8 `1.8.0_504` 下 `enchantmentSelfTest`（含当前、SRG 和 2847 旧布局 Coremod 注入）、`milkCooldownSelfTest`、`compileJava`、`compileTestJava` 与最终 `compileJava processResources build` 均 PASS。Forge 静态 audit 为 0 ERROR、6 条既有 `packet-thread` WARNING。最终重混淆 JAR 的 helper 签名为 `(Object,int)` / `(Object,Object)`，确认不含 MCP/SRG Minecraft 类参数；release JAR 为 404,746 bytes、SHA-256 `670e7a2b83162ae7db1cba304ae08168ced52da2277101771fc0a5dbe23dcd7a`，`unzip -t` PASS。实际 Windows Forge 2847 客户端世界仍待用户用本次 JAR 启动验证。
