@@ -567,7 +567,8 @@ public final class GuiMarketBook extends GuiScreen {
         for (MarketCommodity commodity : BUY_GOODS) {
             ItemStack stack = createCommodityDisplayStack(commodity);
             String displayName = stack.getDisplayName().toLowerCase(Locale.ROOT);
-            if (displayName.contains(query) || commodity.getKey().toLowerCase(Locale.ROOT).contains(query)) {
+            if (PinyinSearch.matches(displayName, query)
+                    || commodity.getKey().toLowerCase(Locale.ROOT).contains(query)) {
                 matched.add(commodity);
             }
         }

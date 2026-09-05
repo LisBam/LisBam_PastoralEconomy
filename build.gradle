@@ -145,6 +145,13 @@ task marketPacketSelfTest(type: JavaExec) {
     main = 'lisbam.pastoraleconomy.network.MarketPacketSelfTest'
 }
 
+task pinyinSearchSelfTest(type: JavaExec) {
+    group = 'verification'
+    description = 'Runs deterministic client market-book pinyin search checks.'
+    classpath = sourceSets.test.runtimeClasspath
+    main = 'lisbam.pastoraleconomy.client.gui.PinyinSearchSelfTest'
+}
+
 task enchantmentSelfTest(type: JavaExec) {
     group = 'verification'
     description = 'Runs deterministic batch 06/07 enchantment definition and formula checks.'
