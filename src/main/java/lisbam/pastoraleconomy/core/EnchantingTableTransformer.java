@@ -70,7 +70,6 @@ public final class EnchantingTableTransformer implements IClassTransformer, Opco
             method.instructions.clear();
             method.tryCatchBlocks.clear();
             method.instructions.add(new VarInsnNode(ALOAD, 0));
-            method.instructions.add(new VarInsnNode(ALOAD, 1));
             method.instructions.add(new VarInsnNode(ALOAD, 0));
             method.instructions.add(new MethodInsnNode(INVOKEVIRTUAL, node.name, vanillaMethod, "()I", false));
             method.instructions.add(new MethodInsnNode(INVOKESTATIC, HOOKS, "getItemEnchantability",

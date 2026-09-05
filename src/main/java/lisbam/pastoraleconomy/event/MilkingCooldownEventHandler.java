@@ -33,10 +33,19 @@ public final class MilkingCooldownEventHandler {
             return;
         }
 
-        // The logical server owns the timer. Client interaction is left to
-        // vanilla so its prediction and inventory synchronization remain
-        // exactly the normal cow-milking path.
-        if (event.getWorld().isRemote || ModSettings.isDisableMilkingCooldown()) {
+        boolean cooldownDisabled = ModSettings.isDisableMilkingCooldown();
+
+        // PlayerControllerMP has already sent the interaction packet before
+        // this client event fires. Cancel only the local prediction so a
+        // rejected server interaction cannot leave a fake milk bucket in the
+        // client inventory. The server still receives the packet and is the
+        // only side that creates a genuine milk bucket through EntityCow.
+        if (MilkCooldownRules.shouldCancelLocalPrediction(event.getWorld().isRemote, cooldownDisabled)) {
+            event.setCanceled(true);
+            event.setCancellationResult(EnumActionResult.SUCCESS);
+            return;
+        }
+        if (cooldownDisabled) {
             return;
         }
 
