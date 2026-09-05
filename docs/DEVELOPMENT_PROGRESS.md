@@ -2,10 +2,20 @@
 
 当前发行版本：`1.5`；既有第 15 批功能完成，1.5 为维护更新。
 
-最近一次成功构建记录（挤奶服务端结算重构后）：
+## 紧急修复：Esc 关闭后遗留服务端容器（2026-09-06）
+
+根因与修复：行情书、商人交易和交通站均为自定义 `GuiScreen`，却同时保持各自的服务端 `Container`。原来的共用按键处理只拦截可改键的“打开背包”键；按 Esc 时会进入 1.12.2 `GuiScreen` 的默认本地 `displayGuiScreen(null)` 分支，未发出关闭窗口包，服务端因而持续把玩家绑定在已经看不见的旧 Container 上。无槽 `ContainerMarketBook` 会特别使后续物品拾取、合成、骨粉交互和背包四格合成栏全按错误窗口验证，造成物品不入包、无法合成及关闭背包时合成格不回收。
+
+`ModGuiInput` 现将 Esc 与原版“打开背包”键统一转至 `EntityPlayerSP#closeScreen`，确保发送 `CPacketCloseWindow` 并执行服务端 Container 收尾；行情书、商人、交通主界面和交通确认层全部使用该路径。新增 `modGuiInputSelfTest` 覆盖 Esc、改键背包键和无关键分支。验证中还发现 `TransportCoreSelfTest` 的费用断言仍是早已废弃的十倍数值，已同步为当前 `TransportCost`、内容书与旅行自检一致的冻结费用，防止误报。
+
+兼容性与影响：没有修改 Packet discriminator、数据编码、registry ID、NBT、Capability、WorldSavedData、金币、库存或交通费用公式；旧存档无需迁移。实际客户端/Dedicated Server 交互仍需在可进入世界的环境中确认。
+
+验证：Temurin Java 8 `1.8.0_504` 下 `modGuiInputSelfTest`、`marketPacketSelfTest`、`merchantCatalogSelfTest`、`transportCoreSelfTest` 和 `transportTravelSelfTest` 均 PASS；严格 Forge audit 为 0 ERROR、6 条既有 `packet-thread` 保守 WARNING。最终 `compileJava processResources build` PASS，包含 `reobfJar` 与 `exportReleaseJar`。`release/LisBam_PastoralEconomy-1.5.jar` 已由本次构建覆盖导出，406,009 bytes，SHA-256 `d0b1d35a707fb03eb6489bc3d9ebbb6d1a7f61b1dd707b4939124223b276138d`，`unzip -t` PASS。
+
+最近一次成功构建记录（本次 Esc 服务端容器修复后）：
 
 - `env JAVA_HOME=/tmp/lbpe-jdk8 PATH="/tmp/lbpe-jdk8/bin:$PATH" ./gradlew compileJava processResources build --no-daemon --console=plain`
-- 日期：2026-09-05
+- 日期：2026-09-06
 - 结果：PASS（Forge 14.23.5.2859 / Temurin Java 8 `1.8.0_504`；`build` 包含 `test`、`reobfJar` 与 `exportReleaseJar`，`release/LisBam_PastoralEconomy-1.5.jar` 已实际覆盖导出且非空。）
 
 ## 维护：行情展示、附魔节奏与旅行费（2026-09-05）

@@ -176,7 +176,7 @@ public final class GuiMerchantTrade extends GuiScreen implements GuiSlider.ISlid
 
     @Override
     protected void keyTyped(char typedChar, int keyCode) throws java.io.IOException {
-        if (ModGuiInput.closeWithInventoryKey(mc, keyCode)) {
+        if (ModGuiInput.closeWithExitKey(mc, keyCode)) {
             return;
         }
         for (int index = 0; index < quantityFields.length; index++) {

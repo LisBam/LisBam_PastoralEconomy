@@ -437,6 +437,14 @@ Reforged 对有右输入的修理、合并和附魔书操作通过 `AnvilUpdateE
 原因：背包 Tooltip 不能从本地目录推断随机市场的今日价格；此前对界面类型、实体实例和库存槽位的额外限制，以及在悬停槽位选中前运行的 `DrawScreenEvent.Post` 兜底，都会让实际悬停请求或显示无法命中，因此只保留合法出售 key 校验并直接修改 `ItemTooltipEvent` 列表，显示价格仍完全来自服务器冻结快照。图表需要为第四条价格文本预留独立垂直间隔。使用原生可同步属性能让攻击与交互保持相同的服务器权威距离规则；1.12.2 原版会从移动属性自动计算 FOV，因此保留客户端监听器抵消疾步项，才能在直接提速的同时不改变 POV。临时 gamma 让夜视保持客户端本地且不污染玩家药水状态。
 
 兼容性与影响：Packet 7/8 为追加 discriminator，0～6 的编码不变；没有 WorldSavedData、Capability、Tile NBT 或 registry 迁移。旧疾步靴子 NBT 可正常保留但不再有效，护腿需按当前附魔规则获得。前往费不持久化，下一次旅行立即按四倍曲线结算。
+
+## DEC-053 自定义界面的双关闭键必须关闭服务端容器（2026-09-06）
+
+决定：`ModGuiInput` 将 Esc 与 `GameSettings.keyBindInventory` 的当前绑定统一视为自定义界面的退出键，并只通过 `EntityPlayerSP#closeScreen` 关闭行情书、商人交易、交通站和交通确认层。四个入口均在调用各自 `GuiScreen`/`GuiYesNo` 默认 `keyTyped` 之前检查该共用路径。补充 `modGuiInputSelfTest` 断言 Esc、改键背包键和无关键的分支；同时把 `TransportCoreSelfTest` 的费用检查点对齐当前冻结的 `TransportCost` 公式。
+
+原因：Forge 1.12.2 的 `GuiScreen` 对 Esc 仅调用客户端 `Minecraft#displayGuiScreen(null)`，但上述界面打开时仍在服务端持有 `ContainerMarketBook`、`ContainerMerchantTrade` 或 `ContainerTransportStation`。若不发送 `CPacketCloseWindow`，服务端会持续根据不可见旧窗口验证后续点击和交互；无槽行情书容器会拒绝背包、合成、拾取和骨粉等正常动作，并使四格合成栏无法随背包关闭返回。`EntityPlayerSP#closeScreen` 同时发送正确 windowId 并在双方执行 Container 收尾，是唯一符合原版容器生命周期的关闭路径。
+
+兼容性与影响：不新增或修改 Packet/discriminator、registry ID、NBT、Capability、WorldSavedData、金币、库存、交易和交通费用。现有存档不需要迁移；仅修正客户端 Esc 的关闭语义。交通核心自检的数值更新不改变运行时代码或任何冻结费用。
 # 2026-09-05 维护决定：挤奶与调价
 
 - 成年牛的挤奶冷却归属于牛实体，而非玩家；最近一次成功挤奶 tick 写入 `Entity#getEntityData()`，因此区块卸载、重启和多人共享同一头牛时仍保持 6000 tick 冷却。`disableMilkingCooldown=false` 时，事件在客户端和服务端都取消原版桶交互：客户端只返回 `SUCCESS`、不触碰物品栏；服务端对合法成年牛执行一次完整的原版等价结算（播放挤奶音效、扣除一只空桶、手中耗尽则替换牛奶桶，否则入包，满包则掉落），结算成功后才写入实体 tick。冷却命中直接返回 `FAIL`，不扣桶、不产奶、不更新时间。开启配置后不接管交互，恢复原版 `EntityCow` 路径。这样交互包仍可正常到达服务端，但不存在客户端假牛奶桶覆盖服务端库存的窗口。
