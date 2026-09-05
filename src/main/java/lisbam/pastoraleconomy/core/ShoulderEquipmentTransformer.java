@@ -35,13 +35,13 @@ public final class ShoulderEquipmentTransformer implements IClassTransformer, Op
             return transformContainer(basicClass, transformedName);
         }
         if ("net.minecraft.entity.EntityLivingBase".equals(transformedName)) {
-            return transformElytraLookup(basicClass, transformedName, "updateElytra", "func_184616_w");
+            return transformElytraLookup(basicClass, transformedName, "updateElytra", "func_184616_r", "r");
         }
         if ("net.minecraft.client.entity.EntityPlayerSP".equals(transformedName)) {
-            return transformElytraLookup(basicClass, transformedName, "onLivingUpdate", "func_70636_d");
+            return transformElytraLookup(basicClass, transformedName, "onLivingUpdate", "func_70636_d", "n");
         }
         if ("net.minecraft.network.NetHandlerPlayServer".equals(transformedName)) {
-            return transformElytraLookup(basicClass, transformedName, "processEntityAction", "func_147357_a");
+            return transformElytraLookup(basicClass, transformedName, "processEntityAction", "func_147357_a", "a");
         }
         return basicClass;
     }
@@ -135,7 +135,7 @@ public final class ShoulderEquipmentTransformer implements IClassTransformer, Op
 
     private static boolean patchElytraShiftClick(ClassNode node) {
         for (MethodNode method : node.methods) {
-            if (!("transferStackInSlot".equals(method.name) || "func_82846_b".equals(method.name))) {
+            if (!isTransferStackMethod(method)) {
                 continue;
             }
             for (AbstractInsnNode instruction = method.instructions.getFirst(); instruction != null;
@@ -144,8 +144,7 @@ public final class ShoulderEquipmentTransformer implements IClassTransformer, Op
                     continue;
                 }
                 MethodInsnNode call = (MethodInsnNode) instruction;
-                if (!(("getSlotForItemStack".equals(call.name) || "func_184640_d".equals(call.name))
-                        && call.getOpcode() == INVOKESTATIC)) {
+                if (!isItemStackEquipmentSlotLookup(call)) {
                     continue;
                 }
                 AbstractInsnNode stackLoad = previousRealInstruction(instruction);
@@ -171,13 +170,31 @@ public final class ShoulderEquipmentTransformer implements IClassTransformer, Op
         return false;
     }
 
+    /** The release JVM sees obfuscated `b`, so identify transfer by signature and its unique static slot lookup. */
+    private static boolean isTransferStackMethod(MethodNode method) {
+        Type[] arguments = Type.getArgumentTypes(method.desc);
+        return arguments.length == 2 && arguments[0].getSort() == Type.OBJECT
+                && arguments[1].getSort() == Type.INT && Type.getReturnType(method.desc).getSort() == Type.OBJECT;
+    }
+
+    private static boolean isItemStackEquipmentSlotLookup(MethodInsnNode call) {
+        if (call.getOpcode() != INVOKESTATIC) {
+            return false;
+        }
+        Type[] arguments = Type.getArgumentTypes(call.desc);
+        return arguments.length == 1 && arguments[0].getSort() == Type.OBJECT
+                && Type.getReturnType(call.desc).getSort() == Type.OBJECT;
+    }
+
     private static byte[] transformElytraLookup(byte[] basicClass, String transformedName,
-                                                  String mcpMethodName, String srgMethodName) {
+                                                  String mcpMethodName, String srgMethodName,
+                                                  String obfuscatedMethodName) {
         ClassNode node = new ClassNode();
         new ClassReader(basicClass).accept(node, 0);
         int replacements = 0;
         for (MethodNode method : node.methods) {
-            if (!mcpMethodName.equals(method.name) && !srgMethodName.equals(method.name)) {
+            if (!mcpMethodName.equals(method.name) && !srgMethodName.equals(method.name)
+                    && !obfuscatedMethodName.equals(method.name)) {
                 continue;
             }
             replacements += replaceChestLookup(method);
@@ -226,8 +243,9 @@ public final class ShoulderEquipmentTransformer implements IClassTransformer, Op
 
     private static boolean isChestStackLookup(MethodInsnNode call, AbstractInsnNode chest) {
         return chest instanceof FieldInsnNode && chest.getOpcode() == GETSTATIC
-                && ("CHEST".equals(((FieldInsnNode) chest).name) || "field_185001_d".equals(((FieldInsnNode) chest).name))
-                && ("getItemStackFromSlot".equals(call.name) || "func_184582_a".equals(call.name))
+                && ("CHEST".equals(((FieldInsnNode) chest).name) || "e".equals(((FieldInsnNode) chest).name))
+                && ("getItemStackFromSlot".equals(call.name) || "func_184582_a".equals(call.name)
+                || "b".equals(call.name))
                 && Type.getArgumentTypes(call.desc).length == 1
                 && Type.getReturnType(call.desc).getSort() == Type.OBJECT;
     }

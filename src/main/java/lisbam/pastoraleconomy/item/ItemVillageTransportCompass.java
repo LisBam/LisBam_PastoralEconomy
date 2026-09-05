@@ -2,7 +2,8 @@ package lisbam.pastoraleconomy.item;
 
 import lisbam.pastoraleconomy.LisBamPastoralEconomy;
 import lisbam.pastoraleconomy.data.world.PastoralWorldData;
-import lisbam.pastoraleconomy.transport.TransportStationRecord;
+import lisbam.pastoraleconomy.block.ModBlocks;
+import lisbam.pastoraleconomy.tile.TileVillageStation;
 import lisbam.pastoraleconomy.transport.VillageTransportCompassTarget;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityLivingBase;
@@ -17,7 +18,10 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.World;
 
-/** Compass variant whose needle follows the nearest registered village transport block. */
+import java.util.ArrayList;
+import java.util.List;
+
+/** Compass variant whose needle follows the nearest physical village transport block. */
 public final class ItemVillageTransportCompass extends ItemCompass {
     private static final String TARGET_TAG = "lisbamVillageTransportTarget";
     private static final String KEY_DIMENSION = "dimension";
@@ -40,20 +44,38 @@ public final class ItemVillageTransportCompass extends ItemCompass {
                 || (!isSelected && ((EntityPlayer) entity).getHeldItemOffhand() != stack)) {
             return;
         }
-        if (entity.ticksExisted % REFRESH_INTERVAL != 0 && hasTarget(stack)) {
+        if (entity.ticksExisted % REFRESH_INTERVAL != 0) {
             return;
         }
-        TransportStationRecord nearest = VillageTransportCompassTarget.findNearest(
-                PastoralWorldData.get(world).getTransportWorldState().getStations(),
+        PastoralWorldData data = PastoralWorldData.get(world);
+        BlockPos nearest = VillageTransportCompassTarget.findNearest(
+                data.getMerchantWorldState().getStations(), findLoadedVillageStationBlocks(world),
                 world.provider.getDimension(), entity.getPosition());
-        writeTarget(stack, nearest);
+        writeTarget(stack, world.provider.getDimension(), nearest);
     }
 
     private static boolean hasTarget(ItemStack stack) {
         return stack.hasTagCompound() && stack.getTagCompound().hasKey(TARGET_TAG, 10);
     }
 
-    private static void writeTarget(ItemStack stack, TransportStationRecord target) {
+    /**
+     * Tile entities are the physical source of truth for blocks currently
+     * loaded around players.  The merchant station records cover known village
+     * stations at a distance without requiring a TransportWorldState entry.
+     */
+    private static List<BlockPos> findLoadedVillageStationBlocks(World world) {
+        List<BlockPos> positions = new ArrayList<BlockPos>();
+        for (net.minecraft.tileentity.TileEntity tile :
+                new ArrayList<net.minecraft.tileentity.TileEntity>(world.loadedTileEntityList)) {
+            if (tile instanceof TileVillageStation && world.getBlockState(tile.getPos()).getBlock()
+                    == ModBlocks.VILLAGE_STATION) {
+                positions.add(tile.getPos().toImmutable());
+            }
+        }
+        return positions;
+    }
+
+    private static void writeTarget(ItemStack stack, int dimension, BlockPos target) {
         NBTTagCompound root = stack.getTagCompound();
         if (target == null) {
             if (root != null) {
@@ -66,10 +88,10 @@ public final class ItemVillageTransportCompass extends ItemCompass {
             stack.setTagCompound(root);
         }
         NBTTagCompound stored = new NBTTagCompound();
-        stored.setInteger(KEY_DIMENSION, target.getDimension());
-        stored.setInteger(KEY_X, target.getPosition().getX());
-        stored.setInteger(KEY_Y, target.getPosition().getY());
-        stored.setInteger(KEY_Z, target.getPosition().getZ());
+        stored.setInteger(KEY_DIMENSION, dimension);
+        stored.setInteger(KEY_X, target.getX());
+        stored.setInteger(KEY_Y, target.getY());
+        stored.setInteger(KEY_Z, target.getZ());
         root.setTag(TARGET_TAG, stored);
     }
 
@@ -93,8 +115,10 @@ public final class ItemVillageTransportCompass extends ItemCompass {
             }
             double yaw = held ? targetEntity.rotationYaw : getFrameRotation((EntityItemFrame) targetEntity);
             double compassAngle = getTargetToAngle(stack, targetEntity) / (Math.PI * 2.0D);
-            double value = 0.5D - MathHelper.positiveModulo(yaw / 360.0D, 1.0D)
-                    - (held ? 0.0D : 0.25D) - compassAngle;
+            // This is ItemCompass$1's exact 1.12.2 relation, with spawn
+            // direction replaced by the stored village-station direction.
+            double value = 0.5D - (MathHelper.positiveModulo(yaw / 360.0D, 1.0D)
+                    - 0.25D - compassAngle);
             if (held) {
                 value = wobble(world, value);
             }

@@ -12,7 +12,9 @@
 - [x] `compileJava`、`processResources`、`playerDataSelfTest`、`transportCoreSelfTest`、`shoulderEquipmentSelfTest`：PASS（Temurin Java 8 `1.8.0_504`）。PlayerData 覆盖肩部鞘翅 NBT、非鞘翅拒绝和 Clone；交通自检覆盖同维度、仅村庄节点、忽略 Y 的最近目标；Coremod 自检对实际 Forge 映射类验证玩家背包肩部槽/Shift-click、客户端起飞、服务端动作验证和飞行耐久查找。
 - [x] Forge 1.12.2 strict audit：0 ERROR；6 条 `packet-thread` WARNING 均为既有网络注册/Proxy 主线程桥接，非本次引入。PNG 为 32 张非空 16×16 RGBA 帧、模型含 31 条 angle 覆盖、无序 JSON 配方解析通过 `processResources`。
 - [x] 最终 `./gradlew build --no-daemon --console=plain`：PASS（Temurin Java 8 `1.8.0_504`；含 `test`、`reobfJar`、`exportReleaseJar`）。`release/LisBam_PastoralEconomy-1.5.jar` 已由本次构建覆盖导出、非空，`unzip -t` PASS。
-- [ ] 游戏内：创造栏/配方获得指南针，主手与副手分别指向最近的同维度村庄交通站；越过最近站分界后刷新目标，在无同维度村庄站的下界/末地沿用原版随机针行为。NOT RUN：当前环境无法创建可操作 Forge 客户端。
+- [x] 回归修正：`compileJava`、`compileTestJava`、`playerDataSelfTest`、`transportCoreSelfTest`、`shoulderEquipmentSelfTest`：PASS（Temurin Java 8 `1.8.0_504`）。交通自检覆盖未登记交通节点的已加载村庄方块优先、同维度与忽略 Y；肩部自检额外把目标方法/字段模拟为 Forge 1.12.2 release 混淆名，确认容器槽、Shift-click、客户端起飞、服务端验证和耐久读取都继续注入。32 张 PNG 全部为原版基底且为 16×16。
+- [x] 回归修正后的最终 `./gradlew build --no-daemon --console=plain`：PASS（含 `test`、`reobfJar`、`exportReleaseJar`）。`release/LisBam_PastoralEconomy-1.5.jar` 已实际覆盖导出，454,587 bytes，`unzip -t` PASS。
+- [ ] 游戏内：创造栏/配方获得指南针，主手与副手分别指向最近的同维度村庄交通方块（不要求交通节点登记）；越过最近站分界后刷新目标，在无同维度村庄站的下界/末地沿用原版随机针行为，并确认全部 32 个方向只有绿/青针颜色变化。NOT RUN：当前环境无法创建可操作 Forge 客户端。
 - [ ] 游戏内/多人：肩部槽仅收鞘翅、Shift-click 自动装备、胸甲位拒绝鞘翅，胸甲与肩部鞘翅可同时存在；双击跳跃起飞、每 20 tick 耐久、死亡/重生/重进/换维度持久化，以及旧胸甲鞘翅迁移均正确。Dedicated Server NOT RUN：未进入可接受 EULA 的测试世界。
 
 ## 紧急修复：客户端容器窗口号与不暂停界面（2026-09-06）

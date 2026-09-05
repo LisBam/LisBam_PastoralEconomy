@@ -4,13 +4,13 @@
 
 ## 维护：村庄交通方块指南针与肩部鞘翅栏（2026-09-06）
 
-实现：新增“村庄交通方块指南针”，其 `angle` 模型和指针摆动沿用 Java 1.12.2 原版罗盘路径，但由逻辑服务端把同维度最近的已登记村庄交通站写入所持 ItemStack；自建交通方块不参与目标选择，Y 高度不影响最近判定。配方为指南针、铁锭、红石粉、绿宝石各一的无序合成。资源使用生成的绿/青针 16×16 原版风第 00 帧，并配合仅变色的原版帧完成 32 帧动画。
+实现：新增“村庄交通方块指南针”，其 `angle` 模型和指针摆动逐字沿用 Java 1.12.2 原版罗盘路径；逻辑服务端从同维度村庄站持久位置和当前加载的物理村庄交通方块中按水平距离选择最近目标，**不再依赖交通节点登记**。自建交通方块不参与目标选择。配方为指南针、铁锭、红石粉、绿宝石各一的无序合成。32 帧贴图现在全部基于对应原版指南针帧，仅将红针的两种颜色改为统一绿/青色。
 
-玩家 Capability 升为 v3 并持久保存一个肩部鞘翅槽。Coremod 为原版玩家背包追加真实同步 Slot、从原版库存贴图裁取槽背景，并让 Shift-click 的鞘翅进入肩部。胸甲槽拒绝鞘翅；客户端起飞、服务端动作包验证和飞行中耐久消耗三个原版胸甲读取都改读肩部，因此胸甲可保留且鞘翅仍是原版飞行/耐久行为。旧存档胸甲鞘翅在下一次登录、重生或换维度时自动迁移，肩部已占用时进入背包或满包掉落。
+玩家 Capability 升为 v3 并持久保存一个肩部鞘翅槽。Coremod 为原版玩家背包追加真实同步 Slot、从原版库存贴图裁取槽背景，并让 Shift-click 的鞘翅进入肩部。胸甲槽拒绝鞘翅；客户端起飞、服务端动作包验证和飞行中耐久消耗三个原版胸甲读取都改读肩部，因此胸甲可保留且鞘翅仍是原版飞行/耐久行为。修正后匹配 MCP、SRG 与发行混淆成员名，正式 JAR 不会再因 Shift-click 目标名差异而回退整个容器补丁。旧存档胸甲鞘翅在下一次登录、重生或换维度时自动迁移，肩部已占用时进入背包或满包掉落。
 
 兼容性与影响：新增一个 Item ID、配方、语言/模型/贴图和 PlayerData 的 `shoulder` NBT；既有 registry ID、Packet discriminator、WorldSavedData 名称与交通节点 NBT 均不变。旧 `dataVersion<=2` 的玩家数据按空肩部读取，无物品损失迁移。游戏内和 Dedicated Server 端到端验收仍待可操作 Forge 世界。
 
-验证：Temurin Java 8 `1.8.0_504` 下 `compileJava`、`processResources`、`playerDataSelfTest`、`transportCoreSelfTest` 和新增 `shoulderEquipmentSelfTest` 通过；后者以实际 Forge 1.12.2 映射类验证 ContainerPlayer、客户端起飞、服务端动作验证和飞行耐久路径均已注入。严格 Forge audit 为 0 ERROR、6 条既有 `packet-thread` 保守 WARNING。最终 `./gradlew build --no-daemon --console=plain`（含 `test`、`reobfJar`、`exportReleaseJar`）PASS；`release/LisBam_PastoralEconomy-1.5.jar` 已实际覆盖导出且 `unzip -t` PASS。
+根因与修正：上一版目标搜索错误读取交通节点登记，故村庄方块尚未镜像到该表时没有目标；并把原版 `angle` 的括号关系改错。肩部实现虽在开发环境可命中 MCP 名称，但正式混淆的 `ContainerPlayer` Shift-click 名称不匹配，变换器因此回退整个容器补丁，造成肩部槽未出现且胸甲仍接收鞘翅。现在以物理村庄方块/村庄站状态选目标，恢复原版公式，并对 release 字节码按签名与实际混淆成员名匹配。验证：Temurin Java 8 `1.8.0_504` 下 `compileJava`、`compileTestJava`、`playerDataSelfTest`、`transportCoreSelfTest` 和 `shoulderEquipmentSelfTest` 通过；最后一项额外模拟正式混淆成员名。严格 Forge audit 为 0 ERROR、6 条既有 `packet-thread` 保守 WARNING。最终 `./gradlew build --no-daemon --console=plain`（含 `test`、`reobfJar`、`exportReleaseJar`）PASS；`release/LisBam_PastoralEconomy-1.5.jar` 已实际覆盖导出，454,587 bytes，`unzip -t` PASS。
 
 ## 紧急修复：客户端窗口号污染与界面暂停（2026-09-06）
 
