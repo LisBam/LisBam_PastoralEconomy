@@ -5,6 +5,9 @@ import net.minecraft.block.Block;
 import net.minecraft.init.Blocks;
 import net.minecraft.init.Items;
 import net.minecraft.item.Item;
+import net.minecraft.item.ItemStack;
+
+import javax.annotation.Nullable;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -21,6 +24,7 @@ public final class MarketCatalog {
     private static final Map<String, MarketCommodity> BY_KEY;
     private static final List<MarketCommodity> ALL;
     private static final List<MarketCommodity> HISTORY_TRACKED;
+    private static final List<MarketCommodity> SELL_HISTORY_TRACKED;
 
     static {
         Map<String, MarketCommodity> definitions = new LinkedHashMap<String, MarketCommodity>();
@@ -40,6 +44,13 @@ public final class MarketCatalog {
             throw new IllegalStateException("The market must track merchant sell goods and purchases.");
         }
         HISTORY_TRACKED = Collections.unmodifiableList(tracked);
+        List<MarketCommodity> sellTracked = new ArrayList<MarketCommodity>();
+        for (MarketCommodity commodity : HISTORY_TRACKED) {
+            if (commodity.getKey().contains(":sell/")) {
+                sellTracked.add(commodity);
+            }
+        }
+        SELL_HISTORY_TRACKED = Collections.unmodifiableList(sellTracked);
     }
 
     private MarketCatalog() {
@@ -59,13 +70,33 @@ public final class MarketCatalog {
 
     /** Merchant sell-side goods used by the first market-book page. */
     public static List<MarketCommodity> getSellHistoryTracked() {
-        List<MarketCommodity> result = new ArrayList<MarketCommodity>();
-        for (MarketCommodity commodity : HISTORY_TRACKED) {
-            if (commodity.getKey().contains(":sell/") && !commodity.getKey().contains("wool_")) {
-                result.add(commodity);
+        return SELL_HISTORY_TRACKED;
+    }
+
+    public static boolean isSellCommodity(MarketCommodity commodity) {
+        return commodity != null && SELL_HISTORY_TRACKED.contains(commodity);
+    }
+
+    /** Resolves exactly the item/meta variants that the merchant will buy, including every wool colour. */
+    @Nullable
+    public static MarketCommodity findSellCommodity(ItemStack stack) {
+        if (stack == null || stack.isEmpty()) {
+            return null;
+        }
+        for (MarketCommodity commodity : SELL_HISTORY_TRACKED) {
+            if (stack.getItem() != commodity.getItem()) {
+                continue;
+            }
+            if (commodity.isAnyWoolColor()) {
+                int metadata = stack.getMetadata();
+                if (metadata >= 0 && metadata < 16) {
+                    return commodity;
+                }
+            } else if (stack.getMetadata() == commodity.getMetadata()) {
+                return commodity;
             }
         }
-        return Collections.unmodifiableList(result);
+        return null;
     }
 
     private static void addSellingDefinitions(Map<String, MarketCommodity> definitions) {

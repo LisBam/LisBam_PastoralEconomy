@@ -1,6 +1,7 @@
 package lisbam.pastoraleconomy.enchantment;
 
 import lisbam.pastoraleconomy.agriculture.AgricultureRules;
+import lisbam.pastoraleconomy.event.ToolEnchantmentEventHandler;
 import net.minecraft.enchantment.Enchantment;
 import net.minecraft.enchantment.EnchantmentData;
 import net.minecraft.enchantment.Enchantment.Rarity;
@@ -87,6 +88,9 @@ public final class EnchantmentSelfTest {
                 "Harvest must reject Fortune");
         require(ModEnchantments.ATTACK_SPEED.canApplyAtEnchantingTable(new ItemStack(Items.DIAMOND_SWORD)),
                 "Attack Speed must apply to weapons");
+        require(ModEnchantments.FLEETFOOT.canApplyAtEnchantingTable(new ItemStack(Items.DIAMOND_LEGGINGS))
+                        && !ModEnchantments.FLEETFOOT.canApplyAtEnchantingTable(new ItemStack(Items.DIAMOND_BOOTS)),
+                "Fleetfoot must apply to leggings, not boots");
         require(ModEnchantments.ATTACK_SPEED.canApplyAtEnchantingTable(new ItemStack(Items.DIAMOND_PICKAXE)),
                 "Attack Speed must apply to tools");
         require(ModEnchantments.RANGE.canApplyAtEnchantingTable(new ItemStack(Items.SHEARS)),
@@ -103,6 +107,9 @@ public final class EnchantmentSelfTest {
                 "Bluntness Curse must stay out of enchanting-table rolls");
         require(!ModEnchantments.BLUNTNESS_CURSE.isCompatibleWith(Enchantments.SWEEPING),
                 "Bluntness Curse must reject Sweeping Edge");
+        require(ToolEnchantmentEventHandler.getRangeBonus(1) == 1.5D
+                        && ToolEnchantmentEventHandler.getRangeBonus(5) == 7.5D,
+                "Range must add exactly 1.5 blocks per enchantment level");
     }
 
     private static void verifyHarvestFormulas() {

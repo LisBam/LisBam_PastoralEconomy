@@ -11,7 +11,7 @@ import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import net.minecraftforge.fml.relauncher.Side;
 
-/** Keeps Fleetfoot's speed multiplier out of the local FOV calculation. */
+/** Keeps Fleetfoot's movement-speed modifier out of the local FOV calculation. */
 @Mod.EventBusSubscriber(modid = LisBamPastoralEconomy.MODID, value = Side.CLIENT)
 public final class ClientFleetfootFovHandler {
     private ClientFleetfootFovHandler() {
@@ -29,14 +29,19 @@ public final class ClientFleetfootFovHandler {
             return;
         }
         double actualSpeed = movement.getAttributeValue();
-        double normalSpeed = actualSpeed / (1.0D + fleetfoot.getAmount());
         double walkSpeed = player.capabilities.getWalkSpeed();
         if (actualSpeed <= 0.0D || walkSpeed <= 0.0D) {
             return;
         }
-        // Preserve bow, flying, and other modifiers applied around the movement term.
+
+        // AbstractClientPlayer multiplies FOV by (speed / walkSpeed + 1) / 2.
+        // Remove only Fleetfoot's contribution so bow, flying, and other effects
+        // retain their normal vanilla FOV behavior.
+        double normalSpeed = actualSpeed / (1.0D + fleetfoot.getAmount());
         double normalTerm = (normalSpeed / walkSpeed + 1.0D) * 0.5D;
         double actualTerm = (actualSpeed / walkSpeed + 1.0D) * 0.5D;
-        event.setFOV((float) (event.getFOV() * normalTerm / actualTerm));
+        if (actualTerm > 0.0D) {
+            event.setFOV((float) (event.getFOV() * normalTerm / actualTerm));
+        }
     }
 }

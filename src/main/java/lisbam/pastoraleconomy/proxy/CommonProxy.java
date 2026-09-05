@@ -53,6 +53,11 @@ public class CommonProxy {
         // Client-only work is isolated in ClientProxy.
     }
 
+    /** ClientProxy schedules the display-only inventory-tooltip price onto the client thread. */
+    public void handleMarketTooltipPriceSync(String commodityKey, long marketDay, long price) {
+        // Client-only work is isolated in ClientProxy.
+    }
+
     public void handleMerchantTradeSync(MerchantTradeSnapshot snapshot) {
         // Client-only work is isolated in ClientProxy.
     }

@@ -1,6 +1,7 @@
 package lisbam.pastoraleconomy.market;
 
 import lisbam.pastoraleconomy.data.world.PastoralWorldData;
+import net.minecraft.item.ItemStack;
 import net.minecraft.world.World;
 
 import javax.annotation.Nullable;
@@ -25,6 +26,15 @@ public final class MarketService {
     @Nullable
     public static MarketCommodity getCommodity(String key) {
         return MarketCatalog.get(key);
+    }
+
+    @Nullable
+    public static MarketCommodity getSellCommodity(ItemStack stack) {
+        return MarketCatalog.findSellCommodity(stack);
+    }
+
+    public static boolean isSellCommodity(MarketCommodity commodity) {
+        return MarketCatalog.isSellCommodity(commodity);
     }
 
     public static long getCurrentMarketDay(World world) {

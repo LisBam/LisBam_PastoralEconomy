@@ -3,10 +3,13 @@ package lisbam.pastoraleconomy.network;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import lisbam.pastoraleconomy.client.ClientMarketState;
+import lisbam.pastoraleconomy.client.ClientMarketTooltipState;
 import lisbam.pastoraleconomy.market.MarketHistoryPoint;
 import lisbam.pastoraleconomy.market.MarketHistorySnapshot;
 import lisbam.pastoraleconomy.network.message.RequestMarketHistoryMessage;
+import lisbam.pastoraleconomy.network.message.RequestMarketTooltipPriceMessage;
 import lisbam.pastoraleconomy.network.message.SyncMarketHistoryMessage;
+import lisbam.pastoraleconomy.network.message.SyncMarketTooltipPriceMessage;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -26,6 +29,7 @@ public final class MarketPacketSelfTest {
         verifyBookSessionDropsLateSnapshots();
         verifyProgressivePrefetchCachesSelectableCommodities();
         verifyDisplayOnlyRequestsRemainIndependent();
+        verifyInventoryTooltipPricePacketsAndCache();
     }
 
     private static void verifyRequestRoundTripAndBounds() {
@@ -147,6 +151,33 @@ public final class MarketPacketSelfTest {
         require(ClientMarketState.getSnapshot(WHEAT, -1L, wheatRequest) == wheat,
                 "the selected commodity must retain its own request identity while other windows prefetch");
         ClientMarketState.endBookSession();
+    }
+
+    private static void verifyInventoryTooltipPricePacketsAndCache() {
+        ByteBuf requestBuffer = Unpooled.buffer();
+        new RequestMarketTooltipPriceMessage(WHEAT).toBytes(requestBuffer);
+        RequestMarketTooltipPriceMessage decodedRequest = new RequestMarketTooltipPriceMessage();
+        decodedRequest.fromBytes(requestBuffer);
+        require(decodedRequest.isValid() && WHEAT.equals(decodedRequest.getCommodityKey()),
+                "inventory tooltip requests must carry only one bounded commodity key");
+
+        ByteBuf responseBuffer = Unpooled.buffer();
+        new SyncMarketTooltipPriceMessage(WHEAT, 42L, 75L).toBytes(responseBuffer);
+        SyncMarketTooltipPriceMessage decodedResponse = new SyncMarketTooltipPriceMessage();
+        decodedResponse.fromBytes(responseBuffer);
+        require(decodedResponse.isValid() && decodedResponse.getMarketDay() == 42L && decodedResponse.getPrice() == 75L,
+                "inventory tooltip replies must preserve the frozen world day and price");
+
+        ClientMarketTooltipState.clear();
+        ClientMarketTooltipState.acceptPrice(WHEAT, 42L, 75L);
+        require(Long.valueOf(75L).equals(ClientMarketTooltipState.getPriceForDay(WHEAT, 42L))
+                        && ClientMarketTooltipState.getPriceForDay(WHEAT, 43L) == null,
+                "a tooltip price must never be reused across market days");
+        require(ClientMarketTooltipState.shouldRequest(WHEAT, 100L)
+                        && !ClientMarketTooltipState.shouldRequest(WHEAT, 119L)
+                        && ClientMarketTooltipState.shouldRequest(WHEAT, 120L),
+                "missing tooltip prices must request at most once per second per commodity");
+        ClientMarketTooltipState.clear();
     }
 
     private static void writeKey(ByteBuf buffer, String key) {

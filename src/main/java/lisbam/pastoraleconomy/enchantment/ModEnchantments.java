@@ -26,6 +26,10 @@ public final class ModEnchantments {
     private static final Item[] BOOTS = new Item[]{
             Items.LEATHER_BOOTS, Items.CHAINMAIL_BOOTS, Items.IRON_BOOTS, Items.GOLDEN_BOOTS, Items.DIAMOND_BOOTS
     };
+    private static final Item[] LEGGINGS = new Item[]{
+            Items.LEATHER_LEGGINGS, Items.CHAINMAIL_LEGGINGS, Items.IRON_LEGGINGS,
+            Items.GOLDEN_LEGGINGS, Items.DIAMOND_LEGGINGS
+    };
     private static final Item[] HELMETS = new Item[]{
             Items.LEATHER_HELMET, Items.CHAINMAIL_HELMET, Items.IRON_HELMET, Items.GOLDEN_HELMET, Items.DIAMOND_HELMET
     };
@@ -71,7 +75,7 @@ public final class ModEnchantments {
                     Enchantments.LOOTING}
     );
     public static final Enchantment FLEETFOOT = new EnchantmentPastoral(
-            "fleetfoot", 4, new EntityEquipmentSlot[]{EntityEquipmentSlot.FEET}, BOOTS,
+            "fleetfoot", 4, new EntityEquipmentSlot[]{EntityEquipmentSlot.LEGS}, LEGGINGS,
             new Enchantment[0]
     );
     public static final Enchantment NIGHT_VISION = new EnchantmentPastoral(
@@ -122,6 +126,10 @@ public final class ModEnchantments {
 
     public static boolean isBoots(ItemStack stack) {
         return hasItem(BOOTS, stack);
+    }
+
+    public static boolean isLeggings(ItemStack stack) {
+        return hasItem(LEGGINGS, stack);
     }
 
     public static boolean isHelmet(ItemStack stack) {

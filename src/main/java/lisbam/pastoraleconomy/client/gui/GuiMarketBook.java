@@ -328,14 +328,16 @@ public final class GuiMarketBook extends GuiScreen {
         drawString(fontRenderer, icon.getDisplayName(), textX, layout.detailsY + 15, 0xFFFFFFFF);
         drawString(fontRenderer, I18n.format("gui.lisbam_pastoral_economy.market_book.current_price",
                 formatCoins(snapshot.getCurrentPrice())), textX, layout.detailsY + 27, 0xFFBFE6A8);
+        drawString(fontRenderer, I18n.format("gui.lisbam_pastoral_economy.market_book.base_price",
+                formatCoins(selectedCommodity.getBasePrice())), textX, layout.detailsY + 39, 0xFFF2E4B7);
         Long previous = snapshot.getPreviousPrice();
         String previousText = previous == null ? "—" : formatCoins(previous.longValue());
         drawString(fontRenderer, I18n.format("gui.lisbam_pastoral_economy.market_book.previous_price", previousText),
-                textX, layout.detailsY + 39, 0xFFD9D9D9);
+                textX, layout.detailsY + 51, 0xFFD9D9D9);
         MarketTrend trend = previous == null ? MarketTrend.FLAT
                 : MarketTrend.compare(snapshot.getCurrentPrice(), previous.longValue());
         drawString(fontRenderer, I18n.format("gui.lisbam_pastoral_economy.market_book.trend",
-                trend.getSymbol(), getTrendName(trend)), textX, layout.detailsY + 51, getTrendColor(trend));
+                trend.getSymbol(), getTrendName(trend)), textX, layout.detailsY + 63, getTrendColor(trend));
     }
 
     private List<GraphNode> drawHistoryGraph(MarketHistorySnapshot snapshot) {
@@ -761,7 +763,7 @@ public final class GuiMarketBook extends GuiScreen {
             int graphX = detailsX;
             // Leave a readable gap between the vertical axis label (coins/unit)
             // and the header's today's-trend line.
-            int graphY = detailsY + 78;
+            int graphY = detailsY + 90;
             int graphRight = Math.max(graphX + 1, panelRight - 8);
             int graphBottom = Math.max(graphY + 1, pageButtonY - 18);
             int pageButtonWidth = Math.max(12, Math.min(58, Math.max(12, (graphRight - graphX) / 4)));
