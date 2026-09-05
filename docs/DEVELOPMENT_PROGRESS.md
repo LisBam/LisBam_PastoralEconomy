@@ -6,7 +6,15 @@
 
 - `JDK8_HOME=/tmp/lbpe-jdk8; env JAVA_HOME="$JDK8_HOME" PATH="$JDK8_HOME/bin:$PATH" ./gradlew compileJava processResources build`
 - 日期：2026-09-05
-- 结果：PASS（Forge 14.23.5.2859 / Temurin Java 8 `1.8.0_504`；`build` 包含 `reobfJar` 与 `exportReleaseJar`。`release/LisBam_PastoralEconomy-1.0.jar` 为 347,012 bytes，SHA-256 `faf5a90e83d818b219e3d7d2c0be5a67d89945730e93f853e0b4e5a541ac0474`，`unzip -t` PASS。）
+- 结果：PASS（Forge 14.23.5.2859 / Temurin Java 8 `1.8.0_504`；`build` 包含 `test`、`reobfJar` 与 `exportReleaseJar`。`release/LisBam_PastoralEconomy-1.0.jar` 为 356,074 bytes，SHA-256 `0a660a9d465461ce9ed0240b2ec2af31bef2b853a8789f3a16b65318851ebb33`，`unzip -t` PASS。）
+
+## 维护：行情书可用性与村庄商人范围（2026-09-05）
+
+实现：创造模式标签补齐 `itemGroup.lisbam_pastoral_economy=聆竹の休闲田园经济`。行情书购买页增加本地化名称/key 搜索、受限三列图标网格与鼠标滚轮逐行浏览；不再为整个购买目录创建越界按钮。选中商品仍优先向服务端请求，其他条目每 4 tick 渐进预取；若服务端 2 tick 合并节流导致请求未回包，40 client tick 后重新请求，消除永久“正在读取行情”。市场图书背景改为完整原版 `demo_background.png`，可见文本仍使用 `FontRenderer`。
+
+审查并修正商人村庄范围：原先实体以站点的 64 格家区游荡、随机出生使用 128×128 方形，和 128 格村庄参考范围不一致。现在 `EntityMerchant` 将村庄中心作为持久 NBT 家点，以同一 128 格半径限制和寻路返航；`VillageService` 只在圆形范围内随机安全出生。旧实体缺少村庄中心 NBT 时先兼容站点坐标，下一次维护根据既有 `VillageRecord` 写入准确中心；没有改动 merchantId、villageId、stationId、WorldSavedData 名称、Packet discriminator 或 Offer/库存语义。
+
+验证：Temurin Java 8 `1.8.0_504` 下 `compileJava`、`processResources`、`marketCoreSelfTest`、`marketPacketSelfTest`、`merchantCatalogSelfTest` 和最终 `build` 均 PASS。严格 Forge audit 为 0 ERROR、5 条既有 S2C/Proxy 主线程桥接 WARNING；`exportReleaseJar` 已覆盖导出 356,074-byte release JAR，SHA-256 `0a660a9d465461ce9ed0240b2ec2af31bef2b853a8789f3a16b65318851ebb33`，`unzip -t` PASS。游戏内 GUI、刷怪蛋收编、返航/解绑和 Dedicated Server 为 NOT RUN，需可操作运行环境。
 
 ## 维护：强制覆盖导出发布 JAR（2026-09-05）
 

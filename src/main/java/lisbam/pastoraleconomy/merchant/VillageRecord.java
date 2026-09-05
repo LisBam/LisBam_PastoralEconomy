@@ -2,6 +2,7 @@ package lisbam.pastoraleconomy.merchant;
 
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.nbt.NBTTagList;
+import net.minecraft.util.math.BlockPos;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -43,6 +44,7 @@ public final class VillageRecord {
     public int getCenterX() { return centerX; }
     public int getCenterY() { return centerY; }
     public int getCenterZ() { return centerZ; }
+    public BlockPos getCenter() { return new BlockPos(centerX, centerY, centerZ); }
     public boolean isActive() { return active; }
     public int getVillagerCount() { return villagerCount; }
     public UUID getStationId() { return stationId; }

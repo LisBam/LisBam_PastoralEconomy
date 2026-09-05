@@ -304,7 +304,7 @@ public final class VillageService {
                 if (merchant.hasKnownEntityChunk() && !isKnownEntityChunkLoaded(world, merchant)) {
                     continue;
                 }
-                EntityMerchant spawned = spawnMerchant(world, merchant, station);
+                EntityMerchant spawned = spawnMerchant(world, merchant, station, village);
                 if (spawned != null) {
                     entities.put(merchantId, spawned);
                     changed |= merchant.updateKnownEntityChunk(spawned.getPosition().getX() >> 4,
@@ -329,7 +329,8 @@ public final class VillageService {
             MerchantRecord merchant = new MerchantRecord(UUID.randomUUID(), village.getVillageId(), station.getStationId());
             state.putMerchant(merchant);
             village.addMerchant(merchant.getMerchantId());
-            entity.bind(merchant.getMerchantId(), village.getVillageId(), station.getStationId(), station.getPosition());
+            entity.bind(merchant.getMerchantId(), village.getVillageId(), station.getStationId(), station.getPosition(),
+                    village.getCenter());
             changed = true;
         }
         return changed;
@@ -368,6 +369,8 @@ public final class VillageService {
                 if (boundVillage != null && !isWithinVillageRange(boundVillage, merchant.getPosition())) {
                     boundVillage.removeMerchant(record.getMerchantId());
                     state.removeMerchant(record.getMerchantId());
+                } else if (boundVillage != null) {
+                    merchant.updateVillageHome(boundVillage.getCenter());
                 }
             }
             if (!isCurrentMerchantEntity(world, state, merchant, record) || !seen.add(merchantId)) {
@@ -410,26 +413,33 @@ public final class VillageService {
                 merchant.getKnownEntityChunkZ() << 4));
     }
 
-    private static EntityMerchant spawnMerchant(WorldServer world, MerchantRecord merchant, StationRecord station) {
+    private static EntityMerchant spawnMerchant(WorldServer world, MerchantRecord merchant, StationRecord station,
+                                                VillageRecord village) {
         if (!world.isBlockLoaded(station.getPosition())) {
             return null;
         }
-        BlockPos spawn = findMerchantSpawnPosition(world, station.getPosition());
+        BlockPos spawn = findMerchantSpawnPosition(world, station.getPosition(), village);
         if (spawn == null) {
             return null;
         }
         EntityMerchant entity = new EntityMerchant(world);
-        entity.bind(merchant.getMerchantId(), merchant.getVillageId(), merchant.getStationId(), station.getPosition());
+        entity.bind(merchant.getMerchantId(), merchant.getVillageId(), merchant.getStationId(), station.getPosition(),
+                village.getCenter());
         entity.setPosition(spawn.getX() + 0.5D, spawn.getY(), spawn.getZ() + 0.5D);
         return world.spawnEntity(entity) ? entity : null;
     }
 
-    private static BlockPos findMerchantSpawnPosition(WorldServer world, BlockPos station) {
+    private static BlockPos findMerchantSpawnPosition(WorldServer world, BlockPos station, VillageRecord village) {
         // Prefer a random safe point in the village's normal activity radius.
         for (int attempt = 0; attempt < 32; attempt++) {
             int offsetX = world.rand.nextInt(VILLAGE_REFERENCE_RANGE * 2 + 1) - VILLAGE_REFERENCE_RANGE;
             int offsetZ = world.rand.nextInt(VILLAGE_REFERENCE_RANGE * 2 + 1) - VILLAGE_REFERENCE_RANGE;
-            BlockPos column = new BlockPos(station.getX() + offsetX, 0, station.getZ() + offsetZ);
+            if ((long) offsetX * offsetX + (long) offsetZ * offsetZ
+                    > (long) VILLAGE_REFERENCE_RANGE * VILLAGE_REFERENCE_RANGE) {
+                continue;
+            }
+            BlockPos center = village.getCenter();
+            BlockPos column = new BlockPos(center.getX() + offsetX, 0, center.getZ() + offsetZ);
             if (!world.isBlockLoaded(column)) continue;
             BlockPos candidate = world.getHeight(column);
             if (isSafeMerchantSpawn(world, candidate)) return candidate;
@@ -444,8 +454,7 @@ public final class VillageService {
                     if (!world.isBlockLoaded(candidate) || !world.isAirBlock(candidate) || !world.isAirBlock(candidate.up())) {
                         continue;
                     }
-                    IBlockState floor = world.getBlockState(candidate.down());
-                    if (isSafeMerchantSpawn(world, candidate)) {
+                    if (isWithinVillageRange(village, candidate) && isSafeMerchantSpawn(world, candidate)) {
                         return candidate;
                     }
                 }

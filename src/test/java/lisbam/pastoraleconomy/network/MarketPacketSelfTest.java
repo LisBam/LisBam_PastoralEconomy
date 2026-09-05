@@ -25,7 +25,7 @@ public final class MarketPacketSelfTest {
         verifySnapshotRoundTripAndBounds();
         verifyStaleSnapshotDoesNotReplaceNewerWindow();
         verifyBookSessionDropsLateSnapshots();
-        verifyOpeningRequestPrefetchesSelectableCommodities();
+        verifyProgressivePrefetchCachesSelectableCommodities();
         verifyBookRequestCoalescing();
     }
 
@@ -137,21 +137,24 @@ public final class MarketPacketSelfTest {
         require(book.pollMarketRequest(102L) == latest, "only the latest rapid crop selection must be served");
     }
 
-    private static void verifyOpeningRequestPrefetchesSelectableCommodities() {
+    private static void verifyProgressivePrefetchCachesSelectableCommodities() {
         List<MarketHistoryPoint> points = new ArrayList<MarketHistoryPoint>();
         points.add(new MarketHistoryPoint(1L, 50L, null));
         ClientMarketState.beginBookSession();
-        int openingRequest = ClientMarketState.nextRequestId();
+        int wheatRequest = ClientMarketState.nextRequestId();
+        int carrotRequest = ClientMarketState.nextRequestId();
         MarketHistorySnapshot wheat = new MarketHistorySnapshot(
-                openingRequest, WHEAT, -1L, 1L, 50L, null, points, false, false
+                wheatRequest, WHEAT, -1L, 1L, 50L, null, points, false, false
         );
         MarketHistorySnapshot carrot = new MarketHistorySnapshot(
-                openingRequest, CARROT, -1L, 1L, 50L, null, points, false, false
+                carrotRequest, CARROT, -1L, 1L, 50L, null, points, false, false
         );
         ClientMarketState.acceptSnapshot(wheat);
         ClientMarketState.acceptSnapshot(carrot);
-        require(ClientMarketState.getSnapshot(CARROT, -1L, openingRequest) == carrot,
-                "all crop windows sent with the opening request id must be selectable without another request");
+        require(ClientMarketState.getLatestSnapshot(CARROT) == carrot,
+                "a low-priority prefetch window must become immediately selectable when it arrives");
+        require(ClientMarketState.getSnapshot(WHEAT, -1L, wheatRequest) == wheat,
+                "the selected commodity must retain its own request identity while other windows prefetch");
         ClientMarketState.endBookSession();
     }
 
