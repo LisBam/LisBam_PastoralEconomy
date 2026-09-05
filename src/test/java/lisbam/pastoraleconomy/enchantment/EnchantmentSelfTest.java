@@ -43,7 +43,7 @@ public final class EnchantmentSelfTest {
 
     private static void verifyDefinitions() {
         Enchantment[] all = ModEnchantments.getAll();
-        require(all.length == 12, "exactly twelve formal enchantments must be registered");
+        require(all.length == 13, "exactly thirteen formal enchantments must be registered");
         for (Enchantment enchantment : all) {
             require(enchantment.isAllowedOnBooks(), "all batch enchantments must allow enchanted books");
         }
@@ -66,12 +66,20 @@ public final class EnchantmentSelfTest {
         require(ModEnchantments.RANGE.getMaxLevel() == 5, "Range maximum level");
         require(ModEnchantments.REFORGED.getMaxLevel() == 1, "Reforged maximum level");
         require(ModEnchantments.BLUNTNESS_CURSE.getMaxLevel() == 1, "Bluntness Curse maximum level");
+        require(ModEnchantments.SHEARS_EFFICIENCY.getMaxLevel() == 5
+                        && ModEnchantments.SHEARS_EFFICIENCY.canApplyAtEnchantingTable(new ItemStack(Items.SHEARS))
+                        && !ModEnchantments.SHEARS_EFFICIENCY.canApplyAtEnchantingTable(new ItemStack(Items.DIAMOND_HOE)),
+                "shears Efficiency compatibility");
         require(ModEnchantments.HARVEST.canApplyAtEnchantingTable(new ItemStack(Items.DIAMOND_HOE)),
                 "Harvest must apply to a vanilla hoe");
         require(!ModEnchantments.HARVEST.canApplyAtEnchantingTable(new ItemStack(Items.DIAMOND_AXE)),
                 "Harvest must reject a non-hoe");
         require(ModEnchantments.HARVEST.canApplyAtEnchantingTable(new ItemStack(Items.SHEARS)),
                 "Harvest must apply to shears");
+        require(Enchantments.MENDING.canApplyAtEnchantingTable(new ItemStack(Items.SHEARS))
+                        && Enchantments.UNBREAKING.canApplyAtEnchantingTable(new ItemStack(Items.SHEARS))
+                        && Enchantments.VANISHING_CURSE.canApplyAtEnchantingTable(new ItemStack(Items.SHEARS)),
+                "vanilla BREAKABLE enchantments must apply to shears");
         require(ModEnchantments.SLAUGHTER.canApplyAtEnchantingTable(new ItemStack(Items.DIAMOND_SWORD)),
                 "Slaughter must apply to a sword");
         require(ModEnchantments.SLAUGHTER.canApplyAtEnchantingTable(new ItemStack(Items.DIAMOND_AXE)),

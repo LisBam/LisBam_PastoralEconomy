@@ -11,6 +11,7 @@ item.lisbam_pastoral_economy.merchant_spawn_egg.name=Merchant Spawn Egg
 config.lisbam_pastoral_economy.gameplay=Gameplay
 config.lisbam_pastoral_economy.gameplay.restore_vanilla_monster_spawns=Restore vanilla monster spawning
 config.lisbam_pastoral_economy.gameplay.disable_animal_bone_drops=Disable animal bone drops
+config.lisbam_pastoral_economy.gameplay.disable_milking_cooldown=Disable five-minute cow milking cooldown
 tile.lisbam_pastoral_economy.crab_trap.name=Crab Trap
 container.lisbam_pastoral_economy.crab_trap=Crab Trap
 gui.lisbam_pastoral_economy.crab_trap.ready=Ready for next round

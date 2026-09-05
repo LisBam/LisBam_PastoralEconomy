@@ -20,6 +20,7 @@ public final class ModSettings {
     private static Property moreStableMarketVolatility;
     private static Property restoreVanillaMonsterSpawns;
     private static Property disableAnimalBoneDrops;
+    private static Property disableMilkingCooldown;
 
     private ModSettings() {
     }
@@ -43,6 +44,9 @@ public final class ModSettings {
         disableAnimalBoneDrops = configuration.get(GAMEPLAY_CATEGORY, "disableAnimalBoneDrops", false,
                 "When enabled, animals no longer receive the mod's additional bone drops.")
                 .setLanguageKey("config." + LisBamPastoralEconomy.MODID + ".gameplay.disable_animal_bone_drops");
+        disableMilkingCooldown = configuration.get(GAMEPLAY_CATEGORY, "disableMilkingCooldown", false,
+                "When enabled, milking the same adult cow is not limited to once every five minutes.")
+                .setLanguageKey("config." + LisBamPastoralEconomy.MODID + ".gameplay.disable_milking_cooldown");
         save();
     }
 
@@ -61,6 +65,10 @@ public final class ModSettings {
 
     public static synchronized boolean isDisableAnimalBoneDrops() {
         return disableAnimalBoneDrops != null && disableAnimalBoneDrops.getBoolean(false);
+    }
+
+    public static synchronized boolean isDisableMilkingCooldown() {
+        return disableMilkingCooldown != null && disableMilkingCooldown.getBoolean(false);
     }
 
     public static synchronized Configuration getConfiguration() {

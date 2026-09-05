@@ -307,11 +307,19 @@
 ## 1.5 附魔维护回归
 
 - [x] Temurin Java 8 `1.8.0_504`：`compileJava`、`processResources`、`compileTestJava`、`enchantmentSelfTest`、`merchantCatalogSelfTest`、`pinyinSearchSelfTest` 和最终 `build`（含 `reobfJar`、`exportReleaseJar`）均 PASS（2026-09-05）。
-- [x] `enchantmentSelfTest`：十二个定义的等级、装备范围、束锋诅咒的宝藏/诅咒/附魔台排除/横扫互斥、剪刀 Harvest/Range 白名单、攻速/百炼如新不进入剪刀白名单、剪毛增产随机式及百炼如新的首次费用/输入 NBT 不变。PASS。
+- [x] `enchantmentSelfTest`：十三个定义的等级、装备范围、剪刀效率兼容、束锋诅咒的宝藏/诅咒/附魔台排除/横扫互斥、剪刀 Harvest/Range 白名单、攻速/百炼如新不进入剪刀白名单、剪毛增产随机式及百炼如新的首次费用/输入 NBT 不变。PASS。
 - [x] `merchantCatalogSelfTest`：珍宝书池共 37 个等级商品，新增攻速、范围、百炼如新、束锋诅咒的等级边界、权重、价格和实际附魔书 NBT。PASS；`pinyinSearchSelfTest` 同时覆盖“耕地行者”和“百炼如新”。PASS。
-- [x] Forge 1.12.2 strict audit：0 ERROR；5 条既有 `packet-thread` 保守 WARNING 已复核为通用网络注册/Proxy 主线程桥接，新增附魔逻辑不使用网络包。PASS。
-- [x] Release：`release/LisBam_PastoralEconomy-1.5.jar` 非空（380,939 bytes），SHA-256 `4b04ab6e26af899364ac5dcdfa5d0da0802b48f772941d60c9b2e289e8ffd415`，`unzip -t` PASS。
+- [x] Forge 1.12.2 strict audit：0 ERROR；6 条既有 `packet-thread` 保守 WARNING 已复核为通用网络注册/Proxy 主线程桥接，新增附魔逻辑不使用网络包。PASS。
+- [x] Release：`release/LisBam_PastoralEconomy-1.5.jar` 非空（401,456 bytes），SHA-256 `f53d2731695a805fff26a3ea497984e8f0dba8cc5c002359992f40d6320fc2e2`，`unzip -t` PASS。
 - [ ] 游戏内单人/多人：捷足 I--IV 不改变 FOV，夜视头盔实际明亮且摘下恢复，耕地行者跳跃/落地不伤耕地或作物。NOT RUN：当前环境无法创建可操作 Forge 客户端/世界。
 - [ ] 游戏内：攻速 I--V 冷却、范围 I--V 客户端选取与服务器攻击/方块/实体距离、束锋诅咒无横扫且直击正常、与横扫之刃的铁砧拒绝。NOT RUN：需要可运行客户端和 Dedicated Server。
 - [ ] 游戏内：百炼如新的修理、装备合并、附魔书、普通改名与 `>=40` 极端改名；确认左右输入不变、输出费用正确。NOT RUN：需要实际铁砧界面。
 - [ ] 游戏内：剪刀在附魔台的效率/耐久/丰收/范围候选；经验修补/消失诅咒书应用；羊和哞菇成功剪毛的额外掉落、已剪羊/失败交互不补发。NOT RUN：需要实际世界。
+# 2026-09-05 维护回归
+
+- [x] `MilkCooldownRules`：5 分钟 = 6000 tick，冷却边界、时间回拨和剩余 tick 计算通过代码审查；`compileJava` PASS。
+- [x] `MarketCatalog`：出售/购买基础价按调价工作簿 ×50 更新，market key 与 16 色羊毛共享行情保持不变；`merchantCatalogSelfTest`、`marketCoreSelfTest` PASS（2026-09-05，Temurin Java 8）。
+- [ ] 游戏内：同一成年牛连续挤奶、区块重载/重启后冷却保持；开启“取消挤奶冷却”后可连续挤奶。NOT RUN：当前环境无可操作 Forge 客户端。
+- [x] 静态/自检：剪刀效率 I～V 兼容附魔、原版 BREAKABLE 的经验修补/消失诅咒/耐久可应用，Harvest/Range 白名单与剪毛增产公式通过 `enchantmentSelfTest`。PASS（2026-09-05，Temurin Java 8）。
+- [ ] 游戏内：剪刀附魔台实际候选及丰收增产。NOT RUN：当前环境无可操作 Forge 客户端。
+- [x] 最终 release：`compileJava processResources build`（含 `test`、`reobfJar`、`exportReleaseJar`）PASS；JAR 401,456 bytes，SHA-256 `f53d2731695a805fff26a3ea497984e8f0dba8cc5c002359992f40d6320fc2e2`，`unzip -t` PASS。

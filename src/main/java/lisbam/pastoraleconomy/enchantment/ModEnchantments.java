@@ -100,6 +100,7 @@ public final class ModEnchantments {
             new Item[]{Items.WOODEN_SWORD, Items.STONE_SWORD, Items.IRON_SWORD, Items.GOLDEN_SWORD, Items.DIAMOND_SWORD},
             new Enchantment[]{Enchantments.SWEEPING}, true, true, false
     );
+    public static final Enchantment SHEARS_EFFICIENCY = new EnchantmentShearsEfficiency();
 
     private ModEnchantments() {
     }
@@ -108,7 +109,7 @@ public final class ModEnchantments {
         return new Enchantment[]{
                 HARVEST, FARMLAND_WALKER, PASTORAL_FAVOR, FINE_CULTIVATION,
                 FELLING, SLAUGHTER, FLEETFOOT, NIGHT_VISION,
-                ATTACK_SPEED, RANGE, REFORGED, BLUNTNESS_CURSE
+                ATTACK_SPEED, RANGE, REFORGED, BLUNTNESS_CURSE, SHEARS_EFFICIENCY
         };
     }
 

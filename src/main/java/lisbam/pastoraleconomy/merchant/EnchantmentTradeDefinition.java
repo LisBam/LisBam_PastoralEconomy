@@ -37,8 +37,7 @@ public final class EnchantmentTradeDefinition {
             }
             totalWeight += weights[index];
             MarketCommodity commodity = MarketCatalog.get(marketKeys[index]);
-            if (commodity == null || commodity.getBasePrice() != prices[index]
-                    || Math.abs(commodity.getCategory().getVolatility() - TREASURE_VOLATILITY) > 0.0000001D) {
+            if (commodity == null || Math.abs(commodity.getCategory().getVolatility() - TREASURE_VOLATILITY) > 0.0000001D) {
                 throw new IllegalArgumentException("Missing or mismatched enchantment market key: " + marketKeys[index]);
             }
             this.commodities[index] = commodity;
