@@ -4,9 +4,17 @@
 
 最近成功构建：
 
-- `JDK8_HOME=/tmp/lbpe-jdk8; env JAVA_HOME="$JDK8_HOME" PATH="$JDK8_HOME/bin:$PATH" ./gradlew compileJava processResources build`
+- `env JAVA_HOME=/tmp/lbpe-jdk8 PATH=/tmp/lbpe-jdk8/bin:$PATH ./gradlew processResources build`
 - 日期：2026-09-05
-- 结果：PASS（Forge 14.23.5.2859 / Temurin Java 8 `1.8.0_504`；`build` 包含 `test`、`reobfJar` 与 `exportReleaseJar`。`release/LisBam_PastoralEconomy-1.0.jar` 为 356,074 bytes，SHA-256 `0a660a9d465461ce9ed0240b2ec2af31bef2b853a8789f3a16b65318851ebb33`，`unzip -t` PASS。）
+- 结果：PASS（Forge 14.23.5.2859 / Temurin Java 8 `1.8.0_504`；`build` 包含 `test`、`reobfJar` 与 `exportReleaseJar`。`release/LisBam_PastoralEconomy-1.0.jar` 为 357,843 bytes，SHA-256 `f990838217fbb6f9a5b616237b39ecda24881ea2f288aa8099888d09442fd29f`，`unzip -t` PASS。）
+
+## 维护：商人出售栏独立品质抽取（2026-09-05）
+
+实现：商人每天出售的商品由 10 项缩减为 8 项，取消原先普通 4、罕见 3、稀有 2、珍宝 1 的固定品质配额。服务端为每个购买槽独立按普通 40%、罕见 30%、稀有 20%、珍宝 10% 抽取品质，再复用各池的轮换、跨池 Item/meta/NBT 变体去重和附魔等级解析，最后按普通→罕见→稀有→珍宝稳定排序。购买交易卡仍使用既有双列、每列四行的自适应布局，数量和同步快照均直接使用同一 8 槽常量。
+
+兼容性与影响：未改动 registry ID、Packet discriminator、NBT key、`PastoralWorldData` 名称或数据版本。旧存档中的 10 槽 `DailyOfferState` 在读取时会因当前数量校验失败而丢弃；下一次商人交互会在逻辑服务端生成当天的新 8 槽列表，旧当天库存不会迁移，其余商人身份、轮换状态和金币保留。
+
+验证：Temurin Java 8 `1.8.0_504` 下 `compileJava`、`compileTestJava`、`merchantCatalogSelfTest`、`processResources build` 均 PASS。自测覆盖 8 槽常量、40/30/20/10 的全部边界、品质排序与旧 10 槽 NBT 拒绝路径。Forge 工具链检查为 0 问题；静态审计为 0 ERROR、5 条既有 packet-thread WARNING。`exportReleaseJar` 已导出 357,843-byte release JAR，SHA-256 `f990838217fbb6f9a5b616237b39ecda24881ea2f288aa8099888d09442fd29f`，`unzip -t` PASS。游戏内跨日概率、交易卡视觉和 Dedicated Server 为 NOT RUN，需可操作运行环境。
 
 ## 维护：行情书可用性与村庄商人范围（2026-09-05）
 

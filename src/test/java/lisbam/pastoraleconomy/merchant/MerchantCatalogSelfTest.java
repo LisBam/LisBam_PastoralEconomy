@@ -35,6 +35,23 @@ public final class MerchantCatalogSelfTest {
         check(TradeCatalog.getPool(TradePool.BUY_UNCOMMON).size() == 42, "uncommon buy pool");
         check(TradeCatalog.getPool(TradePool.BUY_RARE).size() == 28, "rare buy pool");
         check(TradeCatalog.getPool(TradePool.BUY_TREASURE).size() == 33, "treasure buy pool");
+        check(DailyOfferState.BUY_OFFER_COUNT == 8, "eight daily purchase slots");
+        check(MerchantOfferService.selectPurchasePool(new FixedRandom(0)) == TradePool.BUY_COMMON,
+                "common purchase quality lower boundary");
+        check(MerchantOfferService.selectPurchasePool(new FixedRandom(39)) == TradePool.BUY_COMMON,
+                "common purchase quality upper boundary");
+        check(MerchantOfferService.selectPurchasePool(new FixedRandom(40)) == TradePool.BUY_UNCOMMON,
+                "uncommon purchase quality lower boundary");
+        check(MerchantOfferService.selectPurchasePool(new FixedRandom(69)) == TradePool.BUY_UNCOMMON,
+                "uncommon purchase quality upper boundary");
+        check(MerchantOfferService.selectPurchasePool(new FixedRandom(70)) == TradePool.BUY_RARE,
+                "rare purchase quality lower boundary");
+        check(MerchantOfferService.selectPurchasePool(new FixedRandom(89)) == TradePool.BUY_RARE,
+                "rare purchase quality upper boundary");
+        check(MerchantOfferService.selectPurchasePool(new FixedRandom(90)) == TradePool.BUY_TREASURE,
+                "treasure purchase quality lower boundary");
+        check(MerchantOfferService.selectPurchasePool(new FixedRandom(99)) == TradePool.BUY_TREASURE,
+                "treasure purchase quality upper boundary");
         check(find(TradePool.SELL_SECONDARY, "beef_sell").getBasePrice() == 120L, "beef sell price");
         check(find(TradePool.SELL_SECONDARY, "porkchop_sell").getBasePrice() == 120L, "porkchop sell price");
         check(find(TradePool.SELL_SECONDARY, "chicken_sell").getBasePrice() == 80L, "chicken sell price");
@@ -170,6 +187,32 @@ public final class MerchantCatalogSelfTest {
             if (sales.size() == DailyOfferState.SELL_OFFER_COUNT) {
                 break;
             }
+        }
+        List<DailyOffer> uniqueBuys = new java.util.ArrayList<DailyOffer>();
+        for (TradeCatalogEntry entry : TradeCatalog.getPool(TradePool.BUY_COMMON)) {
+            uniqueBuys.add(new DailyOffer(entry.getCatalogKey(), true, entry.getInitialRemainingItems()));
+            if (uniqueBuys.size() == DailyOfferState.BUY_OFFER_COUNT) {
+                break;
+            }
+        }
+        DailyOfferState currentState = new DailyOfferState(0L, sales, uniqueBuys);
+        NBTTagCompound legacyTenSlotState = currentState.writeToNBT();
+        legacyTenSlotState.getTagList("buyOffers", 10).appendTag(uniqueBuys.get(0).writeToNBT());
+        check(DailyOfferState.readFromNBT(legacyTenSlotState) == null,
+                "legacy ten-slot purchase state regenerates");
+
+        List<DailyOffer> unorderedQualities = new java.util.ArrayList<DailyOffer>();
+        unorderedQualities.add(new DailyOffer(find(TradePool.BUY_TREASURE, "nether_star").getCatalogKey(), true, 1));
+        unorderedQualities.add(new DailyOffer(find(TradePool.BUY_COMMON, "wheat_seeds").getCatalogKey(), true,
+                TradeCatalogEntry.UNLIMITED_STOCK));
+        unorderedQualities.add(new DailyOffer(find(TradePool.BUY_RARE, "coal_ore").getCatalogKey(), true,
+                find(TradePool.BUY_RARE, "coal_ore").getInitialRemainingItems()));
+        unorderedQualities.add(new DailyOffer(find(TradePool.BUY_UNCOMMON, "gold_ingot").getCatalogKey(), true,
+                find(TradePool.BUY_UNCOMMON, "gold_ingot").getInitialRemainingItems()));
+        MerchantOfferService.sortPurchaseOffers(unorderedQualities);
+        for (int index = 0; index < unorderedQualities.size(); index++) {
+            check(MerchantOfferService.getPurchaseQualityRank(unorderedQualities.get(index)) == index,
+                    "purchase offers sort from common to treasure");
         }
         try {
             new DailyOfferState(0L, sales, duplicateBuys);

@@ -163,7 +163,7 @@
 
 - [ ] 6 收购栏同日稳定；非栏位商品拒绝；主背包/快捷栏数量和 16 色羊毛统计 — NOT RUN：需要可进入的世界
 - [ ] 牛奶桶出售原子返空桶、满背包失败无副作用 — NOT RUN：需要可进入的世界
-- [ ] 普通 4 + 罕见 3、稀有 2 + 珍宝 1、单件价格与 Metadata — NOT RUN：需要可进入的世界
+- [ ] 8 个购买栏各自按普通 40%、罕见 30%、稀有 20%、珍宝 10% 抽取；当天允许任一品质为 0，且 UI 按普通→罕见→稀有→珍宝分组 — NOT RUN：需要可进入的世界
 - [ ] 有限库存多人共享、重启不恢复、跨日刷新 — NOT RUN：需要 Dedicated Server/多人
 - [x] GUI 每栏数量加减、数量/预计总价显示；服务端数量上限与库存/容量复核 — PASS：代码审查、`compileJava`/`build`
 - [x] 维护：商人 GUI 不暂停单人集成服务端；成功交易同步窗口 0 玩家背包、CoinService 金币缓存和所有打开的同商人快照。PASS：服务端路径代码审查、`compileJava`、`build`。
@@ -183,7 +183,7 @@
 
 ### DailyOffer / 交易
 
-- [x] 每日购买结构 Common 4 + Uncommon 3 + Rare 2 + Treasure 1；无效/重复 Offer 按当前规则重生成 — PASS：代码审查、编译
+- [x] 每日购买为 8 槽独立品质抽取（40%/30%/20%/10%）、生成后 Common→Uncommon→Rare→Treasure 稳定排序；无效、重复或旧 10 槽 Offer 按当前规则重生成 — PASS：`merchantCatalogSelfTest`
 - [x] 多等级附魔先选类型后按权重解析，等级写入 `DailyOffer`，真实 Enchanted Book 输出 — PASS：目录自检、代码审查
 - [x] Rare/Treasure 库存统一共享并复用原子购买、容量模拟、溢出与重复请求防护 — PASS：代码审查、`build`
 - [x] DailyOffer 的 `remainingItems` 与附魔等级 NBT 往返；缺少新字段的旧 Offer 不迁移 — PASS：NBT 字段与读取校验审查
