@@ -2,11 +2,11 @@
 
 当前发行版本：`1.5`；既有第 15 批功能完成，1.5 为维护更新。
 
-最近一次成功构建记录（本次 Forge 14.23.5.2847 Coremod 启动修复后）：
+最近一次成功构建记录（本次 Coremod StackMap 验证修复后）：
 
 - `JDK8_HOME=/tmp/lbpe-jdk8; env JAVA_HOME="$JDK8_HOME" PATH="$JDK8_HOME/bin:$PATH" ./gradlew compileJava processResources build`
 - 日期：2026-09-05
-- 结果：PASS（Forge 14.23.5.2859 / Temurin Java 8 `1.8.0_504`；`build` 包含 `test`、`reobfJar` 与 `exportReleaseJar`。`release/LisBam_PastoralEconomy-1.5.jar` 为 404,746 bytes，SHA-256 `670e7a2b83162ae7db1cba304ae08168ced52da2277101771fc0a5dbe23dcd7a`，`unzip -t` PASS。）
+- 结果：PASS（Forge 14.23.5.2859 / Temurin Java 8 `1.8.0_504`；`build` 包含 `test`、`reobfJar` 与 `exportReleaseJar`。`release/LisBam_PastoralEconomy-1.5.jar` 为 405,030 bytes，SHA-256 `80ad3e648fc357365333c536dc17c6b9d764fe89f91ec102bc597d9d71f40358`，`unzip -t` PASS。）
 
 ## 维护：行情展示、附魔节奏与旅行费（2026-09-05）
 
@@ -656,10 +656,10 @@
 
 验证：Temurin Java 8 `1.8.0_504` 下 `enchantmentSelfTest`、`milkCooldownSelfTest`、`merchantCatalogSelfTest`、`marketCoreSelfTest`、`compileJava` 与 `compileTestJava` PASS；附魔自测会对补丁后的 `Item` 字节码确认剪刀/锄头附魔力钩子和原版效率筛选，并通过 ASM verifier。Forge 1.12.2 audit 为 0 ERROR、6 条既有 `packet-thread` WARNING。带 `JAVA_TOOL_OPTIONS=-Dfml.coreMods.load=...` 的 60 秒 `runServer` 启动已实际发现并入队该 Coremod，时限到达前尚未完成模组/世界加载；未接受 EULA。最终 `compileJava processResources build` PASS，确认 release JAR 含 Coremod manifest/三项 core 类、不含已删除的剪刀专属效率类，大小 404,092 bytes，SHA-256 `a0b82c6dcfbc5e680c39d18f9f4e0643f7f77635521fc4c9bdff5fadc5efb641`，`unzip -t` PASS。
 
-## 2026-09-05 修复：Forge 14.23.5.2847 启动 Coremod 错误
+## 2026-09-05 修复：Forge 1.12.2 Coremod 启动与 StackMap 验证错误
 
-根因：前一版 Coremod 假定所有 1.12.2 Forge 都已在 `Item` 中加入较新的 `getItemEnchantability(ItemStack)` 与 `canApplyAtEnchantingTable` 钩子。用户实际使用的 Forge `14.23.5.2847` 没有该 `Item` 布局，原先的 fail-fast 误将兼容性差异变成启动时 `IllegalStateException`，继而导致 `NoClassDefFoundError: net.minecraft.item.Item`。
+根因：首轮 Coremod 用固定 MCP 名称和单一 `Item` 方法布局定位目标；用户的 Forge `14.23.5.2847` 运行时布局/映射差异使其 fail-fast，进而导致 `NoClassDefFoundError: net.minecraft.item.Item`。后续兼容版虽已正确找到现代 `canApplyAtEnchantingTable`，却在方法前插入了新的 `IFEQ` 跳转；`ClassWriter.COMPUTE_MAXS` 只重算栈深度、不会为新分支生成 Java 8 必需的 StackMap frame，因此用户客户端报 `VerifyError: Expecting a stackmap frame at branch target 10`。
 
-修复：Coremod 现在按已发现的 `Item` 方法布局选择路径。新布局继续补丁两个 Forge 钩子；2847 旧布局只补丁原版无参附魔力，而该版本的 `EnchantmentDigging#canApply` 已原生允许剪刀。所有注入 helper 采用 `Object` 参数描述符，消除 MCP/SRG 内部类名差异；未知布局改为记录错误且返回原字节码，不再阻止客户端或服务端启动。自测新增 SRG 名称和 Forge 2847 旧布局模拟，分别验证当前/旧两条字节码注入路径。
+修复：Coremod 现在按已发现的 `Item` 方法布局选择 `ItemStack` 钩子或旧式无参附魔力路径，helper 全部使用 `Object` 参数描述符，消除 MCP/SRG 内部类名差异。现代效率筛选不再插入任何跳转：它在每个既有 `IRETURN` 前保存原版布尔结果，再调用 `(Object,Object,boolean)` helper 合并剪刀原版效率资格，因此原有控制流和 StackMap frame 保持有效。未知布局改为记录错误且返回原字节码，不再阻止客户端或服务端启动。自测覆盖现代、SRG 和旧式布局，并断言现代效率补丁无跳转。
 
-验证：Temurin Java 8 `1.8.0_504` 下 `enchantmentSelfTest`（含当前、SRG 和 2847 旧布局 Coremod 注入）、`milkCooldownSelfTest`、`compileJava`、`compileTestJava` 与最终 `compileJava processResources build` 均 PASS。Forge 静态 audit 为 0 ERROR、6 条既有 `packet-thread` WARNING。最终重混淆 JAR 的 helper 签名为 `(Object,int)` / `(Object,Object)`，确认不含 MCP/SRG Minecraft 类参数；release JAR 为 404,746 bytes、SHA-256 `670e7a2b83162ae7db1cba304ae08168ced52da2277101771fc0a5dbe23dcd7a`，`unzip -t` PASS。实际 Windows Forge 2847 客户端世界仍待用户用本次 JAR 启动验证。
+验证：Temurin Java 8 `1.8.0_504` 下 `enchantmentSelfTest`（含现代、SRG 和旧式 Coremod 注入及无新增跳转断言）与 `milkCooldownSelfTest` PASS。Forge 静态 audit 为 0 ERROR、6 条既有 `packet-thread` WARNING；最终 `compileJava processResources build`（含 `test`、`reobfJar`、`exportReleaseJar`）PASS。重混淆 release JAR 为 405,030 bytes，SHA-256 `80ad3e648fc357365333c536dc17c6b9d764fe89f91ec102bc597d9d71f40358`，`unzip -t` PASS，manifest 含 `FMLCorePlugin`。实际 Windows Forge 2847 客户端启动仍待用户用本次 JAR 验证。

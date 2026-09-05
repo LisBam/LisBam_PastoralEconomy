@@ -10,8 +10,6 @@ import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.InsnList;
 import org.objectweb.asm.tree.InsnNode;
-import org.objectweb.asm.tree.JumpInsnNode;
-import org.objectweb.asm.tree.LabelNode;
 import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
 import org.objectweb.asm.tree.VarInsnNode;
@@ -39,7 +37,7 @@ public final class EnchantingTableTransformer implements IClassTransformer, Opco
             patchedEnchantability = hasModernEnchantability && patchEnchantability(node);
             patchedEfficiency = hasModernEfficiencyGate && patchNativeEfficiencyGate(node);
         } else {
-            // Forge 14.23.5.2847 has neither ItemStack overload. Its table
+            // Legacy Item layouts have neither ItemStack overload. Their table
             // rolls use Item#getItemEnchantability() plus
             // Enchantment#canApply(ItemStack), where vanilla Efficiency
             // already explicitly accepts shears.
@@ -126,18 +124,30 @@ public final class EnchantingTableTransformer implements IClassTransformer, Opco
             if (!isModernEfficiencyGate(method)) {
                 continue;
             }
-            LabelNode continueVanilla = new LabelNode();
-            InsnList gate = new InsnList();
-            gate.add(new VarInsnNode(ALOAD, 0));
-            gate.add(new VarInsnNode(ALOAD, 2));
-            gate.add(new MethodInsnNode(INVOKESTATIC, HOOKS, "isShearsEfficiency",
-                    "(Ljava/lang/Object;Ljava/lang/Object;)Z", false));
-            gate.add(new JumpInsnNode(IFEQ, continueVanilla));
-            gate.add(new InsnNode(ICONST_1));
-            gate.add(new InsnNode(IRETURN));
-            gate.add(continueVanilla);
-            method.instructions.insert(gate);
-            return true;
+            int resultLocal = 1;
+            for (Type argument : Type.getArgumentTypes(method.desc)) {
+                resultLocal += argument.getSize();
+            }
+            boolean patchedReturn = false;
+            for (AbstractInsnNode instruction = method.instructions.getFirst(); instruction != null;) {
+                AbstractInsnNode next = instruction.getNext();
+                if (instruction.getOpcode() == IRETURN) {
+                    InsnList hook = new InsnList();
+                    hook.add(new VarInsnNode(ISTORE, resultLocal));
+                    hook.add(new VarInsnNode(ALOAD, 0));
+                    hook.add(new VarInsnNode(ALOAD, 2));
+                    hook.add(new VarInsnNode(ILOAD, resultLocal));
+                    hook.add(new MethodInsnNode(INVOKESTATIC, HOOKS, "canApplyAtEnchantingTable",
+                            "(Ljava/lang/Object;Ljava/lang/Object;Z)Z", false));
+                    method.instructions.insertBefore(instruction, hook);
+                    patchedReturn = true;
+                }
+                instruction = next;
+            }
+            if (patchedReturn) {
+                method.maxLocals = Math.max(method.maxLocals, resultLocal + 1);
+            }
+            return patchedReturn;
         }
         return false;
     }

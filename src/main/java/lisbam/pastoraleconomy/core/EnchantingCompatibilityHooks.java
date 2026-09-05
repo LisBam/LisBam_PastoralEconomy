@@ -38,4 +38,8 @@ public final class EnchantingCompatibilityHooks {
     public static boolean isShearsEfficiency(Object item, Object enchantment) {
         return item == Items.SHEARS && enchantment == Enchantments.EFFICIENCY;
     }
+
+    public static boolean canApplyAtEnchantingTable(Object item, Object enchantment, boolean vanillaResult) {
+        return vanillaResult || isShearsEfficiency(item, enchantment);
+    }
 }
