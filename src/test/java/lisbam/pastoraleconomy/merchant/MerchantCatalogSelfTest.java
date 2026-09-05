@@ -32,6 +32,9 @@ public final class MerchantCatalogSelfTest {
         check(VillageService.getTargetMerchantCount(36) == 8, "36 villagers");
         check(VillageService.getTargetMerchantCount(100) == 20, "100 villagers");
         check(VillageService.getTargetMerchantCount(1000) == 200, "1000 villagers");
+        check(VillageService.MAINTENANCE_INTERVAL_TICKS == 60, "three-second village maintenance");
+        check(VillageService.MERCHANT_ACTIVITY_RADIUS == 32, "merchant activity radius");
+        check(VillageService.MERCHANT_TELEPORT_DISTANCE == 64, "merchant teleport distance");
 
         check(TradeCatalog.getPool(TradePool.SELL_CORE).size() == 9, "core sell pool");
         check(TradeCatalog.getPool(TradePool.SELL_SECONDARY).size() == 20, "secondary sell pool");

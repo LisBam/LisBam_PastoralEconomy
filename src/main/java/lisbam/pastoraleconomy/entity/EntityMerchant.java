@@ -12,6 +12,7 @@ import net.minecraft.entity.ai.EntityAISwimming;
 import net.minecraft.entity.ai.EntityAIWatchClosest;
 import net.minecraft.entity.ai.EntityAIWanderAvoidWater;
 import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.init.Items;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.network.datasync.DataParameter;
 import net.minecraft.network.datasync.DataSerializers;
@@ -44,9 +45,10 @@ public final class EntityMerchant extends EntityCreature {
     private static final String LEGACY_GENERIC_NAME = "商人";
     private static final DataParameter<Integer> SKIN_VARIANT = EntityDataManager.createKey(EntityMerchant.class,
             DataSerializers.VARINT);
-    /** Keep the merchant's restriction and return range identical to VillageService's village boundary. */
-    private static final int HOME_RADIUS = VillageService.VILLAGE_REFERENCE_RANGE;
-    private static final int RETURN_DISTANCE = VillageService.VILLAGE_REFERENCE_RANGE;
+    /** The compact entity home does not change VillageService's wider village-identity range. */
+    private static final int HOME_RADIUS = VillageService.MERCHANT_ACTIVITY_RADIUS;
+    private static final int RETURN_DISTANCE = VillageService.MERCHANT_ACTIVITY_RADIUS;
+    private static final int TELEPORT_DISTANCE = VillageService.MERCHANT_TELEPORT_DISTANCE;
     private static final int RETURN_REPATH_INTERVAL_TICKS = 20;
     private static final int FLEE_DURATION_TICKS = 200;
     private static final float FLEE_DISTANCE = 12.0F;
@@ -230,6 +232,12 @@ public final class EntityMerchant extends EntityCreature {
         if (world.isRemote) {
             return;
         }
+        if (villageHomePosition != null && getDistanceSq(villageHomePosition.getX() + 0.5D,
+                villageHomePosition.getY() + 1.0D, villageHomePosition.getZ() + 0.5D)
+                > (double) (TELEPORT_DISTANCE * TELEPORT_DISTANCE)) {
+            teleportToVillageStation();
+            return;
+        }
         if (isTrading()) {
             stopMovement();
             lookAtNearestPlayer();
@@ -249,8 +257,14 @@ public final class EntityMerchant extends EntityCreature {
         nextReturnPathTick = ticksExisted + RETURN_REPATH_INTERVAL_TICKS;
         getNavigator().tryMoveToXYZ(villageHomePosition.getX() + 0.5D, villageHomePosition.getY() + 1.0D,
                 villageHomePosition.getZ() + 0.5D, 1.0D);
-        // Villager-style navigation is intentionally allowed to fail while a
-        // chunk is unavailable; never teleport a merchant across the village.
+    }
+
+    /** The protected station is the existing safe, persistent village return point. */
+    private void teleportToVillageStation() {
+        BlockPos target = stationPosition == null ? villageHomePosition.up() : stationPosition.up();
+        getNavigator().clearPath();
+        setPositionAndUpdate(target.getX() + 0.5D, target.getY(), target.getZ() + 0.5D);
+        nextReturnPathTick = ticksExisted;
     }
 
     private boolean isFleeing() {
@@ -278,6 +292,12 @@ public final class EntityMerchant extends EntityCreature {
 
     @Override
     public boolean processInteract(EntityPlayer player, EnumHand hand) {
+        // Returning false delegates to EntityLivingBase's native 1.12.2 name-tag
+        // interaction, which validates the display name, persists CustomName,
+        // consumes the tag, and never changes this merchant's stable UUID.
+        if (player.getHeldItem(hand).getItem() == Items.NAME_TAG) {
+            return false;
+        }
         if (!world.isRemote) {
             MerchantTradeService.openTrade(player, this);
         }
