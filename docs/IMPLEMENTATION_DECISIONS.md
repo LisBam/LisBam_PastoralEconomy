@@ -457,9 +457,9 @@ Reforged 对有右输入的修理、合并和附魔书操作通过 `AnvilUpdateE
 兼容性与影响：不增加或重排 Packet discriminator，不修改 registry ID、NBT、Capability、WorldSavedData 或任何经济/库存状态。客户端生命周期标记不持久化且不执行权威操作，旧存档无需迁移；更新模组并重新启动客户端后即使用正确的窗口 0 状态。
 ## DEC-055 村庄交通方块指南针与肩部鞘翅装备边界（2026-09-06）
 
-决定：村庄交通方块指南针只读取 `PastoralWorldData.transport` 中 `VILLAGE` 类型、与玩家同维度的物理节点，按水平距离和 UUID 稳定平局选择最近目标；目标写入所持 ItemStack，客户端仅按既有原版罗盘 `angle` 模型显示，不能自主搜索、加载区块或决定世界状态。肩部装备归属既有 Player Capability v3，一个槽只接受 `Items.ELYTRA`；玩家背包容器由最小 Coremod 添加真实 Slot，客户端背景只裁取原版 `inventory.png`。Coremod 同时把胸甲槽的鞘翅合法性设为拒绝，并在客户端起飞、服务端 `START_FALL_FLYING` 与飞行持续耐久三条原版路径中以肩部鞘翅替代胸甲读取。注入 hook 固定使用 `Object` 描述符，未知布局返回原始字节码。
+决定：村庄交通方块指南针由逻辑服务端从同维度村庄 `StationRecord` 与当前加载的物理 `TileVillageStation` 选择最近方块；它**不读取也不要求** `PastoralWorldData.transport` 的交通节点登记，且不强制加载区块。目标仍写入所持 ItemStack，客户端只按原版 `ItemCompass` 的 `angle` 公式与摆动显示，不能自主搜索或决定世界状态。肩部装备归属既有 Player Capability v3，一个槽只接受 `Items.ELYTRA`；玩家背包容器由最小 Coremod 添加真实 Slot，客户端背景只裁取原版 `inventory.png`。Coremod 同时把胸甲槽的鞘翅合法性设为拒绝，并在客户端起飞、服务端 `START_FALL_FLYING` 与飞行持续耐久三条原版路径中以肩部鞘翅替代胸甲读取。注入 hook 固定使用 `Object` 描述符；匹配同时覆盖 MCP、SRG 与 Forge 1.12.2 release 混淆成员，未知布局返回原始字节码。
 
-原因：交通节点是服务器权威、跨区块持久的世界数据；把候选搜索交给客户端会让显示不一致且可能触发非预期区块访问。1.12.2 的鞘翅开始、验证和耐久分别分布在客户端玩家、NetHandlerPlayServer 和 EntityLivingBase，仅增加 GUI 槽或只修正一个条件都会导致假起飞、服务器拒绝或耐久失效。复用 `ContainerPlayer` tracked slot 才能让 Inventory 交互沿用原版 ClickWindow 同步，而原版贴图裁取满足 GUI 槽位视觉边界。
+原因：村庄交通方块本身（及村庄站状态）才是功能目标；交通节点登记只是旅行线路的镜像，不能成为罗盘必要条件。候选仍在服务端解析，避免客户端强制加载或显示不一致。1.12.2 的鞘翅开始、验证和耐久分别分布在客户端玩家、NetHandlerPlayServer 和 EntityLivingBase，仅增加 GUI 槽或只修正一个条件都会导致假起飞、服务器拒绝或耐久失效。正式 JAR 的 Coremod 先看到 release 字节码，故不能只依赖开发映射方法名；容器 Shift-click 必须按稳定签名/调用形状匹配，才能避免一项子注入失败使整套槽位补丁回退。复用 `ContainerPlayer` tracked slot 才能让 Inventory 交互沿用原版 ClickWindow 同步，而原版贴图裁取满足 GUI 槽位视觉边界。
 
 兼容性与影响：新增 Item ID 和 `PlayerData.shoulder` NBT，dataVersion 2 及更早存档以空肩部读取。登录、重生和换维度时把旧胸甲鞘翅迁移到空肩部；若肩部已占用则不覆盖，改放背包，满包才掉落。没有 Packet、WorldSavedData schema、交通节点 ID 或费用变更。
 

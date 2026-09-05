@@ -3,6 +3,8 @@ package lisbam.pastoraleconomy.data.player;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import lisbam.pastoraleconomy.network.message.SyncTransportStateMessage;
+import lisbam.pastoraleconomy.merchant.StationRecord;
+import lisbam.pastoraleconomy.merchant.StationRole;
 import lisbam.pastoraleconomy.transport.TransportCost;
 import lisbam.pastoraleconomy.transport.TransportNameRules;
 import lisbam.pastoraleconomy.transport.TransportNodeView;
@@ -132,24 +134,18 @@ public final class TransportCoreSelfTest {
     }
 
     private static void verifyVillageCompassTarget() {
-        TransportWorldState state = new TransportWorldState();
-        UUID selfBuilt = UUID.randomUUID();
-        UUID wrongDimension = UUID.randomUUID();
-        UUID fartherVillage = UUID.randomUUID();
-        UUID nearestVillage = UUID.randomUUID();
-        state.putStation(new TransportStationRecord(selfBuilt, 0, new BlockPos(1, 64, 1),
-                TransportStationType.SELF_BUILT));
-        state.putStation(new TransportStationRecord(wrongDimension, -1, new BlockPos(0, 64, 0),
-                TransportStationType.VILLAGE));
-        state.putStation(new TransportStationRecord(fartherVillage, 0, new BlockPos(160, 5, 0),
-                TransportStationType.VILLAGE));
-        state.putStation(new TransportStationRecord(nearestVillage, 0, new BlockPos(10, 200, 0),
-                TransportStationType.VILLAGE));
-        TransportStationRecord target = VillageTransportCompassTarget.findNearest(state.getStations(), 0,
-                new BlockPos(0, 64, 0));
-        require(target != null && nearestVillage.equals(target.getStationId()),
-                "compass selects only the nearest same-dimension village station by horizontal distance");
-        require(VillageTransportCompassTarget.findNearest(state.getStations(), 1, new BlockPos(0, 64, 0)) == null,
+        ArrayList<StationRecord> records = new ArrayList<StationRecord>();
+        records.add(new StationRecord(UUID.randomUUID(), UUID.randomUUID(), -1, new BlockPos(0, 64, 0),
+                StationRole.VILLAGE));
+        records.add(new StationRecord(UUID.randomUUID(), UUID.randomUUID(), 0, new BlockPos(160, 5, 0),
+                StationRole.VILLAGE));
+        BlockPos unregisteredPhysicalBlock = new BlockPos(10, 200, 0);
+        BlockPos target = VillageTransportCompassTarget.findNearest(records,
+                Arrays.asList(unregisteredPhysicalBlock), 0, new BlockPos(0, 64, 0));
+        require(unregisteredPhysicalBlock.equals(target),
+                "compass selects a nearest loaded village block even without a transport-registry record");
+        require(VillageTransportCompassTarget.findNearest(records, new ArrayList<BlockPos>(), 1,
+                new BlockPos(0, 64, 0)) == null,
                 "compass has no cross-dimension village target");
     }
 

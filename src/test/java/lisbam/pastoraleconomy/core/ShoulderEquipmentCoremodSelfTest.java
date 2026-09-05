@@ -1,9 +1,12 @@
 package lisbam.pastoraleconomy.core;
 
 import org.objectweb.asm.ClassReader;
+import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.ClassNode;
+import org.objectweb.asm.tree.FieldInsnNode;
 import org.objectweb.asm.tree.MethodInsnNode;
+import org.objectweb.asm.tree.MethodNode;
 import org.objectweb.asm.tree.TypeInsnNode;
 
 import java.io.ByteArrayOutputStream;
@@ -25,6 +28,7 @@ public final class ShoulderEquipmentCoremodSelfTest {
         verifyElytraLookup(transformer, "net.minecraft.client.entity.EntityPlayerSP");
         verifyElytraLookup(transformer, "net.minecraft.network.NetHandlerPlayServer");
         verifyContainer(transformer);
+        verifyObfuscatedReleaseNames(transformer);
     }
 
     private static void verifyElytraLookup(ShoulderEquipmentTransformer transformer, String className)
@@ -52,11 +56,71 @@ public final class ShoulderEquipmentCoremodSelfTest {
         require(foundChestReplacement, "ContainerPlayer chest armor slot must reject Elytra");
     }
 
+    /**
+     * LaunchWrapper invokes Coremods before its final name remap in a release
+     * client.  Simulate the relevant 1.12.2 obfuscated member spellings so a
+     * development-only MCP match can never silently remove the whole feature.
+     */
+    private static void verifyObfuscatedReleaseNames(ShoulderEquipmentTransformer transformer) throws IOException {
+        verifyObfuscatedElytraLookup(transformer, "net.minecraft.entity.EntityLivingBase", "updateElytra", "r");
+        verifyObfuscatedElytraLookup(transformer, "net.minecraft.client.entity.EntityPlayerSP", "onLivingUpdate", "n");
+        verifyObfuscatedElytraLookup(transformer, "net.minecraft.network.NetHandlerPlayServer",
+                "processEntityAction", "a");
+        ClassNode container = transform(transformer, "net.minecraft.inventory.ContainerPlayer",
+                "transferStackInSlot", "b", true);
+        require(containsMethodCall(container, CONTAINER_HOOKS, "addShoulderSlot"),
+                "obfuscated ContainerPlayer must add the persistent shoulder slot");
+        require(containsMethodCall(container, CONTAINER_HOOKS, "tryMoveElytraToShoulder"),
+                "obfuscated ContainerPlayer shift-click must route Elytra into the shoulder slot");
+    }
+
+    private static void verifyObfuscatedElytraLookup(ShoulderEquipmentTransformer transformer, String className,
+                                                      String mappedMethodName, String obfuscatedMethodName)
+            throws IOException {
+        ClassNode node = transform(transformer, className, mappedMethodName, obfuscatedMethodName, false);
+        require(containsMethodCall(node, EQUIPMENT_HOOKS, "getShoulderElytraOrEmpty"),
+                className + " must patch the release-obfuscated Elytra lookup");
+    }
+
     private static ClassNode transform(ShoulderEquipmentTransformer transformer, String className) throws IOException {
         byte[] transformed = transformer.transform(className, className, readClass(className));
         ClassNode node = new ClassNode();
         new ClassReader(transformed).accept(node, 0);
         return node;
+    }
+
+    private static ClassNode transform(ShoulderEquipmentTransformer transformer, String className,
+                                       String mappedMethodName, String obfuscatedMethodName,
+                                       boolean container) throws IOException {
+        ClassNode input = new ClassNode();
+        new ClassReader(readClass(className)).accept(input, 0);
+        for (MethodNode method : input.methods) {
+            if (!mappedMethodName.equals(method.name)) {
+                continue;
+            }
+            method.name = obfuscatedMethodName;
+            for (AbstractInsnNode instruction = method.instructions.getFirst(); instruction != null;
+                 instruction = instruction.getNext()) {
+                if (instruction instanceof FieldInsnNode && "CHEST".equals(((FieldInsnNode) instruction).name)) {
+                    ((FieldInsnNode) instruction).name = "e";
+                }
+                if (instruction instanceof MethodInsnNode) {
+                    MethodInsnNode call = (MethodInsnNode) instruction;
+                    if (container && "getSlotForItemStack".equals(call.name)) {
+                        call.name = "d";
+                    } else if (!container && "getItemStackFromSlot".equals(call.name)) {
+                        call.name = "b";
+                    }
+                }
+            }
+            break;
+        }
+        ClassWriter writer = new ClassWriter(0);
+        input.accept(writer);
+        byte[] transformed = transformer.transform(className, className, writer.toByteArray());
+        ClassNode output = new ClassNode();
+        new ClassReader(transformed).accept(output, 0);
+        return output;
     }
 
     private static boolean containsMethodCall(ClassNode node, String owner, String name) {

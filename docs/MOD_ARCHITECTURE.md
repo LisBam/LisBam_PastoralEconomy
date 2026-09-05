@@ -8,9 +8,9 @@
 
 ### 2026-09-06 维护：村庄交通方块指南针与肩部鞘翅栏
 
-- `item.ItemVillageTransportCompass` 注册稳定 Item ID `lisbam_pastoral_economy:village_transport_compass`。逻辑服务端仅在主/副手持有时按 20 tick 刷新该 ItemStack 的目标 NBT，并从共享 `PastoralWorldData.transport` 中按同维度水平距离、稳定 UUID 平局规则选择最近的 `TransportStationType.VILLAGE`；不强制加载区块。客户端模型使用原版罗盘的 32 帧 `angle` 路径，目标不存在或不在当前维度时沿用原版随机指针语义。无序配方固定为指南针、铁锭、红石粉与绿宝石各一，双语名与 32 张 16×16 PNG 资源完整打包；第 00 帧来自生成的绿/青针原版风贴图，其余帧仅将原版红针改为绿/青色。
-- `PlayerDataCapability` 升至 `dataVersion=3`，新增仅接受 `Items.ELYTRA` 的持久 `shoulder` ItemStack；容器同步直接复用原版 `ContainerPlayer` 的 tracked slot 机制。发行 Coremod 将 1.12.2 `ContainerPlayer` 的四个原版 Armor Slot 改为胸甲位拒绝鞘翅的等价 Slot，并追加可 Shift-click 放入的肩部槽；客户端只在 `GuiInventory` 前景阶段裁取原版 `inventory.png` 的 18×18 槽格，绝不手绘槽框。
-- 同一 Coremod 精确替换客户端起飞、服务端 `START_FALL_FLYING` 验证与 `EntityLivingBase#updateElytra` 的胸甲鞘翅读取，使肩部鞘翅继续使用原版飞行与每 20 tick 耐久消耗。所有注入 hook 使用 `Object` 描述符以保持 MCP/SRG 兼容。旧存档中胸甲位的鞘翅会在登录、重生或换维度时移到空肩部槽；肩部已被占用时安全放入背包，背包满才掉落，绝不覆盖或删除物品。
+- `item.ItemVillageTransportCompass` 注册稳定 Item ID `lisbam_pastoral_economy:village_transport_compass`。逻辑服务端仅在主/副手持有时按 20 tick 刷新所持 ItemStack 的目标 NBT：候选来自同维度的村庄 `StationRecord` 与所有当前加载的物理 `TileVillageStation`，**不读取也不要求** `PastoralWorldData.transport` 的交通节点登记；按水平距离和坐标稳定平局选择最近方块，且不强制加载区块。客户端 `angle` 公式逐字保持原版 `ItemCompass`，只替换目标坐标；目标不存在或不在当前维度时沿用原版随机指针语义。无序配方固定为指南针、铁锭、红石粉与绿宝石各一，双语名与 32 张 16×16 PNG 完整打包；所有帧都以原版指南针为基底，仅把两种红针颜色改为统一绿/青色。
+- `PlayerDataCapability` 升至 `dataVersion=3`，新增仅接受 `Items.ELYTRA` 的持久 `shoulder` ItemStack；容器同步直接复用原版 `ContainerPlayer` 的 tracked slot 机制。发行 Coremod 将 1.12.2 `ContainerPlayer` 的四个原版 Armor Slot 改为胸甲位拒绝鞘翅的等价 Slot，并追加可 Shift-click 放入的肩部槽；客户端只在 `GuiInventory` 前景阶段裁取原版 `inventory.png` 的 18×18 槽格，绝不手绘槽框。Coremod 的容器匹配改按 release 方法签名/静态槽位调用识别，避免正式混淆名不匹配时错误回退整项补丁。
+- 同一 Coremod 精确替换客户端起飞、服务端 `START_FALL_FLYING` 验证与 `EntityLivingBase#updateElytra` 的胸甲鞘翅读取，使肩部鞘翅继续使用原版飞行与每 20 tick 耐久消耗。所有注入 hook 使用 `Object` 描述符，并同时覆盖 MCP、SRG 和 1.12.2 发行混淆名。旧存档中胸甲位的鞘翅会在登录、重生或换维度时移到空肩部槽；肩部已被占用时安全放入背包，背包满才掉落，绝不覆盖或删除物品。
 
 ### 2026-09-05 维护：挤奶冷却、价格重构与剪刀附魔
 
