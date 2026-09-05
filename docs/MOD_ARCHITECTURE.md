@@ -10,7 +10,7 @@
 
 - `event.MilkingCooldownEventHandler` 在逻辑服务端检查成年 `EntityCow`（含哞菇）的桶交互；每头牛将最近成功挤奶世界总 tick 持久化到实体 NBT，冷却固定为 6000 tick（5 分钟）。仅冷却中的交互被拒绝；首次成功完全交回原版 `EntityCow` 桶替换、音效与库存同步路径。`config.ModSettings.disableMilkingCooldown` 默认 `false`，开启后恢复无冷却的原版挤奶路径。
 - `market.MarketCatalog` 的出售与购买基础价已按《全商品手动调价表_调整后.xlsx》以 1 小麦 = 50 金币换算并冻结；稳定 market key、NBT 和历史兼容保持不变。
-- `core.EnchantingTableCorePlugin` 是随发行 JAR 加载的最小 1.12.2 Coremod：在具有 `ItemStack` 附魔力重载的较新 14.23.5.x 精确补丁该重载与效率筛选；在 Forge 14.23.5.2847 的旧 `Item` 布局只补丁无参附魔力，因该版本原版效率已在 `Enchantment#canApply` 接受剪刀。两条路径都把剪刀按铁工具、各锄头按自身材质放入原版候选，剪刀效率直接为原版 `Efficiency`。注入调用只使用 `Object` 描述符，避免 MCP/SRG 名称差异；意外布局只记录错误并保留原版 `Item`，不阻止游戏启动。剪刀仍可使用模组 Harvest/Range 以及原版耐久、经验修补、消失诅咒等合法附魔；Harvest 剪羊/剪哞菇增产沿用既有成功后结算流水线。
+- `core.EnchantingTableCorePlugin` 是随发行 JAR 加载的最小 1.12.2 Coremod：按运行时发现的 `Item` 方法布局补丁 `ItemStack` 附魔力重载及效率筛选，或回退补丁旧式无参附魔力。两条路径都把剪刀按铁工具、各锄头按自身材质放入原版候选，剪刀效率直接为原版 `Efficiency`。注入调用只使用 `Object` 描述符，避免 MCP/SRG 名称差异；效率筛选只在既有 `IRETURN` 前合并原版布尔结果，绝不插入跳转或新 StackMap frame。意外布局只记录错误并保留原版 `Item`，不阻止游戏启动。剪刀仍可使用模组 Harvest/Range 以及原版耐久、经验修补、消失诅咒等合法附魔；Harvest 剪羊/剪哞菇增产沿用既有成功后结算流水线。
 
 ### 2026-09-05 任务维护
 

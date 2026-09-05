@@ -320,10 +320,10 @@
 - [x] `MilkCooldownRules`：5 分钟 = 6000 tick，冷却边界、时间回拨和剩余 tick 计算通过代码审查；`compileJava` PASS。
 - [x] `MarketCatalog`：出售/购买基础价按调价工作簿 ×50 更新，market key 与 16 色羊毛共享行情保持不变；`merchantCatalogSelfTest`、`marketCoreSelfTest` PASS（2026-09-05，Temurin Java 8）。
 - [ ] 游戏内：同一成年牛连续挤奶、区块重载/重启后冷却保持；开启“取消挤奶冷却”后可连续挤奶。NOT RUN：当前环境无可操作 Forge 客户端。
-- [x] 静态/自检：Coremod 后的 `Item` 字节码包含剪刀/五种锄头附魔力钩子与原版效率剪刀筛选，并通过 ASM verifier；`enchantmentSelfTest` 还覆盖原版 BREAKABLE 的经验修补/消失诅咒/耐久、Harvest/Range 白名单与剪毛增产公式。PASS（2026-09-05，Temurin Java 8）。
-- [x] Coremod 兼容：SRG 名称布局和 Forge `14.23.5.2847` 的无参 `Item#getItemEnchantability()` 布局均由 `enchantmentSelfTest` 构造并验证；新布局走原版效率筛选，2847 路径保留其原生 `Enchantment#canApply` 剪刀判定。PASS（2026-09-05，Temurin Java 8）。
+- [x] 静态/自检：Coremod 后的 `Item` 字节码包含剪刀/五种锄头附魔力钩子与原版效率剪刀筛选，并通过 ASM verifier；效率筛选只在既有返回点合并结果、不会新增跳转，覆盖 Java 8 StackMap frame 回归；`enchantmentSelfTest` 还覆盖原版 BREAKABLE 的经验修补/消失诅咒/耐久、Harvest/Range 白名单与剪毛增产公式。PASS（2026-09-05，Temurin Java 8）。
+- [x] Coremod 兼容：SRG 名称布局、现代 `ItemStack` 钩子布局和旧式无参 `Item#getItemEnchantability()` 布局均由 `enchantmentSelfTest` 构造并验证；helper 只使用 mapping-neutral `Object` 描述符，旧式路径保留原生 `Enchantment#canApply` 剪刀判定。PASS（2026-09-05，Temurin Java 8）。
 - [x] `milkCooldownSelfTest`：6000 tick 边界、时间回拨、每牛独立 tick 与配置绕过规则。PASS（2026-09-05，Temurin Java 8）。
 - [x] 静态审计：Forge 1.12.2 audit 为 0 ERROR、6 条既有 `packet-thread` WARNING；Coremod 和挤奶处理器均不引用客户端类。PASS（2026-09-05）。
 - [ ] 游戏内：剪刀/锄头附魔台实际候选、剪刀原版效率书本/铁砧和丰收增产。NOT RUN：当前环境无可操作 Forge 客户端。
 - [ ] Dedicated Server：完整加载 Coremod 后以空桶依次对两头牛挤奶，确认仅已挤牛冷却、真实牛奶桶可饮用、区块重载/重启保持且“取消挤奶冷却”会绕过限制。NOT RUN：60 秒 `runServer` 已发现并入队 Coremod，但在完整模组/世界加载前超时；`run/eula.txt` 保持 `eula=false`。
-- [x] 最终 release：`compileJava processResources build`（含 `test`、`reobfJar`、`exportReleaseJar`）PASS；JAR 404,746 bytes，SHA-256 `670e7a2b83162ae7db1cba304ae08168ced52da2277101771fc0a5dbe23dcd7a`，`unzip -t` PASS；manifest 含 `FMLCorePlugin`/`FMLCorePluginContainsFMLMod`，包内含三项 core 类且不含已删除的剪刀专属效率类；Coremod helper 的发布签名只使用 `Object`，无 MCP/SRG Minecraft 参数。
+- [x] 最终 release：`compileJava processResources build`（含 `test`、`reobfJar`、`exportReleaseJar`）PASS；JAR 405,030 bytes，SHA-256 `80ad3e648fc357365333c536dc17c6b9d764fe89f91ec102bc597d9d71f40358`，`unzip -t` PASS；manifest 含 `FMLCorePlugin`/`FMLCorePluginContainsFMLMod`，包内含三项 core 类且不含已删除的剪刀专属效率类；Coremod helper 的发布签名只使用 `Object`，无 MCP/SRG Minecraft 参数。

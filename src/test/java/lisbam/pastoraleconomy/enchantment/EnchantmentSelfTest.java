@@ -19,6 +19,7 @@ import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.ClassNode;
+import org.objectweb.asm.tree.JumpInsnNode;
 import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
 import org.objectweb.asm.util.CheckClassAdapter;
@@ -41,7 +42,7 @@ public final class EnchantmentSelfTest {
         verifyDefinitions();
         verifyEnchantingTableCompatibilityPatch();
         verifySrgRuntimeNameCompatibility();
-        verifyForge2847Compatibility();
+        verifyLegacyItemLayoutCompatibility();
         verifyReforgedAnvilRule();
         verifyHarvestFormulas();
         verifyProbabilityThresholds();
@@ -166,6 +167,7 @@ public final class EnchantmentSelfTest {
         new ClassReader(transformed).accept(node, 0);
         boolean enchantabilityHook = false;
         boolean efficiencyGate = false;
+        boolean efficiencyGateHasJump = false;
         for (MethodNode method : node.methods) {
             if ("getItemEnchantability".equals(method.name)
                     && "(Lnet/minecraft/item/ItemStack;)I".equals(method.desc)) {
@@ -185,15 +187,19 @@ public final class EnchantmentSelfTest {
                     if (instruction instanceof MethodInsnNode) {
                         MethodInsnNode call = (MethodInsnNode) instruction;
                         if ("lisbam/pastoraleconomy/core/EnchantingCompatibilityHooks".equals(call.owner)
-                                && "isShearsEfficiency".equals(call.name)) {
+                                && "canApplyAtEnchantingTable".equals(call.name)
+                                && "(Ljava/lang/Object;Ljava/lang/Object;Z)Z".equals(call.desc)) {
                             efficiencyGate = true;
                         }
+                    }
+                    if (instruction instanceof JumpInsnNode) {
+                        efficiencyGateHasJump = true;
                     }
                 }
             }
         }
-        require(enchantabilityHook && efficiencyGate,
-                "core patch must add table power and native Efficiency gates");
+        require(enchantabilityHook && efficiencyGate && !efficiencyGateHasJump,
+                "core patch must add table power and a stack-map-safe native Efficiency gate");
     }
 
     private static void verifyBytecode(byte[] transformed) {
@@ -242,15 +248,15 @@ public final class EnchantmentSelfTest {
                 }
                 enchantabilityHook |= "getItemEnchantability".equals(call.name)
                         && "(Ljava/lang/Object;I)I".equals(call.desc);
-                efficiencyHook |= "isShearsEfficiency".equals(call.name)
-                        && "(Ljava/lang/Object;Ljava/lang/Object;)Z".equals(call.desc);
+                efficiencyHook |= "canApplyAtEnchantingTable".equals(call.name)
+                        && "(Ljava/lang/Object;Ljava/lang/Object;Z)Z".equals(call.desc);
             }
         }
         require(enchantabilityHook && efficiencyHook,
-                "core patch must use runtime class descriptors instead of MCP-only names");
+                "core patch must use mapping-neutral helper descriptors");
     }
 
-    private static void verifyForge2847Compatibility() {
+    private static void verifyLegacyItemLayoutCompatibility() {
         ClassNode node = new ClassNode();
         new ClassReader(readItemClassBytes()).accept(node, 0);
         node.name = "vg";
@@ -287,7 +293,7 @@ public final class EnchantmentSelfTest {
             }
         }
         require(legacyHook,
-                "Forge 14.23.5.2847 Item layout must receive the legacy enchantability hook");
+                "legacy Item layouts must receive the legacy enchantability hook");
     }
 
     private static byte[] readItemClassBytes() {
