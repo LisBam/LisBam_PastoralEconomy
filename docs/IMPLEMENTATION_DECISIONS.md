@@ -374,10 +374,20 @@
 
 ## DEC-046 行情书渐进浏览与商人村庄家区
 
-决定：行情书购买页仅为当前滚动窗口建立三列选择按钮，使用客户端 `GuiTextField` 按本地化显示名或稳定商品 key 过滤；选中商品请求优先，其余目录仍以每 4 tick 一个条目的节奏渐进预取。服务端 `ContainerMarketBook` 的每 2 tick 合并/限流保持不变，但客户端在选中请求 40 tick 无快照时以新的单调 requestId 重试。创造标签继续使用稳定 key `lisbam_pastoral_economy`，只补充其语言值“聆竹の休闲田园经济”。
+决定：行情书购买页仅为当前滚动窗口建立三列选择按钮，使用客户端 `GuiTextField` 按本地化显示名或稳定商品 key 过滤；选中商品请求优先，其余目录仍以每 4 tick 一个条目的节奏渐进预取。客户端仍会在选中请求 40 tick 无快照时以新的单调 requestId 重试；服务端直接在主线程回答每个已验证的有界请求，具体取代关系见 DEC-047。创造标签继续使用稳定 key `lisbam_pastoral_economy`，只补充其语言值“聆竹の休闲田园经济”。
 
 商人以 `VillageRecord` 中心和 `VillageService.VILLAGE_REFERENCE_RANGE`（128）作为同一个圆形活动、出生、返航和解绑边界。`EntityMerchant` 将该中心写入可选实体 NBT；旧实体没有该字段时先以旧站点坐标读取，下一次已加载村庄维护再刷新为实际中心。越界只执行地面寻路返航，维护时仍越界才删除 MerchantRecord/roster 绑定，绝不传送。随机出生先采样圆形范围并要求安全、已加载实心地面，不再从范围外的方形角落产生实体。
 
 原因：购买目录远大于出售目录，旧实现为所有商品创建 GUI 按钮，会越过面板并覆盖其他 UI；一次 C2S 请求若被服务端合并而没有回包，则等待状态没有恢复路径。商人服务此前使用 128 格识别/解绑村庄，而实体限制和出生点并不使用同一几何范围，不能满足“同村民村庄范围”活动要求。
 
 兼容性与影响：没有新 registry ID、Packet discriminator、WorldSavedData schema、Capability 或交易数据迁移。新 `villageHomeX/Y/Z` 只在实体 NBT 中可选增加，旧实体、Offer、库存和名称可直接读取；客户端搜索/滚动/重试都是显示缓存行为，价格和市场历史仍完全由逻辑服务器生成和保存。
+
+## DEC-047 行情书直接回包与附魔展示栈（2026-09-05）
+
+决定：`ContainerMarketBook` 仅表示服务端当前确实打开了行情书；Packet 1 已经被调度到逻辑服务端主线程后，立即验证 Container、商品和游标，并直接返回单项、最多 30 点的 Packet 2 快照，不再把请求放入 `Container#detectAndSendChanges` 的延迟队列。`MarketService` 对最新窗口建立“非空当天”不变量：若旧世界有当前冻结价格而该商品的保留历史尚未出现，则显示该当前日价格点；既有 `ensureMarketDay` 仍负责把所有历史目录的当天记录写回 `PastoralWorldData`。
+
+购买页图标通过 `TradeCatalog#createEnchantedBookStackForMarketKey` 从稳定 market key 反查附魔定义和确定等级，构造原版 `ItemEnchantedBook` 栈，而非显示无 NBT 的通用附魔书。
+
+原因：无槽 Container 的 deferred tick 不是可靠的请求完成信号，合法选择会因此没有任何回包；而旧世界缺失新增目录的历史时，裸空列表错误地把已经冻结的当天行情显示为“暂无记录”。附魔书的 Item 名称不包含其 NBT，必须还原真实栈才能让原版 Tooltip 提供玩家需要的附魔信息。
+
+兼容性与影响：Packet 1/2 的 discriminator 与编码完全不变，市场价格、历史写入和所有交易继续由逻辑服务端拥有。没有新增 registry ID、WorldSavedData 版本或 NBT key；仅在旧世界首次读取时由原有修复路径补齐当天历史。

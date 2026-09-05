@@ -136,6 +136,16 @@ public final class MerchantCatalogSelfTest {
         check(harvestDefinition.resolveLevel(new FixedRandom(84)) == 2, "harvest level II upper boundary");
         check(harvestDefinition.resolveLevel(new FixedRandom(85)) == 3, "harvest level III boundary");
         check(harvestDefinition.resolveLevel(new FixedRandom(99)) == 3, "harvest level upper boundary");
+        ItemStack marketBookHarvest = TradeCatalog.createEnchantedBookStackForMarketKey(
+                "lisbam_pastoral_economy:buy/treasure/enchanted_book/harvest_3");
+        check(marketBookHarvest != null && marketBookHarvest.getItem() == Items.ENCHANTED_BOOK,
+                "market-book enchanted entry builds a native book");
+        check(ItemEnchantedBook.getEnchantments(marketBookHarvest).tagCount() == 1
+                        && ItemEnchantedBook.getEnchantments(marketBookHarvest).getCompoundTagAt(0).getShort("lvl") == 3,
+                "market-book enchanted entry preserves the displayed level");
+        check(TradeCatalog.createEnchantedBookStackForMarketKey(
+                        "lisbam_pastoral_economy:buy/common/wheat_seeds") == null,
+                "ordinary market entries are not converted into enchanted books");
         DailyOffer resolved = new DailyOffer(harvest.getCatalogKey(), true, 1, 3);
         DailyOffer restored = DailyOffer.readFromNBT(resolved.writeToNBT());
         check(restored.getEnchantmentLevel() == 3 && restored.getRemainingItems() == 1,

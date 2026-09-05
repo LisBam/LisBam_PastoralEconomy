@@ -41,12 +41,11 @@ public final class RequestMarketHistoryMessageHandler
         if (!(player.openContainer instanceof ContainerMarketBook)) {
             return;
         }
-        ContainerMarketBook book = (ContainerMarketBook) player.openContainer;
-        book.queueMarketRequest(request);
-        RequestMarketHistoryMessage queued = book.pollMarketRequest(player.getServerWorld().getTotalWorldTime());
-        if (queued != null) {
-            handleAcceptedRequest(player, queued);
-        }
+        // One request carries one key and at most thirty display points. It is
+        // already on the server thread, so answer directly rather than rely on
+        // Container#detectAndSendChanges: a slotless container can strand a
+        // deferred selection without a later inventory change.
+        handleAcceptedRequest(player, request);
     }
 
     /** Invoked by the open book container on the logical server after rate limiting. */

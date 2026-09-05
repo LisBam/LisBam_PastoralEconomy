@@ -6,6 +6,9 @@ import lisbam.pastoraleconomy.market.MarketCatalog;
 import lisbam.pastoraleconomy.market.MarketCommodity;
 import net.minecraft.enchantment.Enchantment;
 import net.minecraft.init.Enchantments;
+import net.minecraft.item.ItemStack;
+
+import javax.annotation.Nullable;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -55,6 +58,26 @@ public final class TradeCatalog {
     public static List<TradeCatalogEntry> getPool(TradePool pool) {
         List<TradeCatalogEntry> entries = BY_POOL.get(pool);
         return entries == null ? Collections.<TradeCatalogEntry>emptyList() : entries;
+    }
+
+    /** Recreates the native enchanted-book NBT for one market catalogue key. */
+    @Nullable
+    public static ItemStack createEnchantedBookStackForMarketKey(String marketKey) {
+        if (marketKey == null || marketKey.isEmpty()) {
+            return null;
+        }
+        for (TradeCatalogEntry entry : BY_KEY.values()) {
+            if (!entry.isEnchantment()) {
+                continue;
+            }
+            EnchantmentTradeDefinition definition = entry.getEnchantmentDefinition();
+            for (int level = 1; level <= definition.getMaxLevel(); level++) {
+                if (marketKey.equals(definition.getMarketKey(level))) {
+                    return definition.createBookStack(1, level);
+                }
+            }
+        }
+        return null;
     }
 
     private static void addSellDefinitions(Map<String, TradeCatalogEntry> definitions) {

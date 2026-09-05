@@ -115,17 +115,25 @@ public final class MarketService {
             PastoralWorldData data, MarketCommodity commodity, long beforeExclusiveDay, int limit, int requestId
     ) {
         long currentDay = data.getCurrentMarketDay();
-        List<MarketHistoryPoint> points = beforeExclusiveDay == -1L
-                ? data.getCropHistory(commodity.getKey(), currentDay, limit, null)
-                : data.getCropHistory(commodity.getKey(), currentDay, limit, Long.valueOf(beforeExclusiveDay));
-        boolean hasOlder = !points.isEmpty()
-                && !data.getCropHistory(commodity.getKey(), currentDay, 1,
-                Long.valueOf(points.get(0).getWorldDay())).isEmpty();
-        boolean hasNewer = beforeExclusiveDay != -1L && !points.isEmpty();
         Long currentPrice = data.getCurrentMarketPrice(commodity.getKey());
         if (currentPrice == null) {
             throw new IllegalStateException("Current frozen market snapshot is incomplete: " + commodity.getKey());
         }
+        List<MarketHistoryPoint> points = beforeExclusiveDay == -1L
+                ? data.getCropHistory(commodity.getKey(), currentDay, limit, null)
+                : data.getCropHistory(commodity.getKey(), currentDay, limit, Long.valueOf(beforeExclusiveDay));
+        // A legacy save can have a frozen current price but no retained list
+        // for a commodity introduced later. getReadyData repairs that list on
+        // the logical server; this invariant prevents its first valid newest
+        // snapshot from being rendered as an empty market history.
+        if (beforeExclusiveDay == -1L && points.isEmpty()) {
+            points = Collections.singletonList(new MarketHistoryPoint(currentDay, currentPrice.longValue(),
+                    data.getPreviousMarketPrice(commodity.getKey())));
+        }
+        boolean hasOlder = !points.isEmpty()
+                && !data.getCropHistory(commodity.getKey(), currentDay, 1,
+                Long.valueOf(points.get(0).getWorldDay())).isEmpty();
+        boolean hasNewer = beforeExclusiveDay != -1L && !points.isEmpty();
 
         return new MarketHistorySnapshot(
                 requestId,
