@@ -4,9 +4,17 @@
 
 最近成功构建：
 
-- `env JAVA_HOME=/tmp/lbpe-jdk8 PATH="/tmp/lbpe-jdk8/bin:$PATH" ./gradlew build --console=plain`
+- `env JAVA_HOME=/tmp/lbpe-jdk8 ./gradlew build`
 - 日期：2026-09-05
-- 结果：PASS（Forge 14.23.5.2859 / Temurin Java 8 `1.8.0_504`；`build` 包含 `test`、`reobfJar` 与 `exportReleaseJar`。`release/LisBam_PastoralEconomy-1.5.jar` 为 380,939 bytes，SHA-256 `4b04ab6e26af899364ac5dcdfa5d0da0802b48f772941d60c9b2e289e8ffd415`，`unzip -t` PASS。）
+- 结果：PASS（Forge 14.23.5.2859 / Temurin Java 8 `1.8.0_504`；`build` 包含 `test`、`reobfJar` 与 `exportReleaseJar`。`release/LisBam_PastoralEconomy-1.5.jar` 为 381,312 bytes，SHA-256 `92749273097175e16b734b6efce9e58ff6e02e344f7fc130d84bfac981937b3d`，`unzip -t` PASS。）
+
+## 维护：商人范围、命名牌与交通费用（2026-09-05）
+
+实现：村庄识别、站点和交通仍使用既有的 128/64/160 格参考距离，但商人实体的出生与活动圆形半径独立收紧为 32 格；超出 32 格每 20 tick 尝试寻路返航，超出 64 格立即传送到已持久的村庄站旁。村庄维护从 200 tick 改为 60 tick（3 秒），初次实体载入等待也随之为一个 60 tick 周期。`EntityMerchant#processInteract` 对原版命名牌返回给 `EntityLivingBase` 处理，因此只有已命名的命名牌会写入持久 `CustomName` 并消耗物品，商人 UUID、交易和库存不受影响。交通旅行与接入费都降至原曲线的 1/10：`round5(40 + 0.12D)` 与 `round10(400 + 1.20D)`。
+
+兼容性与影响：没有改动 registry ID、Packet discriminator、NBT key、`PastoralWorldData` schema 或既有商人/交通身份。已存在商人会在下一次服务端 tick 使用新的 32/64 格规则；交通费用按每次服务端计算即时生效，已解锁节点不会被重置。内容书删除了未由代码实现的“村民数量下降时维护移除超额商人”承诺，并将交易界面的购买目录同步为实际 8 条。
+
+验证：`check_toolchain.py` 确认 ForgeGradle 3、Forge `14.23.5.2859`、Gradle 4.9 与 Temurin Java 8 `1.8.0_504`；严格 Forge 1.12.2 审计为 0 ERROR、5 条既有 `packet-thread` WARNING。`compileJava`、`processResources`、`merchantCatalogSelfTest` 与 `transportTravelSelfTest` 均 PASS；最终 `build` PASS，包含 `test`、`reobfJar` 与 `exportReleaseJar`。正式 JAR 已实际覆盖导出为上方 381,312 bytes 的 1.5 成品，`unzip -t` PASS。游戏内范围、命名牌持久化和 Dedicated Server 仍为 NOT RUN：当前环境没有可操作 Forge 客户端，服务器 EULA 未接受。
 
 ## 维护：1.5 附魔修复与扩展（2026-09-05）
 

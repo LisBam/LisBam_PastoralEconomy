@@ -34,8 +34,12 @@ public final class VillageService {
     public static final int VILLAGE_REFERENCE_RANGE = 128;
     public static final int VILLAGE_CONNECTION_DISTANCE = 64;
     public static final int VILLAGE_DEDUP_DISTANCE = 160;
+    /** Entity-only radius; village identity and transport continue using the 128-block reference range above. */
+    public static final int MERCHANT_ACTIVITY_RADIUS = 32;
+    /** An entity farther than this is returned to its village station immediately. */
+    public static final int MERCHANT_TELEPORT_DISTANCE = 64;
     public static final int STATION_SEARCH_RADIUS = 12;
-    public static final int MAINTENANCE_INTERVAL_TICKS = 200;
+    public static final int MAINTENANCE_INTERVAL_TICKS = 60;
     /** Lets persisted chunk entities join their world before records are allowed to replace them. */
     private static final Map<WorldServer, Long> INITIAL_ENTITY_SETTLE_TICKS = new WeakHashMap<WorldServer, Long>();
 
@@ -430,12 +434,13 @@ public final class VillageService {
     }
 
     private static BlockPos findMerchantSpawnPosition(WorldServer world, BlockPos station, VillageRecord village) {
-        // Prefer a random safe point in the village's normal activity radius.
+        // Merchant spawns use their compact activity radius, independently of
+        // the wider village-identity and station/transport reference range.
         for (int attempt = 0; attempt < 32; attempt++) {
-            int offsetX = world.rand.nextInt(VILLAGE_REFERENCE_RANGE * 2 + 1) - VILLAGE_REFERENCE_RANGE;
-            int offsetZ = world.rand.nextInt(VILLAGE_REFERENCE_RANGE * 2 + 1) - VILLAGE_REFERENCE_RANGE;
+            int offsetX = world.rand.nextInt(MERCHANT_ACTIVITY_RADIUS * 2 + 1) - MERCHANT_ACTIVITY_RADIUS;
+            int offsetZ = world.rand.nextInt(MERCHANT_ACTIVITY_RADIUS * 2 + 1) - MERCHANT_ACTIVITY_RADIUS;
             if ((long) offsetX * offsetX + (long) offsetZ * offsetZ
-                    > (long) VILLAGE_REFERENCE_RANGE * VILLAGE_REFERENCE_RANGE) {
+                    > (long) MERCHANT_ACTIVITY_RADIUS * MERCHANT_ACTIVITY_RADIUS) {
                 continue;
             }
             BlockPos center = village.getCenter();
@@ -454,7 +459,7 @@ public final class VillageService {
                     if (!world.isBlockLoaded(candidate) || !world.isAirBlock(candidate) || !world.isAirBlock(candidate.up())) {
                         continue;
                     }
-                    if (isWithinVillageRange(village, candidate) && isSafeMerchantSpawn(world, candidate)) {
+                    if (isWithinMerchantActivityRange(village, candidate) && isSafeMerchantSpawn(world, candidate)) {
                         return candidate;
                     }
                 }
@@ -469,6 +474,12 @@ public final class VillageService {
         IBlockState floor = world.getBlockState(candidate.down());
         return floor.getMaterial().isSolid() && floor.isSideSolid(world, candidate.down(), EnumFacing.UP)
                 && floor.getBlock() != Blocks.FARMLAND;
+    }
+
+    private static boolean isWithinMerchantActivityRange(VillageRecord village, BlockPos position) {
+        long dx = (long) village.getCenterX() - position.getX();
+        long dz = (long) village.getCenterZ() - position.getZ();
+        return dx * dx + dz * dz <= (long) MERCHANT_ACTIVITY_RADIUS * MERCHANT_ACTIVITY_RADIUS;
     }
 
     public static int getTargetMerchantCount(int villagerCount) {
