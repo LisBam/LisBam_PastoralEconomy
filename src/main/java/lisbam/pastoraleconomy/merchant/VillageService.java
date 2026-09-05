@@ -39,7 +39,7 @@ public final class VillageService {
     /** An entity farther than this is returned to its village station immediately. */
     public static final int MERCHANT_TELEPORT_DISTANCE = 64;
     public static final int STATION_SEARCH_RADIUS = 12;
-    public static final int MAINTENANCE_INTERVAL_TICKS = 60;
+    public static final int MAINTENANCE_INTERVAL_TICKS = 200;
     /** Lets persisted chunk entities join their world before records are allowed to replace them. */
     private static final Map<WorldServer, Long> INITIAL_ENTITY_SETTLE_TICKS = new WeakHashMap<WorldServer, Long>();
 
