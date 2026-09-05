@@ -2,6 +2,9 @@ package lisbam.pastoraleconomy.market;
 
 import lisbam.pastoraleconomy.data.world.PastoralWorldData;
 import net.minecraft.init.Bootstrap;
+import net.minecraft.init.Blocks;
+import net.minecraft.init.Items;
+import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
 
 import java.util.Arrays;
@@ -76,6 +79,13 @@ public final class MarketCoreSelfTest {
         }
         require(actualSellGoods.equals(expectedSellGoods),
                 "market book must include every and only merchant sell good");
+        require(MarketCatalog.findSellCommodity(new ItemStack(Items.WHEAT)) == wheat,
+                "a sellable inventory stack must resolve to its market commodity");
+        require(MarketCatalog.findSellCommodity(new ItemStack(Blocks.WOOL, 1, 14)).getKey()
+                        .equals("lisbam_pastoral_economy:sell/livestock/wool"),
+                "every wool colour must resolve to the one shared sell commodity");
+        require(MarketCatalog.findSellCommodity(new ItemStack(Items.DIAMOND)) == null,
+                "non-sellable inventory stacks must not expose a market purchase price");
 
         long expected = MarketPriceGenerator.calculatePrice(71L, 12L, wheat);
         for (int index = 0; index < 100; index++) {

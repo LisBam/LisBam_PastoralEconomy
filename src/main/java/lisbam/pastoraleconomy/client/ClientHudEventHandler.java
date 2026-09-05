@@ -36,16 +36,20 @@ public final class ClientHudEventHandler {
 
     @SubscribeEvent
     public static void clearOnClientConnect(FMLNetworkEvent.ClientConnectedToServerEvent event) {
+        ClientNightVisionRenderHandler.clear();
         ClientPlayerState.clear();
         ClientMarketState.clear();
+        ClientMarketTooltipState.clear();
         ClientMerchantTradeState.clear();
         ClientTransportState.clear();
     }
 
     @SubscribeEvent
     public static void clearOnClientDisconnect(FMLNetworkEvent.ClientDisconnectionFromServerEvent event) {
+        ClientNightVisionRenderHandler.clear();
         ClientPlayerState.clear();
         ClientMarketState.clear();
+        ClientMarketTooltipState.clear();
         ClientMerchantTradeState.clear();
         ClientTransportState.clear();
     }

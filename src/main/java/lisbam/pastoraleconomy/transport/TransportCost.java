@@ -6,8 +6,8 @@ import net.minecraft.util.math.BlockPos;
 public final class TransportCost {
     public static final long BASE_CONNECTION_FEE = 400L;
     public static final long MINIMUM_CONNECTION_FEE = 10L;
-    public static final long BASE_TRAVEL_FEE = 40L;
-    public static final long MINIMUM_TRAVEL_FEE = 5L;
+    public static final long BASE_TRAVEL_FEE = 160L;
+    public static final long MINIMUM_TRAVEL_FEE = 20L;
 
     private TransportCost() {
     }
@@ -40,14 +40,14 @@ public final class TransportCost {
         return Math.max(MINIMUM_CONNECTION_FEE, roundedToTen);
     }
 
-    /** Frozen travel rule: round5(40 + 0.12 * D), using exact integer arithmetic. */
+    /** Frozen travel rule: round20(160 + 0.48 * D), exactly 400% of the former travel curve. */
     public static long travelFee(long distance) {
         if (distance < 0L) {
             throw new IllegalArgumentException("Distance cannot be negative.");
         }
-        // (40 + 0.12D) / 5 = (4000 + 12D) / 500.
-        long numerator = BASE_TRAVEL_FEE * 100L + 12L * distance;
-        long rounded = ((numerator + 250L) / 500L) * 5L;
+        // (160 + 0.48D) / 20 = (16000 + 48D) / 2000.
+        long numerator = BASE_TRAVEL_FEE * 100L + 48L * distance;
+        long rounded = ((numerator + 1000L) / 2000L) * 20L;
         return Math.max(MINIMUM_TRAVEL_FEE, rounded);
     }
 }

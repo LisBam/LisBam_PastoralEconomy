@@ -2,11 +2,25 @@
 
 当前发行版本：`1.5`；既有第 15 批功能完成，1.5 为维护更新。
 
-最近成功构建（在本次 200 tick 回退前）：
+最近一次成功构建记录（本次 Tooltip、夜视与疾步修复后）：
 
-- `env JAVA_HOME=/tmp/lbpe-jdk8 ./gradlew build`
+- `JDK8_HOME=/tmp/lbpe-jdk8; env JAVA_HOME="$JDK8_HOME" PATH="$JDK8_HOME/bin:$PATH" ./gradlew compileJava processResources build`
 - 日期：2026-09-05
-- 结果：PASS（Forge 14.23.5.2859 / Temurin Java 8 `1.8.0_504`；`build` 包含 `test`、`reobfJar` 与 `exportReleaseJar`。`release/LisBam_PastoralEconomy-1.5.jar` 为 381,312 bytes，SHA-256 `92749273097175e16b734b6efce9e58ff6e02e344f7fc130d84bfac981937b3d`，`unzip -t` PASS。）
+- 结果：PASS（Forge 14.23.5.2859 / Temurin Java 8 `1.8.0_504`；`build` 包含 `test`、`reobfJar` 与 `exportReleaseJar`。`release/LisBam_PastoralEconomy-1.5.jar` 为 395,684 bytes，SHA-256 `2faaa78b3992ab242f38b5717d3231da1970006d5e8c625b9f0679a83c1ece94`，`unzip -t` PASS。）
+
+## 维护：行情展示、附魔节奏与旅行费（2026-09-05）
+
+实现：行情书在今日价下新增基础价行，并把昨日价、趋势和曲线纵向错开，避免最小 320×240 缩放下重叠。原版库存 Tooltip 中悬停 29 类商人收购品会显示服务器冻结的今日收购价；Packet 7/8 仅传输有界市场 key 和当前世界日/价格，服务端主线程校验合法出售 key 后回复，客户端按市场日缓存且最多每秒重试一次。
+
+疾步改为护腿附魔，只由服务端固定 UUID 的移动属性直接改变移速，并由客户端 FOV 监听器抵消该固定速度项，因此加速不改变 POV。夜视由客户端可恢复临时 gamma 实现：戴上时立即进入 10 秒视觉窗口，之后每 5 秒续 10 秒，不创建夜视药水效果。范围每级由 +1 调整为 +1.5 格；Forge 1.12.2 原生 `REACH_DISTANCE` 同时覆盖客户端选取和服务端实体攻击、方块及实体交互校验。前往费用提高到旧旅行曲线的 400%，即 `round20(160 + 0.48D)`；接入费不变。
+
+兼容性与影响：新增 Packet discriminator 7/8，不重排 0～6；未变更任何 registry ID、既有 NBT key、WorldSavedData、Capability 或商人商品 key。旧疾步靴子保留其原有 NBT，但不再属于合法装备/不触发效果；护腿上的合法疾步立即生效。旅行费用不持久化，已解锁节点保持，下一次服务端重算旅行时使用新数值。
+
+验证：Temurin Java 8 下 `compileJava`、`processResources`、`build`（含 `test`、`reobfJar`、`exportReleaseJar`）均 PASS；严格 Forge 1.12.2 audit 为 0 ERROR、6 条已审查的 `packet-thread` 保守 WARNING。游戏内背包 Tooltip、夜视亮度/恢复、护腿疾步 POV、范围实体攻击距离与 Dedicated Server 仍待可操作 Forge 世界。
+
+## 2026-09-05 Tooltip 与纯客户端夜视修复
+
+根因与修复：背包价格 Tooltip 原先同时限制 `GuiInventory` 实例、客户端实体对象身份以及服务端主背包槽位；中间尝试的 `DrawScreenEvent.Post` 还发生在 `GuiContainer` 选中悬停槽位之前，导致请求/显示链无法命中。现在客户端按玩家 UUID 在最终原版 `ItemTooltipEvent` 列表中直接追加价格，服务端仅校验稳定出售目录 key 后直接在主线程返回冻结的今日价格，客户端仍按世界日丢弃过期缓存。疾步继续由服务端直接改变移速，并由客户端 FOV 监听器抵消固定疾步项，避免原版速度属性带来的 POV 拉伸。夜视完全移到 `ClientNightVisionRenderHandler`，只在客户端临时提高 gamma 并在摘下头盔、断开连接时恢复原值，不写入任何药水状态或世界光照。
 
 ## 维护：商人范围、命名牌与交通费用（2026-09-05）
 
@@ -18,7 +32,7 @@
 
 ## 维护：1.5 附魔修复与扩展（2026-09-05）
 
-实现：捷足保留服务器移动加成，并由物理客户端 FOV 钩子精确抵消自身速度倍率，故不再出现速度药水式视野拉伸。夜视改为服务器续期的两 tick、无粒子原版效果。耕地行者中文名改为“耕地行者”，两侧取消 `FarmlandTrampleEvent`，玩家跳跃、落地和移动均不会把耕地变回泥土或破坏其上的作物。
+实现：捷足保留服务器移动加成，并由物理客户端 FOV 钩子精确抵消自身速度倍率，故不再出现速度药水式视野拉伸。夜视改为客户端可恢复临时 gamma 的 10 秒初始/5 秒续期视觉，不创建药水效果。耕地行者中文名改为“耕地行者”，两侧取消 `FarmlandTrampleEvent`，玩家跳跃、落地和移动均不会把耕地变回泥土或破坏其上的作物。
 
 新增攻速 I--V、范围 I--V、百炼如新 I、束锋诅咒 I；前两者分别按攻击间隔 80/60/40/20/0% 与交互距离 +1～+5 格实现，百炼如新以临时铁砧输出忽略先前工作惩罚，束锋诅咒为不进附魔台且与横扫之刃互斥的剑用宝藏诅咒。范围和丰收扩展到剪刀；丰收剪羊/剪哞菇仅在原版成功后补发 `Binomial(2L, 4/7)` 的同类掉落。商人目录加入四种书与冻结等级权重/价格，双语和拼音搜索同步更新。
 

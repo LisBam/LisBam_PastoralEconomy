@@ -2,6 +2,7 @@ package lisbam.pastoraleconomy.proxy;
 
 import lisbam.pastoraleconomy.client.ClientCoinSyncExecutor;
 import lisbam.pastoraleconomy.client.ClientMarketSyncExecutor;
+import lisbam.pastoraleconomy.client.ClientMarketTooltipSyncExecutor;
 import lisbam.pastoraleconomy.client.ClientTransportStateSyncExecutor;
 import lisbam.pastoraleconomy.client.gui.GuiCrabTrap;
 import lisbam.pastoraleconomy.client.gui.GuiMarketBook;
@@ -63,6 +64,11 @@ public final class ClientProxy extends CommonProxy {
     @Override
     public void handleMarketHistorySync(MarketHistorySnapshot snapshot) {
         ClientMarketSyncExecutor.acceptServerSnapshot(snapshot);
+    }
+
+    @Override
+    public void handleMarketTooltipPriceSync(String commodityKey, long marketDay, long price) {
+        ClientMarketTooltipSyncExecutor.acceptServerPrice(commodityKey, marketDay, price);
     }
 
     @Override

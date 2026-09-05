@@ -3,8 +3,19 @@
 ## 构建
 
 - [x] `./gradlew compileJava`、`compileTestJava` — PASS（2026-09-05，Temurin Java 8 `1.8.0_504`）
-- [x] `./gradlew processResources`、`build` — PASS（2026-09-05，Temurin Java 8 `1.8.0_504`；含 `test`、`reobfJar`、`exportReleaseJar`；release JAR 已实际覆盖导出、非空，`unzip -t` PASS）
-- [x] Forge 1.12.2 static audit — 0 ERROR；5 条 `packet-thread` WARNING 已审查（通用注册不处理消息；四个 S2C Proxy 桥没有直接修改状态，客户端实际写入均调度至主线程；交通 C2S handler 调度至服务端主线程）。
+- [x] `./gradlew processResources`、`build` — PASS（2026-09-05，Temurin Java 8 `1.8.0_504`；含 `test`、`reobfJar`、`exportReleaseJar`；release JAR 为 395,684 bytes，`unzip -t` PASS，SHA-256 `2faaa78b3992ab242f38b5717d3231da1970006d5e8c625b9f0679a83c1ece94`）
+- [x] Forge 1.12.2 static audit — 0 ERROR；6 条 `packet-thread` WARNING 已审查（通用注册不处理消息；五个 S2C Proxy 桥没有直接修改状态，客户端实际写入均调度至主线程；交通与市场 Tooltip C2S handler 调度至服务端主线程）。
+- [x] 本次 FOV/Tooltip 修复后的 `./gradlew compileJava processResources build` — PASS（Temurin Java 8 `1.8.0_504`；release JAR 已覆盖导出并通过 `unzip -t`）。
+
+## 维护：行情 Tooltip、附魔与前往费（2026-09-05）
+
+- [x] `marketCoreSelfTest`：29 类可出售 Item/meta 可反查唯一市场条目；任意羊毛色归入共享羊毛行情；不可出售物品不产生提示价格。PASS（Temurin Java 8 `1.8.0_504`）。
+- [x] `marketPacketSelfTest`：新增 Packet 7/8 的有界 key、市场日与价格往返；Tooltip 缓存不会跨市场日复用，缺失价格每商品最多每秒请求一次。PASS（Temurin Java 8 `1.8.0_504`）。
+- [x] `enchantmentSelfTest`：疾步只接受护腿、不接受靴子；范围 I/V 精确为 +1.5/+7.5 格。PASS（Temurin Java 8 `1.8.0_504`）。
+- [x] `transportTravelSelfTest`：D=0/250/500/1,000/2,000/5,000/10,000 的旅行费为 160/280/400/640/1,120/2,560/4,960，接入费与 Y 忽略规则不变。PASS（Temurin Java 8 `1.8.0_504`）。
+- [x] `compileJava`、`processResources`、最终 `build` 与严格 Forge audit：PASS；audit 为 0 ERROR、6 条 packet-thread WARNING，新增 S2C Handler 仅经 `ClientProxy` 调度客户端主线程，C2S Handler 先调度服务端主线程。release `1.5` JAR 为 395,684 bytes，SHA-256 `2faaa78b3992ab242f38b5717d3231da1970006d5e8c625b9f0679a83c1ece94`，`unzip -t` PASS。
+- [ ] 游戏内：320×240、常规和高分辨率下行情书基础价/昨日价/趋势/图表无重叠；原版库存 Tooltip 中小麦与任意颜色羊毛显示服务器今日价，非收购物品不显示，跨日后不会显示旧价。NOT RUN：当前环境无法创建可操作 Forge 客户端。
+- [ ] 游戏内：疾步护腿 I--IV 直接提高移速且完全不改变 FOV，靴子疾步无效；夜视头盔戴上立即进入 10 秒视觉窗口并每 5 秒续 10 秒，摘下后 gamma 恢复且没有药水图标；范围 I--V 的实体攻击、方块和实体交互均按 +1.5 格/级且 Dedicated Server 无客户端类加载错误。NOT RUN：需要可操作客户端和 Dedicated Server。
 
 ## 维护：商人范围、命名牌与交通费用（2026-09-05）
 
@@ -141,7 +152,7 @@
 - [x] `AgricultureRules` 把七种 Harvest 目标和 Pumpkin 排除、主作物/种子身份、Binomial/UniformInt/cocoa metadata 3 公式集中。PASS：代码审查和自检。
 - [x] Fine Cultivation 只从最终 HarvestDrops 列表、再从玩家主背包/快捷栏消耗真实种植物，且只在方块仍为空、下方仍为 Farmland 时以默认 age 0 状态补种。PASS：代码审查和编译。
 - [x] Felling 只经原版 `tryHarvestBlock` 逐块处理已验证的同树种原木与叶子；没有手工掉落、全局已访问树列表或递归。PASS：代码审查和编译。
-- [x] Fleetfoot/Farmland Walker 使用服务器固定 UUID 的非持久 operation 2 属性修饰符；Night Vision 只在 `Side.CLIENT` 渲染帧临时 gamma，不使用 Potion 或改世界光照。PASS：代码审查、Forge audit 和编译。
+- [x] Fleetfoot/Farmland Walker 使用服务器固定 UUID 的非持久 operation 2 属性修饰符，`ClientFleetfootFovHandler` 只抵消疾步固定速度项；Night Vision 只在 `Side.CLIENT` 以可恢复临时 gamma 实现，不使用药水效果或改世界光照。PASS：代码审查、JDK 8 编译与最终 Gradle build。
 - [ ] 游戏内：附魔台、附魔书、旧版 Librarian 和原版铁砧的八种附魔候选、max level、费用、同级合并。NOT RUN：客户端/Dedicated Server 未进入可测试世界。
 - [ ] 游戏内：Harvest 七种目标/排除项、Fine Cultivation 四种作物与无种子失败、Pastoral Favor 收获/种植、Farmland Walker、Fleetfoot 叠加。NOT RUN：客户端/Dedicated Server 未进入可测试世界。
 - [ ] 游戏内：六种自然树、木屋/原木墙拒绝、相邻树冠不串联、逐块耐久/Creative、Slaughter 白名单/排除/伤害/掉落/XP、Night Vision 本地恢复。NOT RUN：客户端/Dedicated Server 未进入可测试世界。

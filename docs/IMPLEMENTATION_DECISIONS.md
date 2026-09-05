@@ -412,7 +412,7 @@
 
 决定：保留既有八个附魔 registry ID、NBT 写法与市场 key，不迁移旧物品；新增稳定 ID `attack_speed`、`range`、`reforged`、`bluntness_curse`。Attack Speed、Range、Reforged 的常规武器/工具范围固定为 Java 1.12.2 原版剑、斧、镐、锹、锄，Range 额外允许剪刀；Harvest 同时允许锄和剪刀。Bluntness Curse 是带 `isTreasureEnchantment`/`isCurse` 标记、明确拒绝附魔台的剑用附魔，并与 Sweeping Edge 互斥。商人书池将四种新书作为稳定商品键加入，攻速/范围等级权重冻结为 40/28/17/10/5，价格分别为 50k/80k/120k/180k/250k 与 60k/100k/150k/210k/280k；百炼如新与束锋诅咒固定为 120k/20k。
 
-攻击速度和交互距离仅由逻辑服务端的非持久 AttributeModifier 写入。Attack Speed I--IV 用 operation 2 将冷却间隔固定为原本 80/60/40/20%，V 用高于一游戏 tick 阈值的 attack-speed modifier 保证连续攻击已充能；Range 用 Forge 1.12.2 原生 `EntityPlayer.REACH_DISTANCE`，所以客户端目标选取和服务端距离验证使用同一属性。Fleetfoot 仍用原生移动属性，但物理客户端 `FOVModifier` 只除去该固定 UUID 的倍率，从而不影响弓、飞行等其余 FOV 修正。Night Vision 改由服务器续期两 tick、无粒子的原版效果，不改世界光照，也不清除较长的外部夜视效果。FarmlandTrampleEvent 在两侧取消，防止预测端先将耕地/植物破坏。
+攻击速度和交互距离仅由逻辑服务端的非持久 AttributeModifier 写入。Attack Speed I--IV 用 operation 2 将冷却间隔固定为原本 80/60/40/20%，V 用高于一游戏 tick 阈值的 attack-speed modifier 保证连续攻击已充能；Range 用 Forge 1.12.2 原生 `EntityPlayer.REACH_DISTANCE`，所以客户端目标选取和服务端距离验证使用同一属性。Fleetfoot 仍用原生移动属性，物理客户端 `FOVModifier` 只除去该固定 UUID 的倍率，从而不影响弓、飞行等其余 FOV 修正。Night Vision 改由物理客户端可恢复临时 gamma 实现短时视觉窗口，不创建药水效果或改世界光照。FarmlandTrampleEvent 在两侧取消，防止预测端先将耕地/植物破坏。
 
 Reforged 对有右输入的修理、合并和附魔书操作通过 `AnvilUpdateEvent` 以纯 `AnvilFirstUseRules` 生成首次费用输出，左右输入 NBT 永不改写；Forge 对纯改名不发此事件，故在已有原版输出时仅校正 `ContainerRepair` 的显示费用和输出 RepairCost。极端纯改名若原版已因 `>=40` 完全清空输出，无法从 Forge 公开事件安全恢复名称，保持原版拒绝。Harvest 剪毛先记录服务端原版交互，再在同 tick 确认羊已剪毛或哞菇已变形后追加奖励，避免失败交互复制掉落。束锋诅咒在 `AttackEntityEvent` 后、原版横扫判定前只改变横扫资格边界，不改直击结果。
 
@@ -427,3 +427,13 @@ Reforged 对有右输入的修理、合并和附魔书操作通过 `AnvilUpdateE
 原因：村庄身份的宽范围同时服务于旧版 `VillageCollection` 观察和交通站去重，不应因实体活动区缩小而改变；站点已是受保护、持久且安全的返还位置。交还命名牌给 1.12.2 原版路径可保留显示名校验、物品消耗和 `CustomName` 持久化，避免复制物品交互。按公式与最低值同步缩小费用，确保客户端展示和全部服务端接入/旅行结算一致。
 
 兼容性与影响：无 registry、Packet、NBT key、WorldSavedData 或 Capability 迁移。已加载商人立即使用新位置规则；旧实体的村庄中心/站点 NBT 仍有效。费用不持久化，已解锁节点保留而下一次旅行或接入直接使用新价格。
+
+## DEC-052 背包行情提示、附魔穿戴边界与旅行费回调（2026-09-05）
+
+决定：行情书在价格头部显示 `MarketCommodity.basePrice`，并为新增文字行向下移动昨日价、趋势和图表起点。原版 `ItemTooltipEvent` 路径中的可出售 ItemStack 通过追加 Packet 7（C2S 有界 commodity key）与 Packet 8（S2C key、市场日、当前价）显示今日收购价；服务端在主线程只接受 `MarketCatalog` 中的合法出售 key，再由 `MarketService` 读取并回复冻结价格。客户端仅接受与本地 `worldTime / 24000` 相同市场日的瞬态缓存，缺失条目每秒最多请求一次。
+
+疾步的稳定 registry ID 不变但准确白名单和装备槽改为护腿；它只由服务端非持久移动属性修饰符直接改变移速，客户端 `FOVModifier` 监听器仅抵消疾步固定 UUID 的速度项，因此不会改变 POV，同时保留弓、飞行和其他原版视角变化。夜视改由 `ClientNightVisionRenderHandler` 在物理客户端以可恢复临时 gamma 实现首次 200 tick、之后每 100 tick 续 200 tick，不创建药水效果；取下头盔或断开连接立即恢复原始 gamma。范围仍复用 Forge 1.12.2 `EntityPlayer.REACH_DISTANCE`，数值改为每级 +1.5；Forge 对该属性已同时用于客户端射线选取和服务器 `processUseEntity` 的实体距离门槛，无需也不能添加客户端权威攻击包。旅行费用精确改为旧值的四倍，采用 `round20(160 + 0.48D)`；接入费保持 `round10(400 + 1.20D)`。
+
+原因：背包 Tooltip 不能从本地目录推断随机市场的今日价格；此前对界面类型、实体实例和库存槽位的额外限制，以及在悬停槽位选中前运行的 `DrawScreenEvent.Post` 兜底，都会让实际悬停请求或显示无法命中，因此只保留合法出售 key 校验并直接修改 `ItemTooltipEvent` 列表，显示价格仍完全来自服务器冻结快照。图表需要为第四条价格文本预留独立垂直间隔。使用原生可同步属性能让攻击与交互保持相同的服务器权威距离规则；1.12.2 原版会从移动属性自动计算 FOV，因此保留客户端监听器抵消疾步项，才能在直接提速的同时不改变 POV。临时 gamma 让夜视保持客户端本地且不污染玩家药水状态。
+
+兼容性与影响：Packet 7/8 为追加 discriminator，0～6 的编码不变；没有 WorldSavedData、Capability、Tile NBT 或 registry 迁移。旧疾步靴子 NBT 可正常保留但不再有效，护腿需按当前附魔规则获得。前往费不持久化，下一次旅行立即按四倍曲线结算。

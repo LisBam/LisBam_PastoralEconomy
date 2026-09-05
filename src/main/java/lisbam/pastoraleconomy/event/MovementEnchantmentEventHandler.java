@@ -51,9 +51,10 @@ public final class MovementEnchantmentEventHandler {
             return;
         }
         EntityPlayer player = event.player;
+        ItemStack leggings = player.getItemStackFromSlot(EntityEquipmentSlot.LEGS);
+        int fleetfootLevel = ModEnchantments.isLeggings(leggings)
+                ? EnchantmentHelper.getEnchantmentLevel(ModEnchantments.FLEETFOOT, leggings) : 0;
         ItemStack boots = player.getItemStackFromSlot(EntityEquipmentSlot.FEET);
-        int fleetfootLevel = ModEnchantments.isBoots(boots)
-                ? EnchantmentHelper.getEnchantmentLevel(ModEnchantments.FLEETFOOT, boots) : 0;
         int farmlandWalkerLevel = ModEnchantments.isBoots(boots)
                 ? EnchantmentHelper.getEnchantmentLevel(ModEnchantments.FARMLAND_WALKER, boots) : 0;
         boolean groundTravel = player.onGround && !player.isRiding() && !player.capabilities.isFlying;
