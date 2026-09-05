@@ -1,12 +1,22 @@
 # 当前状态
 
-当前完成批次：第 15 批。
+当前发行版本：`1.5`；既有第 15 批功能完成，1.5 为维护更新。
 
 最近成功构建：
 
-- `env JAVA_HOME=/tmp/lbpe-jdk8 PATH=/tmp/lbpe-jdk8/bin:$PATH ./gradlew processResources build`
+- `env JAVA_HOME=/tmp/lbpe-jdk8 PATH="/tmp/lbpe-jdk8/bin:$PATH" ./gradlew build --console=plain`
 - 日期：2026-09-05
-- 结果：PASS（Forge 14.23.5.2859 / Temurin Java 8 `1.8.0_504`；`build` 包含 `test`、`reobfJar` 与 `exportReleaseJar`。`release/LisBam_PastoralEconomy-1.0.jar` 为 364,651 bytes，SHA-256 `b88b3d48a83cdace34d0e4a2ff3ebebbd24d8de45c04ea64de1045821f26dd76`，`unzip -t` PASS。）
+- 结果：PASS（Forge 14.23.5.2859 / Temurin Java 8 `1.8.0_504`；`build` 包含 `test`、`reobfJar` 与 `exportReleaseJar`。`release/LisBam_PastoralEconomy-1.5.jar` 为 380,939 bytes，SHA-256 `4b04ab6e26af899364ac5dcdfa5d0da0802b48f772941d60c9b2e289e8ffd415`，`unzip -t` PASS。）
+
+## 维护：1.5 附魔修复与扩展（2026-09-05）
+
+实现：捷足保留服务器移动加成，并由物理客户端 FOV 钩子精确抵消自身速度倍率，故不再出现速度药水式视野拉伸。夜视改为服务器续期的两 tick、无粒子原版效果。耕地行者中文名改为“耕地行者”，两侧取消 `FarmlandTrampleEvent`，玩家跳跃、落地和移动均不会把耕地变回泥土或破坏其上的作物。
+
+新增攻速 I--V、范围 I--V、百炼如新 I、束锋诅咒 I；前两者分别按攻击间隔 80/60/40/20/0% 与交互距离 +1～+5 格实现，百炼如新以临时铁砧输出忽略先前工作惩罚，束锋诅咒为不进附魔台且与横扫之刃互斥的剑用宝藏诅咒。范围和丰收扩展到剪刀；丰收剪羊/剪哞菇仅在原版成功后补发 `Binomial(2L, 4/7)` 的同类掉落。商人目录加入四种书与冻结等级权重/价格，双语和拼音搜索同步更新。
+
+兼容性与影响：旧八种附魔的 registry ID、已有物品 NBT、Packet、Capability、`PastoralWorldData` 和既有商品 key 不变；新增四个附魔 ID 与 merchant market key 为追加式变化，旧世界自然在后续商人商品生成时纳入新书。百炼如新不改写铁砧输入 NBT；极端纯改名若原版已因“过于昂贵”不产生输出，仍保持原版拒绝。
+
+验证：JDK 8 下 `compileJava`、`processResources`、`compileTestJava`、`enchantmentSelfTest`、`merchantCatalogSelfTest`、`pinyinSearchSelfTest` 与最终 `build` 全部 PASS。严格 Forge audit 为 0 ERROR、5 条既有 packet-thread 保守 WARNING；release JAR 如上。游戏内附魔台、FOV、夜视、踩踏、铁砧、剪毛和 Dedicated Server 为 NOT RUN，需可进入实际世界的环境。
 
 ## 维护：商人交易快照与行情书拼音检索（2026-09-05）
 

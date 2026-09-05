@@ -407,3 +407,15 @@
 原因：购买栏由 10 项缩减为 8 项后，服务端已经按 8 项写出快照，但客户端仍尝试读取 10 项，导致整个解码失败，交易 GUI 的所有槽位都退回“后续内容”占位。拼音搜索只影响本地目录筛选，使用运行时外部库或服务端查询既无必要，也会扩大客户端/网络边界；逐字缓存可避免每次渲染/输入都重新转换目录名称。
 
 兼容性与影响：Packet discriminator、字段顺序、NBT、WorldSavedData、registry ID 和交易/市场权威规则均不变；仅当前协议长度随既有 8 槽常量正确读取，旧客户端不能与新服务端混用。拼音匹配不会改变商品 key、价格、缓存请求、背包或服务端交易结果；缺少字典读音的资源包自定义汉字仍可按原始名称或 key 搜索。
+
+## DEC-050 1.5 附魔修复与工具交互边界（2026-09-05）
+
+决定：保留既有八个附魔 registry ID、NBT 写法与市场 key，不迁移旧物品；新增稳定 ID `attack_speed`、`range`、`reforged`、`bluntness_curse`。Attack Speed、Range、Reforged 的常规武器/工具范围固定为 Java 1.12.2 原版剑、斧、镐、锹、锄，Range 额外允许剪刀；Harvest 同时允许锄和剪刀。Bluntness Curse 是带 `isTreasureEnchantment`/`isCurse` 标记、明确拒绝附魔台的剑用附魔，并与 Sweeping Edge 互斥。商人书池将四种新书作为稳定商品键加入，攻速/范围等级权重冻结为 40/28/17/10/5，价格分别为 50k/80k/120k/180k/250k 与 60k/100k/150k/210k/280k；百炼如新与束锋诅咒固定为 120k/20k。
+
+攻击速度和交互距离仅由逻辑服务端的非持久 AttributeModifier 写入。Attack Speed I--IV 用 operation 2 将冷却间隔固定为原本 80/60/40/20%，V 用高于一游戏 tick 阈值的 attack-speed modifier 保证连续攻击已充能；Range 用 Forge 1.12.2 原生 `EntityPlayer.REACH_DISTANCE`，所以客户端目标选取和服务端距离验证使用同一属性。Fleetfoot 仍用原生移动属性，但物理客户端 `FOVModifier` 只除去该固定 UUID 的倍率，从而不影响弓、飞行等其余 FOV 修正。Night Vision 改由服务器续期两 tick、无粒子的原版效果，不改世界光照，也不清除较长的外部夜视效果。FarmlandTrampleEvent 在两侧取消，防止预测端先将耕地/植物破坏。
+
+Reforged 对有右输入的修理、合并和附魔书操作通过 `AnvilUpdateEvent` 以纯 `AnvilFirstUseRules` 生成首次费用输出，左右输入 NBT 永不改写；Forge 对纯改名不发此事件，故在已有原版输出时仅校正 `ContainerRepair` 的显示费用和输出 RepairCost。极端纯改名若原版已因 `>=40` 完全清空输出，无法从 Forge 公开事件安全恢复名称，保持原版拒绝。Harvest 剪毛先记录服务端原版交互，再在同 tick 确认羊已剪毛或哞菇已变形后追加奖励，避免失败交互复制掉落。束锋诅咒在 `AttackEntityEvent` 后、原版横扫判定前只改变横扫资格边界，不改直击结果。
+
+原因：移动药水式 FOV、客户端 gamma 和仅服务端踩踏拦截都只覆盖了视觉/事件链的一部分；依赖 Forge 的属性、原版状态效果和可取消踩踏事件能同时保持多人服务端权威与 1.12.2 原版行为。铁砧规则若直接改背包输入的 `RepairCost` 会永久篡改物品 NBT，故只创建当前输出。剪毛没有可用的后置掉落事件，必须以原版实际结果为条件。
+
+兼容性与影响：新增四个 registry ID 和商人 market key 是追加式变化；现有附魔物品、`PastoralWorldData`、Player Capability、Tile NBT、Packet discriminator 和已有商品 key 均不变。旧存档第一次生成商人新一天出售栏时自然可抽到新增书；不要求数据迁移。百炼如新不修改输入 NBT；普通改名的原版“过于昂贵”空输出是唯一明确保留的边界。

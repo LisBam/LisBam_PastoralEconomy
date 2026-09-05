@@ -2,15 +2,17 @@ package lisbam.pastoraleconomy.enchantment;
 
 import lisbam.pastoraleconomy.agriculture.AgricultureRules;
 import net.minecraft.enchantment.Enchantment;
+import net.minecraft.enchantment.EnchantmentData;
 import net.minecraft.enchantment.Enchantment.Rarity;
 import net.minecraft.init.Bootstrap;
 import net.minecraft.init.Enchantments;
 import net.minecraft.init.Items;
 import net.minecraft.item.ItemStack;
+import net.minecraft.item.ItemEnchantedBook;
 
 import java.util.Random;
 
-/** Standalone deterministic checks for the frozen batch 06/07 definitions. */
+/** Standalone deterministic checks for all registered pastoral enchantments. */
 public final class EnchantmentSelfTest {
     private EnchantmentSelfTest() {
     }
@@ -18,19 +20,39 @@ public final class EnchantmentSelfTest {
     public static void main(String[] args) {
         Bootstrap.register();
         verifyDefinitions();
+        verifyReforgedAnvilRule();
         verifyHarvestFormulas();
         verifyProbabilityThresholds();
     }
 
+    private static void verifyReforgedAnvilRule() {
+        ItemStack left = new ItemStack(Items.DIAMOND_SWORD);
+        left.setRepairCost(31);
+        ItemStack right = new ItemStack(Items.ENCHANTED_BOOK);
+        right.setRepairCost(15);
+        ItemEnchantedBook.addEnchantment(right, new EnchantmentData(Enchantments.UNBREAKING, 1));
+
+        AnvilFirstUseRules.Result result = AnvilFirstUseRules.createResult(left, right, null);
+        require(result != null, "Reforged must produce an ordinary first-use result despite prior-work costs");
+        require(result.getCost() == 1, "Reforged must charge the first-use book cost");
+        require(result.getOutput().getRepairCost() == 1, "Reforged output must restart at first-use repair cost");
+        require(left.getRepairCost() == 31 && right.getRepairCost() == 15,
+                "Reforged must not mutate either anvil input's persistent NBT");
+    }
+
     private static void verifyDefinitions() {
         Enchantment[] all = ModEnchantments.getAll();
-        require(all.length == 8, "exactly eight formal enchantments must be registered");
+        require(all.length == 12, "exactly twelve formal enchantments must be registered");
         for (Enchantment enchantment : all) {
-            require(enchantment.getRarity() == Rarity.RARE, "all batch enchantments must be rare");
-            require(!enchantment.isTreasureEnchantment() && !enchantment.isCurse(),
-                    "all batch enchantments must be normal non-curse entries");
             require(enchantment.isAllowedOnBooks(), "all batch enchantments must allow enchanted books");
         }
+        require(ModEnchantments.ATTACK_SPEED.getRarity() == Rarity.RARE, "Attack Speed rarity");
+        require(ModEnchantments.RANGE.getRarity() == Rarity.RARE, "Range rarity");
+        require(ModEnchantments.REFORGED.getRarity() == Rarity.RARE, "Reforged Mending rarity");
+        require(ModEnchantments.BLUNTNESS_CURSE.getRarity() == Rarity.VERY_RARE
+                        && ModEnchantments.BLUNTNESS_CURSE.isTreasureEnchantment()
+                        && ModEnchantments.BLUNTNESS_CURSE.isCurse(),
+                "Bluntness Curse must be a treasure curse");
         require(ModEnchantments.HARVEST.getMaxLevel() == 3, "Harvest maximum level");
         require(ModEnchantments.FARMLAND_WALKER.getMaxLevel() == 3, "Farmland Walker maximum level");
         require(ModEnchantments.PASTORAL_FAVOR.getMaxLevel() == 4, "Pastoral Favor maximum level");
@@ -39,10 +61,16 @@ public final class EnchantmentSelfTest {
         require(ModEnchantments.SLAUGHTER.getMaxLevel() == 3, "Slaughter maximum level");
         require(ModEnchantments.FLEETFOOT.getMaxLevel() == 4, "Fleetfoot maximum level");
         require(ModEnchantments.NIGHT_VISION.getMaxLevel() == 1, "Night Vision maximum level");
+        require(ModEnchantments.ATTACK_SPEED.getMaxLevel() == 5, "Attack Speed maximum level");
+        require(ModEnchantments.RANGE.getMaxLevel() == 5, "Range maximum level");
+        require(ModEnchantments.REFORGED.getMaxLevel() == 1, "Reforged maximum level");
+        require(ModEnchantments.BLUNTNESS_CURSE.getMaxLevel() == 1, "Bluntness Curse maximum level");
         require(ModEnchantments.HARVEST.canApplyAtEnchantingTable(new ItemStack(Items.DIAMOND_HOE)),
                 "Harvest must apply to a vanilla hoe");
         require(!ModEnchantments.HARVEST.canApplyAtEnchantingTable(new ItemStack(Items.DIAMOND_AXE)),
                 "Harvest must reject a non-hoe");
+        require(ModEnchantments.HARVEST.canApplyAtEnchantingTable(new ItemStack(Items.SHEARS)),
+                "Harvest must apply to shears");
         require(ModEnchantments.SLAUGHTER.canApplyAtEnchantingTable(new ItemStack(Items.DIAMOND_SWORD)),
                 "Slaughter must apply to a sword");
         require(ModEnchantments.SLAUGHTER.canApplyAtEnchantingTable(new ItemStack(Items.DIAMOND_AXE)),
@@ -57,6 +85,24 @@ public final class EnchantmentSelfTest {
                 "Slaughter must reject Looting");
         require(!ModEnchantments.HARVEST.isCompatibleWith(Enchantments.FORTUNE),
                 "Harvest must reject Fortune");
+        require(ModEnchantments.ATTACK_SPEED.canApplyAtEnchantingTable(new ItemStack(Items.DIAMOND_SWORD)),
+                "Attack Speed must apply to weapons");
+        require(ModEnchantments.ATTACK_SPEED.canApplyAtEnchantingTable(new ItemStack(Items.DIAMOND_PICKAXE)),
+                "Attack Speed must apply to tools");
+        require(ModEnchantments.RANGE.canApplyAtEnchantingTable(new ItemStack(Items.SHEARS)),
+                "Range must apply to shears");
+        require(!ModEnchantments.ATTACK_SPEED.canApplyAtEnchantingTable(new ItemStack(Items.SHEARS)),
+                "Attack Speed must not extend beyond the stated shears enchantment list");
+        require(ModEnchantments.REFORGED.canApplyAtEnchantingTable(new ItemStack(Items.DIAMOND_AXE)),
+                "Reforged must apply to tools");
+        require(!ModEnchantments.REFORGED.canApplyAtEnchantingTable(new ItemStack(Items.SHEARS)),
+                "Reforged must not extend beyond the stated shears enchantment list");
+        require(ModEnchantments.BLUNTNESS_CURSE.canApply(new ItemStack(Items.DIAMOND_SWORD)),
+                "Bluntness Curse item scope must be swords");
+        require(!ModEnchantments.BLUNTNESS_CURSE.canApplyAtEnchantingTable(new ItemStack(Items.DIAMOND_SWORD)),
+                "Bluntness Curse must stay out of enchanting-table rolls");
+        require(!ModEnchantments.BLUNTNESS_CURSE.isCompatibleWith(Enchantments.SWEEPING),
+                "Bluntness Curse must reject Sweeping Edge");
     }
 
     private static void verifyHarvestFormulas() {
@@ -87,6 +133,8 @@ public final class EnchantmentSelfTest {
 
         require(AgricultureRules.createHarvestBonus(AgricultureRules.Crop.PUMPKIN, 3,
                 new FixedRandom()).isEmpty(), "pumpkins must receive no Harvest bonus");
+        require(AgricultureRules.rollShearingHarvestBonus(2, new FixedRandom(0, 4, 1, 6)) == 2,
+                "shearing Harvest must use two 4/7 trials per level");
     }
 
     private static void verifyProbabilityThresholds() {

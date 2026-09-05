@@ -285,3 +285,15 @@
 - [ ] 游戏内：金闪闪的骨粉在每类原版作物中心完全成熟、外围作物各一次骨粉、草方块/花 5×5 自然生成、创造模式不消耗、无效目标不消耗；320×240 与常规缩放下确认层无文字重影且“我的节点”不被按钮遮挡。NOT RUN：当前环境无法创建可操作 Forge 客户端窗口。
 - [ ] 游戏内：在 320x240、常规 GUI Scale 和高分辨率下验证所有四种 GUI 的文字、按钮、滚动、物品 Tooltip、蟹笼点击/Shift-click、无虚假顶部格子、商人余额/背包不足深色禁用态和当前页签禁用、交通费用与余额暗置，以及商人连续切换后的默认页。NOT RUN：当前环境无法创建可操作的 Forge 客户端窗口。
 - [ ] 游戏内：交通方块物品/方块名精确为“交通方块”、两种交通站显示简约石质罗盘贴图、蟹笼显示简约木框铁栅贴图、行情书为绿皮书，且蟹笼新配方正确；传送、重进和 Chunk unload/reload 后没有短暂重复商人。NOT RUN：当前环境无法创建可操作的 Forge 客户端窗口。
+
+## 1.5 附魔维护回归
+
+- [x] Temurin Java 8 `1.8.0_504`：`compileJava`、`processResources`、`compileTestJava`、`enchantmentSelfTest`、`merchantCatalogSelfTest`、`pinyinSearchSelfTest` 和最终 `build`（含 `reobfJar`、`exportReleaseJar`）均 PASS（2026-09-05）。
+- [x] `enchantmentSelfTest`：十二个定义的等级、装备范围、束锋诅咒的宝藏/诅咒/附魔台排除/横扫互斥、剪刀 Harvest/Range 白名单、攻速/百炼如新不进入剪刀白名单、剪毛增产随机式及百炼如新的首次费用/输入 NBT 不变。PASS。
+- [x] `merchantCatalogSelfTest`：珍宝书池共 37 个等级商品，新增攻速、范围、百炼如新、束锋诅咒的等级边界、权重、价格和实际附魔书 NBT。PASS；`pinyinSearchSelfTest` 同时覆盖“耕地行者”和“百炼如新”。PASS。
+- [x] Forge 1.12.2 strict audit：0 ERROR；5 条既有 `packet-thread` 保守 WARNING 已复核为通用网络注册/Proxy 主线程桥接，新增附魔逻辑不使用网络包。PASS。
+- [x] Release：`release/LisBam_PastoralEconomy-1.5.jar` 非空（380,939 bytes），SHA-256 `4b04ab6e26af899364ac5dcdfa5d0da0802b48f772941d60c9b2e289e8ffd415`，`unzip -t` PASS。
+- [ ] 游戏内单人/多人：捷足 I--IV 不改变 FOV，夜视头盔实际明亮且摘下恢复，耕地行者跳跃/落地不伤耕地或作物。NOT RUN：当前环境无法创建可操作 Forge 客户端/世界。
+- [ ] 游戏内：攻速 I--V 冷却、范围 I--V 客户端选取与服务器攻击/方块/实体距离、束锋诅咒无横扫且直击正常、与横扫之刃的铁砧拒绝。NOT RUN：需要可运行客户端和 Dedicated Server。
+- [ ] 游戏内：百炼如新的修理、装备合并、附魔书、普通改名与 `>=40` 极端改名；确认左右输入不变、输出费用正确。NOT RUN：需要实际铁砧界面。
+- [ ] 游戏内：剪刀在附魔台的效率/耐久/丰收/范围候选；经验修补/消失诅咒书应用；羊和哞菇成功剪毛的额外掉落、已剪羊/失败交互不补发。NOT RUN：需要实际世界。

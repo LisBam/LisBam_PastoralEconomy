@@ -1,0 +1,94 @@
+package lisbam.pastoraleconomy.event;
+
+import lisbam.pastoraleconomy.LisBamPastoralEconomy;
+import lisbam.pastoraleconomy.enchantment.ModEnchantments;
+import net.minecraft.enchantment.EnchantmentHelper;
+import net.minecraft.entity.SharedMonsterAttributes;
+import net.minecraft.entity.ai.attributes.AttributeModifier;
+import net.minecraft.entity.ai.attributes.IAttributeInstance;
+import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.init.MobEffects;
+import net.minecraft.inventory.EntityEquipmentSlot;
+import net.minecraft.item.ItemStack;
+import net.minecraft.potion.PotionEffect;
+import net.minecraftforge.fml.common.Mod;
+import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
+import net.minecraftforge.fml.common.gameevent.TickEvent;
+
+import java.util.UUID;
+
+/** Server-owned held-tool attributes and the native Night Vision effect. */
+@Mod.EventBusSubscriber(modid = LisBamPastoralEconomy.MODID)
+public final class ToolEnchantmentEventHandler {
+    private static final UUID ATTACK_SPEED_ID = UUID.fromString("5098d917-bb85-4b09-a7da-7678c4bdc2dd");
+    private static final UUID RANGE_ID = UUID.fromString("ca26a30c-1a0e-4277-a7c6-b6d1d5b969c0");
+    private static final int INSTANT_ATTACK_SPEED_AMOUNT = 1024;
+
+    private ToolEnchantmentEventHandler() {
+    }
+
+    @SubscribeEvent
+    public static void updateToolEnchantments(TickEvent.PlayerTickEvent event) {
+        if (event.phase != TickEvent.Phase.END || event.player.world.isRemote) {
+            return;
+        }
+        EntityPlayer player = event.player;
+        ItemStack held = player.getHeldItemMainhand();
+        int attackSpeedLevel = ModEnchantments.isWeaponOrTool(held)
+                ? EnchantmentHelper.getEnchantmentLevel(ModEnchantments.ATTACK_SPEED, held) : 0;
+        int rangeLevel = ModEnchantments.isRangeItem(held)
+                ? EnchantmentHelper.getEnchantmentLevel(ModEnchantments.RANGE, held) : 0;
+
+        updateAttackSpeed(player, attackSpeedLevel);
+        setModifier(player.getEntityAttribute(EntityPlayer.REACH_DISTANCE), RANGE_ID, "LisBam Range",
+                rangeLevel > 0, rangeLevel, 0);
+        grantNightVision(player);
+    }
+
+    private static void updateAttackSpeed(EntityPlayer player, int level) {
+        IAttributeInstance attribute = player.getEntityAttribute(SharedMonsterAttributes.ATTACK_SPEED);
+        if (level <= 0) {
+            setModifier(attribute, ATTACK_SPEED_ID, "LisBam Attack Speed", false, 0.0D, 0);
+            return;
+        }
+        if (level >= ModEnchantments.ATTACK_SPEED.getMaxLevel()) {
+            // 1.12.2 cooldown uses ticks. This is far above the one-tick
+            // threshold, so even an immediately repeated attack is charged.
+            setModifier(attribute, ATTACK_SPEED_ID, "LisBam Attack Speed", true,
+                    INSTANT_ATTACK_SPEED_AMOUNT, 0);
+            return;
+        }
+        double speedMultiplier = 1.0D / (1.0D - level * 0.20D);
+        setModifier(attribute, ATTACK_SPEED_ID, "LisBam Attack Speed", true,
+                speedMultiplier - 1.0D, 2);
+    }
+
+    private static void grantNightVision(EntityPlayer player) {
+        ItemStack helmet = player.getItemStackFromSlot(EntityEquipmentSlot.HEAD);
+        if (!ModEnchantments.isHelmet(helmet)
+                || EnchantmentHelper.getEnchantmentLevel(ModEnchantments.NIGHT_VISION, helmet) <= 0) {
+            return;
+        }
+        // The short hidden effect renews server-side. Removing the helmet lets
+        // it expire immediately without deleting a longer external potion.
+        player.addPotionEffect(new PotionEffect(MobEffects.NIGHT_VISION, 2, 0, true, false));
+    }
+
+    private static void setModifier(IAttributeInstance attribute, UUID id, String name,
+                                    boolean shouldApply, double amount, int operation) {
+        AttributeModifier existing = attribute.getModifier(id);
+        if (!shouldApply) {
+            if (existing != null) {
+                attribute.removeModifier(existing);
+            }
+            return;
+        }
+        if (existing != null && existing.getAmount() == amount && existing.getOperation() == operation) {
+            return;
+        }
+        if (existing != null) {
+            attribute.removeModifier(existing);
+        }
+        attribute.applyModifier(new AttributeModifier(id, name, amount, operation).setSaved(false));
+    }
+}

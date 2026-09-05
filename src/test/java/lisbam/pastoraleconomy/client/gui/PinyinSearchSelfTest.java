@@ -10,7 +10,8 @@ public final class PinyinSearchSelfTest {
         check(PinyinSearch.matches("小麦", "xiaomai"), "full pinyin search");
         check(PinyinSearch.matches("小麦", "xm"), "initial pinyin search");
         check(PinyinSearch.matches("附魔书", "fumoshu"), "enchanted book full pinyin search");
-        check(PinyinSearch.matches("护田行者", "htxz"), "contextual xing initial search");
+        check(PinyinSearch.matches("耕地行者", "gdxz"), "farmland walker initial search");
+        check(PinyinSearch.matches("百炼如新", "blrx"), "new enchantment initial search");
         check(PinyinSearch.matches("绿宝石", "lvbaoshi"), "umlaut pinyin normalization");
         check(PinyinSearch.matches("绿宝石", "lübs"), "umlaut initial pinyin normalization");
         check(!PinyinSearch.matches("小麦", "zuanshi"), "unrelated pinyin must not match");
