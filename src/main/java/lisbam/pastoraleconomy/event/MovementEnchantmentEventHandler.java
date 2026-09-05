@@ -57,12 +57,16 @@ public final class MovementEnchantmentEventHandler {
         ItemStack boots = player.getItemStackFromSlot(EntityEquipmentSlot.FEET);
         int farmlandWalkerLevel = ModEnchantments.isBoots(boots)
                 ? EnchantmentHelper.getEnchantmentLevel(ModEnchantments.FARMLAND_WALKER, boots) : 0;
+        // Keep Fleetfoot's modifier stable through jumps. Removing it on the
+        // airborne tick creates a client attribute-sync window that vanilla
+        // turns into a one-frame FOV change.
+        boolean fleetfootActive = fleetfootLevel > 0;
         boolean groundTravel = player.onGround && !player.isRiding() && !player.capabilities.isFlying;
         boolean onFarmland = groundTravel
                 && player.world.getBlockState(player.getPosition().down()).getBlock() == Blocks.FARMLAND;
 
         IAttributeInstance movement = player.getEntityAttribute(SharedMonsterAttributes.MOVEMENT_SPEED);
-        setModifier(movement, FLEETFOOT_ID, "LisBam Fleetfoot", groundTravel && fleetfootLevel > 0,
+        setModifier(movement, FLEETFOOT_ID, "LisBam Fleetfoot", fleetfootActive,
                 fleetfootLevel * 0.20D);
         double walkerAmount = farmlandWalkerLevel == 2 ? 0.20D : farmlandWalkerLevel >= 3 ? 0.35D : 0.0D;
         setModifier(movement, FARMLAND_WALKER_ID, "LisBam Farmland Walker", onFarmland && walkerAmount > 0.0D,

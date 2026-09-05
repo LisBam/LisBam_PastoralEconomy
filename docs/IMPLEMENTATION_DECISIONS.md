@@ -430,9 +430,9 @@ Reforged 对有右输入的修理、合并和附魔书操作通过 `AnvilUpdateE
 
 ## DEC-052 背包行情提示、附魔穿戴边界与旅行费回调（2026-09-05）
 
-决定：行情书在价格头部显示 `MarketCommodity.basePrice`，并为新增文字行向下移动昨日价、趋势和图表起点。原版 `ItemTooltipEvent` 路径中的可出售 ItemStack 通过追加 Packet 7（C2S 有界 commodity key）与 Packet 8（S2C key、市场日、当前价）显示今日收购价；服务端在主线程只接受 `MarketCatalog` 中的合法出售 key，再由 `MarketService` 读取并回复冻结价格。客户端仅接受与本地 `worldTime / 24000` 相同市场日的瞬态缓存，缺失条目每秒最多请求一次。
+决定：行情书在价格头部显示 `MarketCommodity.basePrice`，并为新增文字行向下移动昨日价、趋势和图表起点。原版 `ItemTooltipEvent` 路径中的可出售 ItemStack 通过追加 Packet 7（C2S 有界 commodity key）与 Packet 8（S2C key、市场日、当前价）显示“今日价：xxx金币”；服务端在主线程只接受 `MarketCatalog` 中的合法出售 key，再由 `MarketService` 读取并回复冻结价格。客户端仅接受与本地 `worldTime / 24000` 相同市场日的瞬态缓存，缺失条目每秒最多请求一次。
 
-疾步的稳定 registry ID 不变但准确白名单和装备槽改为护腿；它只由服务端非持久移动属性修饰符直接改变移速，客户端 `FOVModifier` 监听器仅抵消疾步固定 UUID 的速度项，因此不会改变 POV，同时保留弓、飞行和其他原版视角变化。夜视改由 `ClientNightVisionRenderHandler` 在物理客户端以可恢复临时 gamma 实现首次 200 tick、之后每 100 tick 续 200 tick，不创建药水效果；取下头盔或断开连接立即恢复原始 gamma。范围仍复用 Forge 1.12.2 `EntityPlayer.REACH_DISTANCE`，数值改为每级 +1.5；Forge 对该属性已同时用于客户端射线选取和服务器 `processUseEntity` 的实体距离门槛，无需也不能添加客户端权威攻击包。旅行费用精确改为旧值的四倍，采用 `round20(160 + 0.48D)`；接入费保持 `round10(400 + 1.20D)`。
+疾步的稳定 registry ID 不变但准确白名单和装备槽改为护腿；它只由服务端非持久移动属性修饰符直接改变移速，修饰符在穿戴期间保持跨跳跃稳定，客户端 `FOVModifier` 监听器按去除疾步固定 UUID 后的完整属性值重算，因此穿戴和跳跃均不会改变 POV，同时保留弓、飞行和其他原版视角变化。夜视改由 `ClientNightVisionRenderHandler` 在物理客户端以可恢复临时 gamma 实现首次 200 tick、之后每 100 tick 续 200 tick，不创建药水效果；取下头盔或断开连接立即恢复原始 gamma。范围仍复用 Forge 1.12.2 `EntityPlayer.REACH_DISTANCE`，数值改为每级 +1.5；Forge 对该属性已同时用于客户端射线选取和服务器 `processUseEntity` 的实体距离门槛，无需也不能添加客户端权威攻击包。旅行费用精确改为旧值的四倍，采用 `round20(160 + 0.48D)`；接入费保持 `round10(400 + 1.20D)`。
 
 原因：背包 Tooltip 不能从本地目录推断随机市场的今日价格；此前对界面类型、实体实例和库存槽位的额外限制，以及在悬停槽位选中前运行的 `DrawScreenEvent.Post` 兜底，都会让实际悬停请求或显示无法命中，因此只保留合法出售 key 校验并直接修改 `ItemTooltipEvent` 列表，显示价格仍完全来自服务器冻结快照。图表需要为第四条价格文本预留独立垂直间隔。使用原生可同步属性能让攻击与交互保持相同的服务器权威距离规则；1.12.2 原版会从移动属性自动计算 FOV，因此保留客户端监听器抵消疾步项，才能在直接提速的同时不改变 POV。临时 gamma 让夜视保持客户端本地且不污染玩家药水状态。
 

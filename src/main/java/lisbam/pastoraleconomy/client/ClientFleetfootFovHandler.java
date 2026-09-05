@@ -35,13 +35,35 @@ public final class ClientFleetfootFovHandler {
         }
 
         // AbstractClientPlayer multiplies FOV by (speed / walkSpeed + 1) / 2.
-        // Remove only Fleetfoot's contribution so bow, flying, and other effects
-        // retain their normal vanilla FOV behavior.
-        double normalSpeed = actualSpeed / (1.0D + fleetfoot.getAmount());
+        // Recompute the attribute without this UUID instead of dividing the
+        // final value: this remains correct with other operation-0/1/2 speed
+        // modifiers and during the equipment/jump synchronization boundary.
+        double normalSpeed = getSpeedWithoutFleetfoot(movement);
         double normalTerm = (normalSpeed / walkSpeed + 1.0D) * 0.5D;
         double actualTerm = (actualSpeed / walkSpeed + 1.0D) * 0.5D;
         if (actualTerm > 0.0D) {
             event.setFOV((float) (event.getFOV() * normalTerm / actualTerm));
         }
+    }
+
+    private static double getSpeedWithoutFleetfoot(IAttributeInstance movement) {
+        double value = movement.getBaseValue();
+        for (AttributeModifier modifier : movement.getModifiersByOperation(0)) {
+            if (!MovementEnchantmentEventHandler.getFleetfootModifierId().equals(modifier.getID())) {
+                value += modifier.getAmount();
+            }
+        }
+        double operationOneBase = value;
+        for (AttributeModifier modifier : movement.getModifiersByOperation(1)) {
+            if (!MovementEnchantmentEventHandler.getFleetfootModifierId().equals(modifier.getID())) {
+                value += operationOneBase * modifier.getAmount();
+            }
+        }
+        for (AttributeModifier modifier : movement.getModifiersByOperation(2)) {
+            if (!MovementEnchantmentEventHandler.getFleetfootModifierId().equals(modifier.getID())) {
+                value *= 1.0D + modifier.getAmount();
+            }
+        }
+        return value;
     }
 }
