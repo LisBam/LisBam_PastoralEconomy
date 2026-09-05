@@ -537,6 +537,16 @@
 
 ## 第 15 批后界面维护
 
+## 维护：行情书快照与附魔书提示（2026-09-05）
+
+根因与修复：行情书曾把冷却内的选择请求放入无槽 `ContainerMarketBook`，再等待 `detectAndSendChanges` 的后续 tick；该延迟路径没有可依赖的槽位变化，导致客户端已进入“正在读取行情”却没有回包。现在 Packet 1 在既有的服务端主线程任务中直接验证打开的书本、商品和游标并返回单个有界快照。市场服务还保证最新窗口在旧存档缺失某商品历史列表时至少显示该商品已经冻结的当天价格点；`ensureMarketDay` 同时会持久补齐当天所有历史目录。
+
+购买页的附魔书不再由裸 `Items.ENCHANTED_BOOK` 图标代替。`TradeCatalog` 根据稳定 market key 找回附魔定义与等级，构造和商人实际出售完全相同的 `ItemEnchantedBook` NBT；行情书原版 Tooltip 因而显示具体附魔和等级。
+
+存档/协议影响：未更改 registry ID、Packet discriminator、Packet 字段、`PastoralWorldData` schema 或 NBT key。旧世界不需迁移；首次读取缺失的当天历史时按已有当天冻结价格补回。游戏内端到端验证仍需要可运行的 Forge 客户端。
+
+验证：`check_toolchain.py`、`compileJava`、`compileTestJava`、`marketCoreSelfTest`、`marketPacketSelfTest`、`merchantCatalogSelfTest`、`processResources` 和 `build` 均 PASS（Temurin Java 8 `1.8.0_504`）。严格 Forge audit 为 0 ERROR、5 条既有 S2C Proxy/通用注册器 `packet-thread` WARNING，均已复核。`release/LisBam_PastoralEconomy-1.0.jar` 已由 `exportReleaseJar` 实际覆盖导出、非空，`unzip -t` PASS。
+
 ## 2026-09-05 任务维护
 
 状态：市场双分页/渐进缓存、肉类收购、商人活动与刷怪蛋、创造标签和两项配置已实现。

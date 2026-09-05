@@ -175,6 +175,17 @@ public final class MarketCoreSelfTest {
         require(restored.getCropHistory(WHEAT, 12L, 100, null).size() == 5,
                 "returning to a day must deterministically rebuild without duplicate history");
 
+        NBTTagCompound missingCurrentHistories = data.writeToNBT(new NBTTagCompound());
+        missingCurrentHistories.getCompoundTag("market").setTag("cropHistories", new net.minecraft.nbt.NBTTagList());
+        PastoralWorldData repairedHistory = new PastoralWorldData();
+        repairedHistory.readFromNBT(missingCurrentHistories);
+        repairedHistory.ensureMarketDay(12L, 99L);
+        List<MarketHistoryPoint> repairedWheat = repairedHistory.getCropHistory(WHEAT, 12L, 30, null);
+        require(repairedWheat.size() == 1 && repairedWheat.get(0).getWorldDay() == 12L,
+                "a legacy frozen market without a history list must repair today's wheat point");
+        require(repairedHistory.getCropHistory("lisbam_pastoral_economy:buy/common/iron_ingot", 12L, 30, null).size() == 1,
+                "repair must also initialize purchase-page history for an older world");
+
         NBTTagCompound v6 = data.writeToNBT(new NBTTagCompound());
         v6.setInteger("dataVersion", 6);
         PastoralWorldData migratedV6 = new PastoralWorldData();

@@ -3,7 +3,6 @@ package lisbam.pastoraleconomy.network;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import lisbam.pastoraleconomy.client.ClientMarketState;
-import lisbam.pastoraleconomy.gui.ContainerMarketBook;
 import lisbam.pastoraleconomy.market.MarketHistoryPoint;
 import lisbam.pastoraleconomy.market.MarketHistorySnapshot;
 import lisbam.pastoraleconomy.network.message.RequestMarketHistoryMessage;
@@ -26,7 +25,7 @@ public final class MarketPacketSelfTest {
         verifyStaleSnapshotDoesNotReplaceNewerWindow();
         verifyBookSessionDropsLateSnapshots();
         verifyProgressivePrefetchCachesSelectableCommodities();
-        verifyBookRequestCoalescing();
+        verifyDisplayOnlyRequestsRemainIndependent();
     }
 
     private static void verifyRequestRoundTripAndBounds() {
@@ -122,19 +121,11 @@ public final class MarketPacketSelfTest {
         ClientMarketState.endBookSession();
     }
 
-    private static void verifyBookRequestCoalescing() {
-        ContainerMarketBook book = new ContainerMarketBook();
+    private static void verifyDisplayOnlyRequestsRemainIndependent() {
         RequestMarketHistoryMessage first = new RequestMarketHistoryMessage(WHEAT, -1L, 1);
-        RequestMarketHistoryMessage second = new RequestMarketHistoryMessage("lisbam_pastoral_economy:sell/crop/carrot", -1L, 2);
-        RequestMarketHistoryMessage latest = new RequestMarketHistoryMessage("lisbam_pastoral_economy:sell/crop/potato", -1L, 3);
-
-        book.queueMarketRequest(first);
-        require(book.pollMarketRequest(100L) == first, "the first open-book request must be served immediately");
-        book.queueMarketRequest(second);
-        require(book.pollMarketRequest(100L) == null, "the cooldown must defer rapid requests instead of dropping them");
-        book.queueMarketRequest(latest);
-        require(book.pollMarketRequest(101L) == null, "the latest request must remain queued until the cooldown expires");
-        require(book.pollMarketRequest(102L) == latest, "only the latest rapid crop selection must be served");
+        RequestMarketHistoryMessage second = new RequestMarketHistoryMessage(CARROT, -1L, 2);
+        require(first.isValid() && second.isValid(),
+                "each bounded display request must be eligible for immediate server-thread handling");
     }
 
     private static void verifyProgressivePrefetchCachesSelectableCommodities() {

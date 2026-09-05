@@ -2,8 +2,8 @@
 
 ## 构建
 
-- [x] `./gradlew compileJava`、`compileTestJava` — PASS（2026-09-04，Temurin Java 8 `1.8.0_504`）
-- [x] `./gradlew processResources`、`build` — PASS（2026-09-05，Temurin Java 8 `1.8.0_504`；含 `test`、`reobfJar`、`exportReleaseJar`；release JAR 356,074 bytes，SHA-256 `0a660a9d465461ce9ed0240b2ec2af31bef2b853a8789f3a16b65318851ebb33`，`unzip -t` PASS）
+- [x] `./gradlew compileJava`、`compileTestJava` — PASS（2026-09-05，Temurin Java 8 `1.8.0_504`）
+- [x] `./gradlew processResources`、`build` — PASS（2026-09-05，Temurin Java 8 `1.8.0_504`；含 `test`、`reobfJar`、`exportReleaseJar`；release JAR 已实际覆盖导出、非空，`unzip -t` PASS）
 - [x] Forge 1.12.2 static audit — 0 ERROR；5 条 `packet-thread` WARNING 已审查（通用注册不处理消息；四个 S2C Proxy 桥没有直接修改状态，客户端实际写入均调度至主线程；交通 C2S handler 调度至服务端主线程）。
 
 ## 维护：行情书目录、创造标签与村庄商人范围（2026-09-05）
@@ -11,8 +11,8 @@
 - [x] 本模组创造标签本地化键 `itemGroup.lisbam_pastoral_economy` 为“聆竹の休闲田园经济”。PASS：`processResources` 与语言文件审查。
 - [x] `marketCoreSelfTest`、`marketPacketSelfTest`：30 日市场历史、每项有界 Packet、选中窗口与独立低优先缓存窗口通过。PASS（Temurin Java 8 `1.8.0_504`）。
 - [x] `merchantCatalogSelfTest`：29 条收购商品包含七种肉类，基础单价为牛肉/猪排/羊肉 120、鸡肉/鳕鱼 80、兔肉 140、鲑鱼 100；所有商人购买目录商品标记为行情书历史商品。PASS（Temurin Java 8 `1.8.0_504`）。
-- [x] 源码审查：购买页只创建可见 3 列图标格，名称/key 搜索和滚轮按行滚动不改变服务器价格；选中请求超时 40 tick 重试，预取仍为 4 tick 一项、服务端仍为 2 tick 合并。商人出生点在 128 格圆内，实体保存村庄中心并以同一半径限制/寻路返回，越界维护解除绑定且无传送。PASS：`compileJava`。
-- [ ] 游戏内：320×240、常规和高分辨率 GUI Scale 下，购买页搜索、滚轮、快速切换、请求重试、图标 tooltip 和曲线无越界/重叠；刷怪蛋商人收编、128 格边界返航/解绑和保存重载。NOT RUN：当前环境无法创建可操作 Forge 客户端或进入 Dedicated Server 世界。
+- [x] 源码审查：购买页只创建可见 3 列图标格，名称/key 搜索和滚轮按行滚动不改变服务器价格；选中请求超时 40 tick 重试，预取仍为 4 tick 一项、每个合法服务端请求直接生成有界快照。商人出生点在 128 格圆内，实体保存村庄中心并以同一半径限制/寻路返回，越界维护解除绑定且无传送。PASS：`compileJava`。
+- [ ] 游戏内：320×240、常规和高分辨率 GUI Scale 下，购买页搜索、滚轮、快速切换、请求重试、附魔书 tooltip 的具体附魔/等级和曲线无越界/重叠；刷怪蛋商人收编、128 格边界返航/解绑和保存重载。NOT RUN：当前环境无法创建可操作 Forge 客户端或进入 Dedicated Server 世界。
 
 ## 维护：链式市场价格边界与动态回归
 
@@ -97,7 +97,7 @@
 ## 第 04 批世界日市场核心
 
 - [x] `marketCoreSelfTest`：100 次同 key/day 调用一致；同 Item/meta 买卖变体共享随机身份；8 类上下限、动态回归和边界反弹正确；小麦基础价为 50。PASS（2026-09-05）。
-- [x] 市场初始化只写当前真实世界日的 14 条作物点；苹果不进入历史。PASS：自检。
+- [x] 市场初始化与旧存档缺失 history list 修复会写入当前真实世界日的全部出售/购买历史目录；小麦和购买页铁锭都会得到当天价格点。PASS：`marketCoreSelfTest`。
 - [x] 连续 30 日只保留按世界日升序的最近 30 点；第 31 天及更早点不再提供分页或持久化。PASS：`marketCoreSelfTest`。
 - [x] 多日推进逐日承接上一日价格；连续 1,000 日后只保留最近 30 日窗口；当天重复调用不重建，NBT 重载、回拨和返回原日均不重复。PASS：`marketCoreSelfTest`。
 - [x] v6 市场读入后写为 v7，且不再写 legacy `processedDays`。PASS：`marketCoreSelfTest`。
@@ -109,14 +109,15 @@
 ## 第 05 批市场行情书与历史 GUI
 
 - [x] `market_book` 具有稳定 registry/unlocalized name；书 + 小麦使用无序 JSON 配方、输出严格为 1；模型引用本模组 `textures/items/market_book.png` 绿皮书贴图。PASS：编译、`processResources`、成品 Jar 资源检查。
-- [x] Packet 1/2 使用既有 `lb_pastoral` channel、稳定不重排的 discriminator 1/2；商品 key 限制为 128 UTF-8 bytes，历史点计数最大 30；C2S 仅接收 key/游标/请求号，服务端验证实际打开的 `ContainerMarketBook`、14 种历史作物、非负/非未来游标并调度主线程。书本首个 cursor `-1` 请求会下发全部 14 种最新窗口，切换作物不再发包；后备请求最多每 2 tick 生成一次，冷却内快速切换合并为最后一项而非静默丢弃。PASS：代码审查、Forge audit 与编译。
-- [x] S2C 快照包含当前日、商品 key、窗口游标、今日/可选昨日价、最多 30 个日/价格/真实前一点价格、前后翻页标记；客户端缓存仅在打开书本期间接收，关闭立即清空并拒绝迟到包，连接内请求号不复用。PASS：代码审查、`marketPacketSelfTest`、编译。
-- [x] `marketPacketSelfTest`：合法请求/快照可往返，129-byte key 与 31 点快照被拒绝，首个可见点保留无前日状态，较旧同窗口快照不会替换较新缓存；同一打开请求号的预取小麦/胡萝卜窗口可独立命中缓存；首个后备请求立即处理、冷却内快速切换只保留最后一项并在到期后处理。PASS。
+- [x] Packet 1/2 使用既有 `lb_pastoral` channel、稳定不重排的 discriminator 1/2；商品 key 限制为 128 UTF-8 bytes，历史点计数最大 30；C2S 仅接收 key/游标/请求号，服务端在主线程验证实际打开的 `ContainerMarketBook`、全部 historyTracked 商品和非负/非未来游标后直接生成单项快照，不依赖无槽 Container 的后续 tick。PASS：代码审查、Forge audit 与编译。
+- [x] S2C 快照包含当前日、商品 key、窗口游标、今日/可选昨日价、最多 30 个日/价格/真实前一点价格、前后翻页标记；最新窗口即使旧存档的某项历史暂缺，也至少包含已冻结的当天价格点。客户端缓存仅在打开书本期间接收，关闭立即清空并拒绝迟到包，连接内请求号不复用。PASS：代码审查、`marketCoreSelfTest`、`marketPacketSelfTest`、编译。
+- [x] `marketPacketSelfTest`：合法请求/快照可往返，129-byte key 与 31 点快照被拒绝，首个可见点保留无前日状态，较旧同窗口快照不会替换较新缓存；同一打开请求号的预取小麦/胡萝卜窗口可独立命中缓存，多个合法显示请求均保持独立可处理。PASS。
+- [x] 购买页附魔书由与商人实际输出一致的原版 `ItemEnchantedBook` NBT 构造，Tooltip 可读取附魔和精确等级；普通商品不会被误构造成附魔书。PASS：`merchantCatalogSelfTest`。
 - [x] 行情书打开/经济实际读取才经 `MarketService` 服务端惰性刷新市场；主世界 tick 不再调用市场服务。关闭书本后没有客户端市场缓存或新请求。PASS：代码审查、市场核心自检回归。
 - [x] 成品 Jar 包含 `GuiMarketBook`、Packet、行情书 Item、模型、配方、语言、`mcmod.info` 与 `pack.mcmeta`。PASS：Jar 检查。
 - [ ] 开发客户端实际进入世界后：获得物品、中文名、模型、无序配方、主/副手无限使用、默认小麦、14 项切换、今日/昨日/趋势、折线、悬停、30 天窗口、GUI Scale 和小窗口。NOT RUN：`runClient` 已实际进入 Forge/FML 与 coremod 发现，但本 WSL 环境在本模组加载/窗口创建前终止。
 - [ ] 市场按需初始化、跨日重开、v6 存档首次访问迁移、多人和主世界/下界/末地一致性。NOT RUN：需要可进入测试世界；实现路径均经服务端主世界 `WorldSavedData` 解析，且市场没有后台 tick。
-- [ ] 恶意包（无书本 Container、非法商品、负/超大/未来日期、快速切换、低于 2 tick 间隔、关书后的迟到回包）端到端。NOT RUN：需要已连接客户端；代码路径已验证 Container、边界、合并限速和会话缓存。
+- [ ] 恶意包（无书本 Container、非法商品、负/超大/未来日期、快速切换、关书后的迟到回包）端到端。NOT RUN：需要已连接客户端；代码路径已验证 Container、边界和会话缓存。
 - [ ] Dedicated Server 完整加载、玩家连接、GUI 请求和无客户端类加载错误。NOT RUN：`runServer` 已实际进入 Forge/FML Server 与 coremod 阶段，但未完成模组加载；`run/eula.txt` 保持 `false`，未接受 EULA。
 
 ## 第 06、07 批附魔农业与工具战斗

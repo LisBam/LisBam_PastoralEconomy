@@ -6,6 +6,7 @@ import lisbam.pastoraleconomy.market.MarketCommodity;
 import lisbam.pastoraleconomy.market.MarketHistoryPoint;
 import lisbam.pastoraleconomy.market.MarketHistorySnapshot;
 import lisbam.pastoraleconomy.market.MarketTrend;
+import lisbam.pastoraleconomy.merchant.TradeCatalog;
 import lisbam.pastoraleconomy.network.ModNetwork;
 import lisbam.pastoraleconomy.network.message.RequestMarketHistoryMessage;
 import net.minecraft.client.gui.GuiButton;
@@ -510,7 +511,10 @@ public final class GuiMarketBook extends GuiScreen {
 
     /** Keeps the generic wool listing readable without changing its item/meta market identity. */
     private ItemStack createCommodityDisplayStack(MarketCommodity commodity) {
-        ItemStack stack = new ItemStack(commodity.getItem(), 1, commodity.getMetadata());
+        ItemStack stack = TradeCatalog.createEnchantedBookStackForMarketKey(commodity.getKey());
+        if (stack == null) {
+            stack = new ItemStack(commodity.getItem(), 1, commodity.getMetadata());
+        }
         if (commodity.isAnyWoolColor()) {
             stack.setStackDisplayName(I18n.format("gui.lisbam_pastoral_economy.commodity.wool"));
         }
