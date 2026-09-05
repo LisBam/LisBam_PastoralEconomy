@@ -19,10 +19,19 @@ public final class ContainerMerchantTrade extends Container {
         entityId = merchant.getEntityId();
     }
 
+    /**
+     * Client-side lifecycle counterpart for Forge's OpenGui protocol. The
+     * authoritative server always uses the entity-bound constructor above.
+     */
+    public ContainerMerchantTrade(int entityId) {
+        merchantId = null;
+        this.entityId = entityId;
+    }
+
     @Override
     public boolean canInteractWith(EntityPlayer player) {
         Entity entity = player.world.getEntityByID(entityId);
-        return entity instanceof EntityMerchant && !entity.isDead
+        return merchantId != null && entity instanceof EntityMerchant && !entity.isDead
                 && merchantId.equals(((EntityMerchant) entity).getMerchantId())
                 && player.getDistanceSq(entity) <= 64.0D;
     }
@@ -45,7 +54,8 @@ public final class ContainerMerchantTrade extends Container {
         super.onContainerClosed(playerIn);
         committing = false;
         Entity entity = playerIn.world.getEntityByID(entityId);
-        if (entity instanceof EntityMerchant && merchantId.equals(((EntityMerchant) entity).getMerchantId())) {
+        if (merchantId != null && entity instanceof EntityMerchant
+                && merchantId.equals(((EntityMerchant) entity).getMerchantId())) {
             ((EntityMerchant) entity).endTrading(playerIn);
         }
     }

@@ -1,6 +1,7 @@
 package lisbam.pastoraleconomy.client.gui;
 
 import lisbam.pastoraleconomy.client.ClientTransportState;
+import lisbam.pastoraleconomy.gui.ContainerTransportStation;
 import lisbam.pastoraleconomy.network.ModNetwork;
 import lisbam.pastoraleconomy.network.message.TransportStationActionMessage;
 import lisbam.pastoraleconomy.transport.TransportAction;
@@ -8,10 +9,10 @@ import lisbam.pastoraleconomy.transport.TransportNodeView;
 import lisbam.pastoraleconomy.transport.TransportStateSnapshot;
 import lisbam.pastoraleconomy.transport.VillageTransportCandidate;
 import net.minecraft.client.gui.GuiButton;
-import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.client.gui.GuiTextField;
 import net.minecraft.client.gui.GuiYesNo;
 import net.minecraft.client.gui.GuiYesNoCallback;
+import net.minecraft.client.gui.inventory.GuiContainer;
 import net.minecraft.client.resources.I18n;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.ResourceLocation;
@@ -22,7 +23,7 @@ import java.util.List;
 import java.util.UUID;
 
 /** Responsive client-only transport view; every mutation remains a C2S request. */
-public final class GuiTransportStation extends GuiScreen implements GuiYesNoCallback {
+public final class GuiTransportStation extends GuiContainer implements GuiYesNoCallback {
     private static final int BUTTON_CONNECT = 1;
     private static final int BUTTON_REMOVE = 2;
     private static final int BUTTON_RENAME = 3;
@@ -50,11 +51,15 @@ public final class GuiTransportStation extends GuiScreen implements GuiYesNoCall
     private Layout layout;
 
     public GuiTransportStation(BlockPos stationPosition) {
+        super(new ContainerTransportStation(stationPosition));
         this.stationPosition = stationPosition.toImmutable();
     }
 
     @Override
     public void initGui() {
+        // Forge may assign the server window id immediately after this returns;
+        // install the station's dedicated client container first.
+        super.initGui();
         buttonList.clear();
         layout = Layout.create(width, height);
         buttonList.add(new GuiButton(BUTTON_CONNECT, layout.connectX, layout.actionRowOneY, layout.connectWidth, 18,
@@ -201,6 +206,17 @@ public final class GuiTransportStation extends GuiScreen implements GuiYesNoCall
         if (snapshot != null) {
             drawNodeTooltip(snapshot.getNodes(), mouseX, mouseY);
         }
+    }
+
+    /** Transport state and actions must keep ticking in integrated-server worlds. */
+    @Override
+    public boolean doesGuiPauseGame() {
+        return false;
+    }
+
+    @Override
+    protected void drawGuiContainerBackgroundLayer(float partialTicks, int mouseX, int mouseY) {
+        // This slotless container keeps the existing responsive vanilla-texture layout in drawScreen.
     }
 
     private void drawCurrentStation(TransportStateSnapshot snapshot) {
@@ -555,6 +571,11 @@ public final class GuiTransportStation extends GuiScreen implements GuiYesNoCall
                 return;
             }
             super.keyTyped(typedChar, keyCode);
+        }
+
+        @Override
+        public boolean doesGuiPauseGame() {
+            return false;
         }
     }
 

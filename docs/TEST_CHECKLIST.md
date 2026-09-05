@@ -2,12 +2,22 @@
 
 ## 构建
 
-- [x] `./gradlew compileJava`、`compileTestJava` — PASS（2026-09-05，Temurin Java 8 `1.8.0_504`）
-- [x] `./gradlew processResources`、`build` — PASS（2026-09-05，Temurin Java 8 `1.8.0_504`；含 `test`、`reobfJar`、`exportReleaseJar`；release JAR 为 396,136 bytes，`unzip -t` PASS，SHA-256 `1f1f106150703828330c65c3c5bca2bb99e153f617d17acca38e8d03ec384e6e`）
+- [x] `./gradlew compileJava`、`compileTestJava` — PASS（2026-09-06，Temurin Java 8 `1.8.0_504`）
+- [x] `./gradlew processResources`、`build` — PASS（2026-09-06，Temurin Java 8 `1.8.0_504`；含 `test`、`reobfJar`、`exportReleaseJar`；release JAR 为 406,463 bytes，`unzip -t` PASS，SHA-256 `fc2f462ea631113b77272b3edfa706550cb165d921026892402f60e96db4ad44`）
 - [x] Forge 1.12.2 static audit — 0 ERROR；6 条 `packet-thread` WARNING 已审查（通用注册不处理消息；五个 S2C Proxy 桥没有直接修改状态，客户端实际写入均调度至主线程；交通与市场 Tooltip C2S handler 调度至服务端主线程）。
 - [x] 本次 FOV/Tooltip 修复后的 `./gradlew compileJava processResources build` — PASS（Temurin Java 8 `1.8.0_504`；release JAR 已覆盖导出并通过 `unzip -t`）。
 
-## 紧急修复：自定义 GUI 的 Esc 关闭（2026-09-06）
+## 紧急修复：客户端容器窗口号与不暂停界面（2026-09-06）
+
+- [x] `modGuiInputSelfTest`：Esc 与改键后的背包键进入 `EntityPlayerSP#closeScreen`；行情书、商人和交通 GUI 均继承 `GuiContainer`，会在 Forge 分配模组窗口号前安装独立客户端 Container。PASS（Temurin Java 8 `1.8.0_504`）。
+- [x] 源码与 Forge 1.12.2 生命周期审查：三个自定义 `initGui` 首先调用 `GuiContainer#initGui`；商人/交通客户端标记构造器不具有权威 UUID且服务端工厂不使用；交通 GUI 创建不依赖客户端 TileEntity 同步先后。PASS。
+- [x] 行情书、商人、交通主界面与交通 `GuiYesNo` 确认层均为 `doesGuiPauseGame=false`；common 侧没有新增客户端类引用。PASS：源码审查、`compileJava`。
+- [x] `marketPacketSelfTest`、`merchantCatalogSelfTest`、`transportCoreSelfTest`、`transportTravelSelfTest`、`goldenBoneMealSelfTest`：相关协议、目录、交通结算和骨粉规则回归通过。PASS（Temurin Java 8 `1.8.0_504`）。
+- [x] Forge 1.12.2 strict audit：0 ERROR；6 条既有 `packet-thread` 保守 WARNING 已复核，均不是本次生命周期改动引入。PASS（2026-09-06）。
+- [x] `./gradlew compileJava processResources build --no-daemon --console=plain`：PASS（Temurin Java 8 `1.8.0_504`；含 `test`、`reobfJar`、`exportReleaseJar`）。`release/LisBam_PastoralEconomy-1.5.jar` 已覆盖导出，406,463 bytes，SHA-256 `fc2f462ea631113b77272b3edfa706550cb165d921026892402f60e96db4ad44`，`unzip -t` PASS，并包含本次 GUI/Container 类。
+- [ ] 游戏内单人/多人：依次打开行情书、商人、交通站和交通确认层；保持界面打开时确认世界、实体及服务器请求继续 tick；分别用 Esc/E 关闭后立刻拾取物品、使用普通/金闪闪骨粉、移动背包物品并完成四格合成，关闭背包时合成格物品正常返回。NOT RUN：当前环境无法创建可操作 Forge 客户端或进入 Dedicated Server 世界。
+
+## 前序修复：自定义 GUI 的 Esc 关闭（2026-09-06）
 
 - [x] `modGuiInputSelfTest`：Esc 与改键后的背包键均进入 `EntityPlayerSP#closeScreen` 路径；无关键不关闭界面。PASS（Temurin Java 8 `1.8.0_504`）。
 - [x] `marketPacketSelfTest`、`merchantCatalogSelfTest`：行情书与商人既有服务端会话/包边界回归通过。PASS（Temurin Java 8 `1.8.0_504`；商人自检有 12 条既有 Forge alternative-prefix 警告，任务成功）。

@@ -4,6 +4,7 @@ import lisbam.pastoraleconomy.client.ClientMerchantTradeState;
 import lisbam.pastoraleconomy.client.ClientMerchantTradeViewState;
 import lisbam.pastoraleconomy.client.ClientPlayerState;
 import lisbam.pastoraleconomy.entity.EntityMerchant;
+import lisbam.pastoraleconomy.gui.ContainerMerchantTrade;
 import lisbam.pastoraleconomy.market.MarketTrend;
 import lisbam.pastoraleconomy.merchant.MerchantTradeOfferView;
 import lisbam.pastoraleconomy.merchant.MerchantTradeSnapshot;
@@ -12,8 +13,8 @@ import lisbam.pastoraleconomy.merchant.TradeCatalogEntry;
 import lisbam.pastoraleconomy.network.ModNetwork;
 import lisbam.pastoraleconomy.network.message.MerchantTradeRequestMessage;
 import net.minecraft.client.gui.GuiButton;
-import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.client.gui.GuiTextField;
+import net.minecraft.client.gui.inventory.GuiContainer;
 import net.minecraft.client.resources.I18n;
 import net.minecraft.item.ItemStack;
 import net.minecraft.entity.Entity;
@@ -25,7 +26,7 @@ import org.lwjgl.input.Keyboard;
  * Compact, responsive 1.12.2 merchant screen. Quantities are display/input
  * state only; MerchantTradeService remains the sole transaction authority.
  */
-public final class GuiMerchantTrade extends GuiScreen implements GuiSlider.ISlider {
+public final class GuiMerchantTrade extends GuiContainer implements GuiSlider.ISlider {
     private static final int BUTTON_SELL_PAGE = 1;
     private static final int BUTTON_BUY_PAGE = 2;
     private static final int BUTTON_CONFIRM_OFFSET = 100;
@@ -51,11 +52,15 @@ public final class GuiMerchantTrade extends GuiScreen implements GuiSlider.ISlid
     private Layout layout;
 
     public GuiMerchantTrade(int merchantEntityId) {
+        super(new ContainerMerchantTrade(merchantEntityId));
         this.merchantEntityId = merchantEntityId;
     }
 
     @Override
     public void initGui() {
+        // Prevent Forge's OpenGui packet from assigning this window id to the
+        // player's permanent inventoryContainer.
+        super.initGui();
         buttonList.clear();
         layout = Layout.create(width, height);
         int tabWidth = (layout.panelWidth - 16) / 2;
@@ -140,6 +145,11 @@ public final class GuiMerchantTrade extends GuiScreen implements GuiSlider.ISlid
     @Override
     public boolean doesGuiPauseGame() {
         return false;
+    }
+
+    @Override
+    protected void drawGuiContainerBackgroundLayer(float partialTicks, int mouseX, int mouseY) {
+        // This slotless container keeps the existing responsive vanilla-texture layout in drawScreen.
     }
 
     @Override

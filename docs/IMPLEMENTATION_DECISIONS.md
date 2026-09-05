@@ -445,6 +445,16 @@ Reforged 对有右输入的修理、合并和附魔书操作通过 `AnvilUpdateE
 原因：Forge 1.12.2 的 `GuiScreen` 对 Esc 仅调用客户端 `Minecraft#displayGuiScreen(null)`，但上述界面打开时仍在服务端持有 `ContainerMarketBook`、`ContainerMerchantTrade` 或 `ContainerTransportStation`。若不发送 `CPacketCloseWindow`，服务端会持续根据不可见旧窗口验证后续点击和交互；无槽行情书容器会拒绝背包、合成、拾取和骨粉等正常动作，并使四格合成栏无法随背包关闭返回。`EntityPlayerSP#closeScreen` 同时发送正确 windowId 并在双方执行 Container 收尾，是唯一符合原版容器生命周期的关闭路径。
 
 兼容性与影响：不新增或修改 Packet/discriminator、registry ID、NBT、Capability、WorldSavedData、金币、库存、交易和交通费用。现有存档不需要迁移；仅修正客户端 Esc 的关闭语义。交通核心自检的数值更新不改变运行时代码或任何冻结费用。
+
+后续结论：该决定修正了关窗包，但不是异常状态的完整根因。普通 `GuiScreen` 在 Forge 客户端 `OpenGui` 分配窗口号前没有安装对应客户端 Container，导致玩家永久背包容器的窗口号先被污染；完整修复见 DEC-054。
+
+## DEC-054 服务端 GUI 必须具有匹配的客户端容器生命周期（2026-09-06）
+
+决定：只要 `ModGuiHandler#getServerGuiElement` 为一个界面返回服务端 `Container`，对应客户端界面就必须继承 `GuiContainer`、持有独立客户端 Container，并在自定义 `initGui` 开头调用 `super.initGui()`。行情书、商人和交通分别复用 `ContainerMarketBook`、`ContainerMerchantTrade`、`ContainerTransportStation` 作为双端生命周期类型；客户端构造器只保存显示所需的实体 ID 或 BlockPos，不具有服务端权威 UUID，`canInteractWith` 因而不能在客户端标记容器上通过。服务端工厂仍只调用绑定真实实体/Tile UUID 的构造器。`ClientProxy` 对已由服务端验证的交通开窗直接创建 BlockPos 标记 GUI，不再因 TileEntity 客户端同步延迟返回 `null`。这三个主界面及交通 `GuiYesNo` 确认层都明确不暂停游戏；关闭仍统一走 DEC-053 的 `EntityPlayerSP#closeScreen`。
+
+原因：Forge 1.12.2 客户端 `OpenGuiHandler` 调用本地 GUI 工厂后，会执行 `player.openContainer.windowId = msg.windowId`。只有 `GuiContainer#initGui` 会在这一步之前把 `player.openContainer` 改为该 GUI 的 `inventorySlots`。普通 `GuiScreen` 会让该赋值落到玩家永久的 `inventoryContainer`，把原版窗口 0 改成模组窗口号；关窗只切回同一对象而不重置编号，随后背包点击和四格合成包被服务端窗口校验拒绝。这也解释了为何上一轮补发 `CPacketCloseWindow` 后仍能复现。使用匹配的客户端 Container 与原版箱子/工作台生命周期一致，同时让 `GuiContainer#doesGuiPauseGame` 的不暂停语义覆盖主界面；确认层需单独覆写。
+
+兼容性与影响：不增加或重排 Packet discriminator，不修改 registry ID、NBT、Capability、WorldSavedData 或任何经济/库存状态。客户端生命周期标记不持久化且不执行权威操作，旧存档无需迁移；更新模组并重新启动客户端后即使用正确的窗口 0 状态。
 # 2026-09-05 维护决定：挤奶与调价
 
 - 成年牛的挤奶冷却归属于牛实体，而非玩家；最近一次成功挤奶 tick 写入 `Entity#getEntityData()`，因此区块卸载、重启和多人共享同一头牛时仍保持 6000 tick 冷却。`disableMilkingCooldown=false` 时，事件在客户端和服务端都取消原版桶交互：客户端只返回 `SUCCESS`、不触碰物品栏；服务端对合法成年牛执行一次完整的原版等价结算（播放挤奶音效、扣除一只空桶、手中耗尽则替换牛奶桶，否则入包，满包则掉落），结算成功后才写入实体 tick。冷却命中直接返回 `FAIL`，不扣桶、不产奶、不更新时间。开启配置后不接管交互，恢复原版 `EntityCow` 路径。这样交互包仍可正常到达服务端，但不存在客户端假牛奶桶覆盖服务端库存的窗口。
