@@ -455,6 +455,14 @@ Reforged 对有右输入的修理、合并和附魔书操作通过 `AnvilUpdateE
 原因：Forge 1.12.2 客户端 `OpenGuiHandler` 调用本地 GUI 工厂后，会执行 `player.openContainer.windowId = msg.windowId`。只有 `GuiContainer#initGui` 会在这一步之前把 `player.openContainer` 改为该 GUI 的 `inventorySlots`。普通 `GuiScreen` 会让该赋值落到玩家永久的 `inventoryContainer`，把原版窗口 0 改成模组窗口号；关窗只切回同一对象而不重置编号，随后背包点击和四格合成包被服务端窗口校验拒绝。这也解释了为何上一轮补发 `CPacketCloseWindow` 后仍能复现。使用匹配的客户端 Container 与原版箱子/工作台生命周期一致，同时让 `GuiContainer#doesGuiPauseGame` 的不暂停语义覆盖主界面；确认层需单独覆写。
 
 兼容性与影响：不增加或重排 Packet discriminator，不修改 registry ID、NBT、Capability、WorldSavedData 或任何经济/库存状态。客户端生命周期标记不持久化且不执行权威操作，旧存档无需迁移；更新模组并重新启动客户端后即使用正确的窗口 0 状态。
+## DEC-055 村庄交通方块指南针与肩部鞘翅装备边界（2026-09-06）
+
+决定：村庄交通方块指南针只读取 `PastoralWorldData.transport` 中 `VILLAGE` 类型、与玩家同维度的物理节点，按水平距离和 UUID 稳定平局选择最近目标；目标写入所持 ItemStack，客户端仅按既有原版罗盘 `angle` 模型显示，不能自主搜索、加载区块或决定世界状态。肩部装备归属既有 Player Capability v3，一个槽只接受 `Items.ELYTRA`；玩家背包容器由最小 Coremod 添加真实 Slot，客户端背景只裁取原版 `inventory.png`。Coremod 同时把胸甲槽的鞘翅合法性设为拒绝，并在客户端起飞、服务端 `START_FALL_FLYING` 与飞行持续耐久三条原版路径中以肩部鞘翅替代胸甲读取。注入 hook 固定使用 `Object` 描述符，未知布局返回原始字节码。
+
+原因：交通节点是服务器权威、跨区块持久的世界数据；把候选搜索交给客户端会让显示不一致且可能触发非预期区块访问。1.12.2 的鞘翅开始、验证和耐久分别分布在客户端玩家、NetHandlerPlayServer 和 EntityLivingBase，仅增加 GUI 槽或只修正一个条件都会导致假起飞、服务器拒绝或耐久失效。复用 `ContainerPlayer` tracked slot 才能让 Inventory 交互沿用原版 ClickWindow 同步，而原版贴图裁取满足 GUI 槽位视觉边界。
+
+兼容性与影响：新增 Item ID 和 `PlayerData.shoulder` NBT，dataVersion 2 及更早存档以空肩部读取。登录、重生和换维度时把旧胸甲鞘翅迁移到空肩部；若肩部已占用则不覆盖，改放背包，满包才掉落。没有 Packet、WorldSavedData schema、交通节点 ID 或费用变更。
+
 # 2026-09-05 维护决定：挤奶与调价
 
 - 成年牛的挤奶冷却归属于牛实体，而非玩家；最近一次成功挤奶 tick 写入 `Entity#getEntityData()`，因此区块卸载、重启和多人共享同一头牛时仍保持 6000 tick 冷却。`disableMilkingCooldown=false` 时，事件在客户端和服务端都取消原版桶交互：客户端只返回 `SUCCESS`、不触碰物品栏；服务端对合法成年牛执行一次完整的原版等价结算（播放挤奶音效、扣除一只空桶、手中耗尽则替换牛奶桶，否则入包，满包则掉落），结算成功后才写入实体 tick。冷却命中直接返回 `FAIL`，不扣桶、不产奶、不更新时间。开启配置后不接管交互，恢复原版 `EntityCow` 路径。这样交互包仍可正常到达服务端，但不存在客户端假牛奶桶覆盖服务端库存的窗口。

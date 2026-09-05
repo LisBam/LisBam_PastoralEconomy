@@ -11,6 +11,7 @@ import lisbam.pastoraleconomy.transport.TransportStationType;
 import lisbam.pastoraleconomy.transport.TransportStateSnapshot;
 import lisbam.pastoraleconomy.transport.TransportWorldState;
 import lisbam.pastoraleconomy.transport.VillageTransportCandidate;
+import lisbam.pastoraleconomy.transport.VillageTransportCompassTarget;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.util.math.BlockPos;
 
@@ -28,6 +29,7 @@ public final class TransportCoreSelfTest {
         verifyNames();
         verifyPlayerPersistence();
         verifyWorldRegistry();
+        verifyVillageCompassTarget();
         verifyPacketRoundTrip();
     }
 
@@ -127,6 +129,28 @@ public final class TransportCoreSelfTest {
                 && decoded.getSnapshot().getNearestVillage() != null
                 && decoded.getSnapshot().getNearestVillage().getStationId() == null,
                 "bounded transport sync round trip");
+    }
+
+    private static void verifyVillageCompassTarget() {
+        TransportWorldState state = new TransportWorldState();
+        UUID selfBuilt = UUID.randomUUID();
+        UUID wrongDimension = UUID.randomUUID();
+        UUID fartherVillage = UUID.randomUUID();
+        UUID nearestVillage = UUID.randomUUID();
+        state.putStation(new TransportStationRecord(selfBuilt, 0, new BlockPos(1, 64, 1),
+                TransportStationType.SELF_BUILT));
+        state.putStation(new TransportStationRecord(wrongDimension, -1, new BlockPos(0, 64, 0),
+                TransportStationType.VILLAGE));
+        state.putStation(new TransportStationRecord(fartherVillage, 0, new BlockPos(160, 5, 0),
+                TransportStationType.VILLAGE));
+        state.putStation(new TransportStationRecord(nearestVillage, 0, new BlockPos(10, 200, 0),
+                TransportStationType.VILLAGE));
+        TransportStationRecord target = VillageTransportCompassTarget.findNearest(state.getStations(), 0,
+                new BlockPos(0, 64, 0));
+        require(target != null && nearestVillage.equals(target.getStationId()),
+                "compass selects only the nearest same-dimension village station by horizontal distance");
+        require(VillageTransportCompassTarget.findNearest(state.getStations(), 1, new BlockPos(0, 64, 0)) == null,
+                "compass has no cross-dimension village target");
     }
 
     private static void require(boolean condition, String message) {

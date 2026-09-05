@@ -7,6 +7,14 @@
 - [x] Forge 1.12.2 static audit — 0 ERROR；6 条 `packet-thread` WARNING 已审查（通用注册不处理消息；五个 S2C Proxy 桥没有直接修改状态，客户端实际写入均调度至主线程；交通与市场 Tooltip C2S handler 调度至服务端主线程）。
 - [x] 本次 FOV/Tooltip 修复后的 `./gradlew compileJava processResources build` — PASS（Temurin Java 8 `1.8.0_504`；release JAR 已覆盖导出并通过 `unzip -t`）。
 
+## 维护：村庄交通方块指南针与肩部鞘翅栏（2026-09-06）
+
+- [x] `compileJava`、`processResources`、`playerDataSelfTest`、`transportCoreSelfTest`、`shoulderEquipmentSelfTest`：PASS（Temurin Java 8 `1.8.0_504`）。PlayerData 覆盖肩部鞘翅 NBT、非鞘翅拒绝和 Clone；交通自检覆盖同维度、仅村庄节点、忽略 Y 的最近目标；Coremod 自检对实际 Forge 映射类验证玩家背包肩部槽/Shift-click、客户端起飞、服务端动作验证和飞行耐久查找。
+- [x] Forge 1.12.2 strict audit：0 ERROR；6 条 `packet-thread` WARNING 均为既有网络注册/Proxy 主线程桥接，非本次引入。PNG 为 32 张非空 16×16 RGBA 帧、模型含 31 条 angle 覆盖、无序 JSON 配方解析通过 `processResources`。
+- [x] 最终 `./gradlew build --no-daemon --console=plain`：PASS（Temurin Java 8 `1.8.0_504`；含 `test`、`reobfJar`、`exportReleaseJar`）。`release/LisBam_PastoralEconomy-1.5.jar` 已由本次构建覆盖导出、非空，`unzip -t` PASS。
+- [ ] 游戏内：创造栏/配方获得指南针，主手与副手分别指向最近的同维度村庄交通站；越过最近站分界后刷新目标，在无同维度村庄站的下界/末地沿用原版随机针行为。NOT RUN：当前环境无法创建可操作 Forge 客户端。
+- [ ] 游戏内/多人：肩部槽仅收鞘翅、Shift-click 自动装备、胸甲位拒绝鞘翅，胸甲与肩部鞘翅可同时存在；双击跳跃起飞、每 20 tick 耐久、死亡/重生/重进/换维度持久化，以及旧胸甲鞘翅迁移均正确。Dedicated Server NOT RUN：未进入可接受 EULA 的测试世界。
+
 ## 紧急修复：客户端容器窗口号与不暂停界面（2026-09-06）
 
 - [x] `modGuiInputSelfTest`：Esc 与改键后的背包键进入 `EntityPlayerSP#closeScreen`；行情书、商人和交通 GUI 均继承 `GuiContainer`，会在 Forge 分配模组窗口号前安装独立客户端 Container。PASS（Temurin Java 8 `1.8.0_504`）。
