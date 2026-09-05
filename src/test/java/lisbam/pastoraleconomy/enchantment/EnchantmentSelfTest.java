@@ -1,6 +1,8 @@
 package lisbam.pastoraleconomy.enchantment;
 
 import lisbam.pastoraleconomy.agriculture.AgricultureRules;
+import lisbam.pastoraleconomy.core.EnchantingCompatibilityHooks;
+import lisbam.pastoraleconomy.core.EnchantingTableTransformer;
 import lisbam.pastoraleconomy.event.ToolEnchantmentEventHandler;
 import net.minecraft.enchantment.Enchantment;
 import net.minecraft.enchantment.EnchantmentData;
@@ -10,7 +12,21 @@ import net.minecraft.init.Enchantments;
 import net.minecraft.init.Items;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.ItemEnchantedBook;
+import net.minecraft.item.Item;
 
+import org.objectweb.asm.ClassReader;
+import org.objectweb.asm.tree.AbstractInsnNode;
+import org.objectweb.asm.tree.ClassNode;
+import org.objectweb.asm.tree.MethodInsnNode;
+import org.objectweb.asm.tree.MethodNode;
+import org.objectweb.asm.tree.TypeInsnNode;
+import org.objectweb.asm.util.CheckClassAdapter;
+
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.util.Random;
 
 /** Standalone deterministic checks for all registered pastoral enchantments. */
@@ -21,6 +37,7 @@ public final class EnchantmentSelfTest {
     public static void main(String[] args) {
         Bootstrap.register();
         verifyDefinitions();
+        verifyEnchantingTableCompatibilityPatch();
         verifyReforgedAnvilRule();
         verifyHarvestFormulas();
         verifyProbabilityThresholds();
@@ -43,7 +60,7 @@ public final class EnchantmentSelfTest {
 
     private static void verifyDefinitions() {
         Enchantment[] all = ModEnchantments.getAll();
-        require(all.length == 13, "exactly thirteen formal enchantments must be registered");
+        require(all.length == 12, "exactly twelve active enchantments must be registered");
         for (Enchantment enchantment : all) {
             require(enchantment.isAllowedOnBooks(), "all batch enchantments must allow enchanted books");
         }
@@ -66,20 +83,16 @@ public final class EnchantmentSelfTest {
         require(ModEnchantments.RANGE.getMaxLevel() == 5, "Range maximum level");
         require(ModEnchantments.REFORGED.getMaxLevel() == 1, "Reforged maximum level");
         require(ModEnchantments.BLUNTNESS_CURSE.getMaxLevel() == 1, "Bluntness Curse maximum level");
-        require(ModEnchantments.SHEARS_EFFICIENCY.getMaxLevel() == 5
-                        && ModEnchantments.SHEARS_EFFICIENCY.canApplyAtEnchantingTable(new ItemStack(Items.SHEARS))
-                        && !ModEnchantments.SHEARS_EFFICIENCY.canApplyAtEnchantingTable(new ItemStack(Items.DIAMOND_HOE)),
-                "shears Efficiency compatibility");
         require(ModEnchantments.HARVEST.canApplyAtEnchantingTable(new ItemStack(Items.DIAMOND_HOE)),
                 "Harvest must apply to a vanilla hoe");
         require(!ModEnchantments.HARVEST.canApplyAtEnchantingTable(new ItemStack(Items.DIAMOND_AXE)),
                 "Harvest must reject a non-hoe");
         require(ModEnchantments.HARVEST.canApplyAtEnchantingTable(new ItemStack(Items.SHEARS)),
                 "Harvest must apply to shears");
-        require(Enchantments.MENDING.canApplyAtEnchantingTable(new ItemStack(Items.SHEARS))
+        require(Enchantments.MENDING.canApply(new ItemStack(Items.SHEARS))
                         && Enchantments.UNBREAKING.canApplyAtEnchantingTable(new ItemStack(Items.SHEARS))
-                        && Enchantments.VANISHING_CURSE.canApplyAtEnchantingTable(new ItemStack(Items.SHEARS)),
-                "vanilla BREAKABLE enchantments must apply to shears");
+                        && Enchantments.VANISHING_CURSE.canApply(new ItemStack(Items.SHEARS)),
+                "vanilla books and Breakable table enchantments must apply to shears");
         require(ModEnchantments.SLAUGHTER.canApplyAtEnchantingTable(new ItemStack(Items.DIAMOND_SWORD)),
                 "Slaughter must apply to a sword");
         require(ModEnchantments.SLAUGHTER.canApplyAtEnchantingTable(new ItemStack(Items.DIAMOND_AXE)),
@@ -118,6 +131,92 @@ public final class EnchantmentSelfTest {
         require(ToolEnchantmentEventHandler.getRangeBonus(1) == 1.5D
                         && ToolEnchantmentEventHandler.getRangeBonus(5) == 7.5D,
                 "Range must add exactly 1.5 blocks per enchantment level");
+    }
+
+    private static void verifyEnchantingTableCompatibilityPatch() {
+        require(EnchantingCompatibilityHooks.getItemEnchantability(Items.SHEARS, new ItemStack(Items.SHEARS), 0)
+                        == Item.ToolMaterial.IRON.getEnchantability(),
+                "shears must use iron-tier enchanting power");
+        require(EnchantingCompatibilityHooks.getItemEnchantability(Items.WOODEN_HOE, new ItemStack(Items.WOODEN_HOE), 0)
+                        == Item.ToolMaterial.WOOD.getEnchantability(),
+                "wood hoe enchanting power");
+        require(EnchantingCompatibilityHooks.getItemEnchantability(Items.STONE_HOE, new ItemStack(Items.STONE_HOE), 0)
+                        == Item.ToolMaterial.STONE.getEnchantability(),
+                "stone hoe enchanting power");
+        require(EnchantingCompatibilityHooks.getItemEnchantability(Items.IRON_HOE, new ItemStack(Items.IRON_HOE), 0)
+                        == Item.ToolMaterial.IRON.getEnchantability(),
+                "iron hoe enchanting power");
+        require(EnchantingCompatibilityHooks.getItemEnchantability(Items.GOLDEN_HOE, new ItemStack(Items.GOLDEN_HOE), 0)
+                        == Item.ToolMaterial.GOLD.getEnchantability(),
+                "gold hoe enchanting power");
+        require(EnchantingCompatibilityHooks.getItemEnchantability(Items.DIAMOND_HOE, new ItemStack(Items.DIAMOND_HOE), 0)
+                        == Item.ToolMaterial.DIAMOND.getEnchantability(),
+                "diamond hoe enchanting power");
+        require(EnchantingCompatibilityHooks.getItemEnchantability(Items.DIAMOND_SWORD, new ItemStack(Items.DIAMOND_SWORD), 10)
+                        == 10, "unrelated items must retain vanilla enchanting power");
+
+        byte[] transformed = new EnchantingTableTransformer().transform("net.minecraft.item.Item",
+                "net.minecraft.item.Item", readItemClassBytes());
+        verifyBytecode(transformed);
+        ClassNode node = new ClassNode();
+        new ClassReader(transformed).accept(node, 0);
+        boolean enchantabilityHook = false;
+        boolean efficiencyGate = false;
+        for (MethodNode method : node.methods) {
+            if ("getItemEnchantability".equals(method.name)
+                    && "(Lnet/minecraft/item/ItemStack;)I".equals(method.desc)) {
+                for (AbstractInsnNode instruction = method.instructions.getFirst(); instruction != null;
+                     instruction = instruction.getNext()) {
+                    if (instruction instanceof MethodInsnNode
+                            && "lisbam/pastoraleconomy/core/EnchantingCompatibilityHooks"
+                            .equals(((MethodInsnNode) instruction).owner)) {
+                        enchantabilityHook = true;
+                    }
+                }
+            }
+            if ("canApplyAtEnchantingTable".equals(method.name)
+                    && "(Lnet/minecraft/item/ItemStack;Lnet/minecraft/enchantment/Enchantment;)Z".equals(method.desc)) {
+                boolean shears = false;
+                boolean efficiency = false;
+                for (AbstractInsnNode instruction = method.instructions.getFirst(); instruction != null;
+                     instruction = instruction.getNext()) {
+                    if (instruction instanceof TypeInsnNode) {
+                        String type = ((TypeInsnNode) instruction).desc;
+                        shears |= "net/minecraft/item/ItemShears".equals(type);
+                        efficiency |= "net/minecraft/enchantment/EnchantmentDigging".equals(type);
+                    }
+                }
+                efficiencyGate = shears && efficiency;
+            }
+        }
+        require(enchantabilityHook && efficiencyGate,
+                "core patch must add table power and native Efficiency gates");
+    }
+
+    private static void verifyBytecode(byte[] transformed) {
+        StringWriter diagnostics = new StringWriter();
+        CheckClassAdapter.verify(new ClassReader(transformed), false, new PrintWriter(diagnostics));
+        require(diagnostics.getBuffer().length() == 0,
+                "core patch must produce verifier-clean Item bytecode: " + diagnostics);
+    }
+
+    private static byte[] readItemClassBytes() {
+        InputStream input = Item.class.getResourceAsStream("Item.class");
+        if (input == null) {
+            throw new AssertionError("Item class bytes are unavailable for core patch verification");
+        }
+        try {
+            ByteArrayOutputStream output = new ByteArrayOutputStream();
+            byte[] buffer = new byte[4096];
+            int read;
+            while ((read = input.read(buffer)) >= 0) {
+                output.write(buffer, 0, read);
+            }
+            input.close();
+            return output.toByteArray();
+        } catch (IOException exception) {
+            throw new AssertionError("Unable to read Item class bytes", exception);
+        }
     }
 
     private static void verifyHarvestFormulas() {
