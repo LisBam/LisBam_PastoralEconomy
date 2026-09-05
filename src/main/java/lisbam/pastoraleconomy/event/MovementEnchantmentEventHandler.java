@@ -12,6 +12,7 @@ import net.minecraft.inventory.EntityEquipmentSlot;
 import net.minecraft.item.ItemStack;
 import net.minecraftforge.event.world.BlockEvent;
 import net.minecraftforge.fml.common.Mod;
+import net.minecraftforge.fml.common.eventhandler.EventPriority;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import net.minecraftforge.fml.common.gameevent.TickEvent;
 
@@ -26,9 +27,14 @@ public final class MovementEnchantmentEventHandler {
     private MovementEnchantmentEventHandler() {
     }
 
-    @SubscribeEvent
+    /** Client FOV compensation needs the exact non-persistent attribute identity. */
+    public static UUID getFleetfootModifierId() {
+        return FLEETFOOT_ID;
+    }
+
+    @SubscribeEvent(priority = EventPriority.HIGHEST)
     public static void preventFarmlandTrample(BlockEvent.FarmlandTrampleEvent event) {
-        if (event.getWorld().isRemote || !(event.getEntity() instanceof EntityPlayer)) {
+        if (!(event.getEntity() instanceof EntityPlayer)) {
             return;
         }
         EntityPlayer player = (EntityPlayer) event.getEntity();

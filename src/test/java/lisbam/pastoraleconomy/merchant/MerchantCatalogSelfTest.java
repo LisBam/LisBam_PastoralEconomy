@@ -38,7 +38,7 @@ public final class MerchantCatalogSelfTest {
         check(TradeCatalog.getPool(TradePool.BUY_COMMON).size() == 56, "common buy pool");
         check(TradeCatalog.getPool(TradePool.BUY_UNCOMMON).size() == 42, "uncommon buy pool");
         check(TradeCatalog.getPool(TradePool.BUY_RARE).size() == 28, "rare buy pool");
-        check(TradeCatalog.getPool(TradePool.BUY_TREASURE).size() == 33, "treasure buy pool");
+        check(TradeCatalog.getPool(TradePool.BUY_TREASURE).size() == 37, "treasure buy pool");
         check(DailyOfferState.BUY_OFFER_COUNT == 8, "eight daily purchase slots");
         check(MerchantOfferService.selectPurchasePool(new FixedRandom(0)) == TradePool.BUY_COMMON,
                 "common purchase quality lower boundary");
@@ -157,6 +157,17 @@ public final class MerchantCatalogSelfTest {
         check(harvestDefinition.resolveLevel(new FixedRandom(84)) == 2, "harvest level II upper boundary");
         check(harvestDefinition.resolveLevel(new FixedRandom(85)) == 3, "harvest level III boundary");
         check(harvestDefinition.resolveLevel(new FixedRandom(99)) == 3, "harvest level upper boundary");
+        EnchantmentTradeDefinition attackSpeedDefinition = find(TradePool.BUY_TREASURE,
+                "treasure_enchant_attack_speed").getEnchantmentDefinition();
+        check(attackSpeedDefinition.resolveLevel(new FixedRandom(0)) == 1, "attack speed level I boundary");
+        check(attackSpeedDefinition.resolveLevel(new FixedRandom(39)) == 1, "attack speed level I upper boundary");
+        check(attackSpeedDefinition.resolveLevel(new FixedRandom(40)) == 2, "attack speed level II boundary");
+        check(attackSpeedDefinition.resolveLevel(new FixedRandom(94)) == 4, "attack speed level IV upper boundary");
+        check(attackSpeedDefinition.resolveLevel(new FixedRandom(95)) == 5, "attack speed level V boundary");
+        check(find(TradePool.BUY_TREASURE, "treasure_enchant_reforged").getBasePrice() == 120000L,
+                "Reforged book price");
+        check(find(TradePool.BUY_TREASURE, "treasure_enchant_bluntness_curse").getBasePrice() == 20000L,
+                "Bluntness Curse book price");
         ItemStack marketBookHarvest = TradeCatalog.createEnchantedBookStackForMarketKey(
                 "lisbam_pastoral_economy:buy/treasure/enchanted_book/harvest_3");
         check(marketBookHarvest != null && marketBookHarvest.getItem() == Items.ENCHANTED_BOOK,

@@ -159,6 +159,11 @@ public final class AgricultureRules {
         return level > 0 && random.nextInt(100) < level * 10;
     }
 
+    /** Extra shearing output uses the same two 4/7 trials per Harvest level as root crops. */
+    public static int rollShearingHarvestBonus(int level, Random random) {
+        return level <= 0 ? 0 : binomial(random, level * 2, 4, 7);
+    }
+
     private static boolean isMatureCrop(IBlockState state) {
         return state.getBlock() instanceof BlockCrops && ((BlockCrops) state.getBlock()).isMaxAge(state);
     }

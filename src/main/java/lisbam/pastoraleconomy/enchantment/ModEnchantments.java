@@ -12,6 +12,10 @@ public final class ModEnchantments {
     private static final Item[] HOES = new Item[]{
             Items.WOODEN_HOE, Items.STONE_HOE, Items.IRON_HOE, Items.GOLDEN_HOE, Items.DIAMOND_HOE
     };
+    private static final Item[] HOES_AND_SHEARS = new Item[]{
+            Items.WOODEN_HOE, Items.STONE_HOE, Items.IRON_HOE, Items.GOLDEN_HOE, Items.DIAMOND_HOE,
+            Items.SHEARS
+    };
     private static final Item[] AXES = new Item[]{
             Items.WOODEN_AXE, Items.STONE_AXE, Items.IRON_AXE, Items.GOLDEN_AXE, Items.DIAMOND_AXE
     };
@@ -25,9 +29,24 @@ public final class ModEnchantments {
     private static final Item[] HELMETS = new Item[]{
             Items.LEATHER_HELMET, Items.CHAINMAIL_HELMET, Items.IRON_HELMET, Items.GOLDEN_HELMET, Items.DIAMOND_HELMET
     };
+    private static final Item[] WEAPONS_AND_TOOLS = new Item[]{
+            Items.WOODEN_SWORD, Items.STONE_SWORD, Items.IRON_SWORD, Items.GOLDEN_SWORD, Items.DIAMOND_SWORD,
+            Items.WOODEN_AXE, Items.STONE_AXE, Items.IRON_AXE, Items.GOLDEN_AXE, Items.DIAMOND_AXE,
+            Items.WOODEN_PICKAXE, Items.STONE_PICKAXE, Items.IRON_PICKAXE, Items.GOLDEN_PICKAXE, Items.DIAMOND_PICKAXE,
+            Items.WOODEN_SHOVEL, Items.STONE_SHOVEL, Items.IRON_SHOVEL, Items.GOLDEN_SHOVEL, Items.DIAMOND_SHOVEL,
+            Items.WOODEN_HOE, Items.STONE_HOE, Items.IRON_HOE, Items.GOLDEN_HOE, Items.DIAMOND_HOE
+    };
+    private static final Item[] RANGE_ITEMS = new Item[]{
+            Items.WOODEN_SWORD, Items.STONE_SWORD, Items.IRON_SWORD, Items.GOLDEN_SWORD, Items.DIAMOND_SWORD,
+            Items.WOODEN_AXE, Items.STONE_AXE, Items.IRON_AXE, Items.GOLDEN_AXE, Items.DIAMOND_AXE,
+            Items.WOODEN_PICKAXE, Items.STONE_PICKAXE, Items.IRON_PICKAXE, Items.GOLDEN_PICKAXE, Items.DIAMOND_PICKAXE,
+            Items.WOODEN_SHOVEL, Items.STONE_SHOVEL, Items.IRON_SHOVEL, Items.GOLDEN_SHOVEL, Items.DIAMOND_SHOVEL,
+            Items.WOODEN_HOE, Items.STONE_HOE, Items.IRON_HOE, Items.GOLDEN_HOE, Items.DIAMOND_HOE,
+            Items.SHEARS
+    };
 
     public static final Enchantment HARVEST = new EnchantmentPastoral(
-            "harvest", 3, new EntityEquipmentSlot[]{EntityEquipmentSlot.MAINHAND}, HOES,
+            "harvest", 3, new EntityEquipmentSlot[]{EntityEquipmentSlot.MAINHAND}, HOES_AND_SHEARS,
             new Enchantment[]{Enchantments.FORTUNE}
     );
     public static final Enchantment FARMLAND_WALKER = new EnchantmentPastoral(
@@ -59,6 +78,24 @@ public final class ModEnchantments {
             "night_vision", 1, new EntityEquipmentSlot[]{EntityEquipmentSlot.HEAD}, HELMETS,
             new Enchantment[0]
     );
+    public static final Enchantment ATTACK_SPEED = new EnchantmentPastoral(
+            "attack_speed", 5, new EntityEquipmentSlot[]{EntityEquipmentSlot.MAINHAND}, WEAPONS_AND_TOOLS,
+            new Enchantment[0]
+    );
+    public static final Enchantment RANGE = new EnchantmentPastoral(
+            "range", 5, new EntityEquipmentSlot[]{EntityEquipmentSlot.MAINHAND}, RANGE_ITEMS,
+            new Enchantment[0]
+    );
+    public static final Enchantment REFORGED = new EnchantmentPastoral(
+            "reforged", Enchantment.Rarity.RARE, 1, new EntityEquipmentSlot[]{EntityEquipmentSlot.MAINHAND},
+            WEAPONS_AND_TOOLS, new Enchantment[0], false, false, true
+    );
+    public static final Enchantment BLUNTNESS_CURSE = new EnchantmentPastoral(
+            "bluntness_curse", Enchantment.Rarity.VERY_RARE, 1,
+            new EntityEquipmentSlot[]{EntityEquipmentSlot.MAINHAND},
+            new Item[]{Items.WOODEN_SWORD, Items.STONE_SWORD, Items.IRON_SWORD, Items.GOLDEN_SWORD, Items.DIAMOND_SWORD},
+            new Enchantment[]{Enchantments.SWEEPING}, true, true, false
+    );
 
     private ModEnchantments() {
     }
@@ -66,7 +103,8 @@ public final class ModEnchantments {
     public static Enchantment[] getAll() {
         return new Enchantment[]{
                 HARVEST, FARMLAND_WALKER, PASTORAL_FAVOR, FINE_CULTIVATION,
-                FELLING, SLAUGHTER, FLEETFOOT, NIGHT_VISION
+                FELLING, SLAUGHTER, FLEETFOOT, NIGHT_VISION,
+                ATTACK_SPEED, RANGE, REFORGED, BLUNTNESS_CURSE
         };
     }
 
@@ -88,6 +126,14 @@ public final class ModEnchantments {
 
     public static boolean isHelmet(ItemStack stack) {
         return hasItem(HELMETS, stack);
+    }
+
+    public static boolean isWeaponOrTool(ItemStack stack) {
+        return hasItem(WEAPONS_AND_TOOLS, stack);
+    }
+
+    public static boolean isRangeItem(ItemStack stack) {
+        return hasItem(RANGE_ITEMS, stack);
     }
 
     private static boolean hasItem(Item[] choices, ItemStack stack) {

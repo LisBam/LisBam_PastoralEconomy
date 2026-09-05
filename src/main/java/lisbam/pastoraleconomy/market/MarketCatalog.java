@@ -259,6 +259,10 @@ public final class MarketCatalog {
         book(definitions, "butchering_1", 60000); book(definitions, "butchering_2", 100000); book(definitions, "butchering_3", 150000);
         book(definitions, "swift_footed_1", 50000); book(definitions, "swift_footed_2", 80000); book(definitions, "swift_footed_3", 120000); book(definitions, "swift_footed_4", 180000);
         book(definitions, "night_vision_1", 120000);
+        book(definitions, "attack_speed_1", 50000); book(definitions, "attack_speed_2", 80000); book(definitions, "attack_speed_3", 120000); book(definitions, "attack_speed_4", 180000); book(definitions, "attack_speed_5", 250000);
+        book(definitions, "range_1", 60000); book(definitions, "range_2", 100000); book(definitions, "range_3", 150000); book(definitions, "range_4", 210000); book(definitions, "range_5", 280000);
+        book(definitions, "reforged_1", 120000);
+        book(definitions, "bluntness_curse_1", 20000);
     }
 
     private static void book(Map<String, MarketCommodity> definitions, String name, long price) {

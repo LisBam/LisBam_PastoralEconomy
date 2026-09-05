@@ -256,6 +256,18 @@ public final class TradeCatalog {
                         "buy/treasure/enchanted_book/swift_footed_4"});
         addEnchantment(definitions, "night_vision", ModEnchantments.NIGHT_VISION, new int[]{100},
                 new long[]{120000}, new String[]{"buy/treasure/enchanted_book/night_vision_1"});
+        addEnchantment(definitions, "attack_speed", ModEnchantments.ATTACK_SPEED, new int[]{40, 28, 17, 10, 5},
+                new long[]{50000, 80000, 120000, 180000, 250000}, new String[]{"buy/treasure/enchanted_book/attack_speed_1",
+                        "buy/treasure/enchanted_book/attack_speed_2", "buy/treasure/enchanted_book/attack_speed_3",
+                        "buy/treasure/enchanted_book/attack_speed_4", "buy/treasure/enchanted_book/attack_speed_5"});
+        addEnchantment(definitions, "range", ModEnchantments.RANGE, new int[]{40, 28, 17, 10, 5},
+                new long[]{60000, 100000, 150000, 210000, 280000}, new String[]{"buy/treasure/enchanted_book/range_1",
+                        "buy/treasure/enchanted_book/range_2", "buy/treasure/enchanted_book/range_3",
+                        "buy/treasure/enchanted_book/range_4", "buy/treasure/enchanted_book/range_5"});
+        addEnchantment(definitions, "reforged", ModEnchantments.REFORGED, new int[]{100},
+                new long[]{120000}, new String[]{"buy/treasure/enchanted_book/reforged_1"});
+        addEnchantment(definitions, "bluntness_curse", ModEnchantments.BLUNTNESS_CURSE, new int[]{100},
+                new long[]{20000}, new String[]{"buy/treasure/enchanted_book/bluntness_curse_1"});
     }
 
     private static void addEnchantment(Map<String, TradeCatalogEntry> definitions, String name, Enchantment enchantment,
