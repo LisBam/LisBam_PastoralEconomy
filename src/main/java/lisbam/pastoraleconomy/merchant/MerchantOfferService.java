@@ -6,12 +6,13 @@ import net.minecraft.world.World;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Random;
 import java.util.Set;
 
-/** Generates one persisted 6 + 10 offer layout per merchant and market day. */
+/** Generates one persisted 6 + 8 offer layout per merchant and market day. */
 public final class MerchantOfferService {
 
     private MerchantOfferService() {
@@ -25,42 +26,111 @@ public final class MerchantOfferService {
         long worldDay = MarketService.getCurrentMarketDay(world);
         DailyOfferState existing = merchant.getDailyOfferState();
         if (existing != null && existing.getWorldDay() == worldDay) {
-            if (hasAdvancedOffers(existing) && hasUniqueBuyProducts(existing)) {
+            if (hasSortedBuyOffers(existing) && hasUniqueBuyProducts(existing)) {
                 return false;
             }
             // Invalid or incomplete same-day states are regenerated under the
-            // current item-count and uniqueness rules.
-            List<DailyOffer> sell = new ArrayList<DailyOffer>(DailyOfferState.SELL_OFFER_COUNT);
-            appendPoolOffers(merchant, TradePool.SELL_CORE, 4, sell, worldDay, null);
-            appendPoolOffers(merchant, TradePool.SELL_SECONDARY, 2, sell, worldDay, null);
-            List<DailyOffer> buy = new ArrayList<DailyOffer>(DailyOfferState.BUY_OFFER_COUNT);
-            Set<String> selectedProducts = new HashSet<String>();
-            appendPoolOffers(merchant, TradePool.BUY_COMMON, 4, buy, worldDay, selectedProducts);
-            appendPoolOffers(merchant, TradePool.BUY_UNCOMMON, 3, buy, worldDay, selectedProducts);
-            appendPoolOffers(merchant, TradePool.BUY_RARE, 2, buy, worldDay, selectedProducts);
-            appendPoolOffers(merchant, TradePool.BUY_TREASURE, 1, buy, worldDay, selectedProducts);
-            merchant.setDailyOfferState(new DailyOfferState(worldDay, sell, buy));
+            // current item-count, quality-order, and uniqueness rules.
+            merchant.setDailyOfferState(createOfferState(merchant, worldDay));
             return true;
         }
 
+        merchant.setDailyOfferState(createOfferState(merchant, worldDay));
+        return true;
+    }
+
+    private static DailyOfferState createOfferState(MerchantRecord merchant, long worldDay) {
         List<DailyOffer> sell = new ArrayList<DailyOffer>(DailyOfferState.SELL_OFFER_COUNT);
         appendPoolOffers(merchant, TradePool.SELL_CORE, 4, sell, worldDay, null);
         appendPoolOffers(merchant, TradePool.SELL_SECONDARY, 2, sell, worldDay, null);
 
-        List<DailyOffer> buy = new ArrayList<DailyOffer>(DailyOfferState.BUY_OFFER_COUNT);
-        Set<String> selectedProducts = new HashSet<String>();
-        appendPoolOffers(merchant, TradePool.BUY_COMMON, 4, buy, worldDay, selectedProducts);
-        appendPoolOffers(merchant, TradePool.BUY_UNCOMMON, 3, buy, worldDay, selectedProducts);
-        appendPoolOffers(merchant, TradePool.BUY_RARE, 2, buy, worldDay, selectedProducts);
-        appendPoolOffers(merchant, TradePool.BUY_TREASURE, 1, buy, worldDay, selectedProducts);
-        merchant.setDailyOfferState(new DailyOfferState(worldDay, sell, buy));
-        return true;
+        return new DailyOfferState(worldDay, sell, createPurchaseOffers(merchant, worldDay));
     }
 
-    private static boolean hasAdvancedOffers(DailyOfferState state) {
-        return isOfferFromPool(state.getBuyOffer(7), TradePool.BUY_RARE)
-                && isOfferFromPool(state.getBuyOffer(8), TradePool.BUY_RARE)
-                && isOfferFromPool(state.getBuyOffer(9), TradePool.BUY_TREASURE);
+    private static List<DailyOffer> createPurchaseOffers(MerchantRecord merchant, long worldDay) {
+        List<DailyOffer> buy = new ArrayList<DailyOffer>(DailyOfferState.BUY_OFFER_COUNT);
+        Set<String> selectedProducts = new HashSet<String>();
+        Random qualityRandom = new Random(createPurchaseQualitySeed(merchant, worldDay));
+        for (int slot = 0; slot < DailyOfferState.BUY_OFFER_COUNT; slot++) {
+            appendPoolOffers(merchant, selectPurchasePool(qualityRandom), 1, buy, worldDay, selectedProducts);
+        }
+        sortPurchaseOffers(buy);
+        return buy;
+    }
+
+    private static long createPurchaseQualitySeed(MerchantRecord merchant, long worldDay) {
+        return merchant.getMerchantId().getMostSignificantBits()
+                ^ Long.rotateLeft(merchant.getMerchantId().getLeastSignificantBits(), 31)
+                ^ Long.rotateLeft(worldDay, 7)
+                ^ 0xA0761D6478BD642FL;
+    }
+
+    /** Each purchase slot independently selects a quality by its frozen daily weight. */
+    static TradePool selectPurchasePool(Random random) {
+        if (random == null) {
+            throw new IllegalArgumentException("Purchase quality random cannot be null.");
+        }
+        int roll = random.nextInt(100);
+        if (roll < 40) {
+            return TradePool.BUY_COMMON;
+        }
+        if (roll < 70) {
+            return TradePool.BUY_UNCOMMON;
+        }
+        if (roll < 90) {
+            return TradePool.BUY_RARE;
+        }
+        return TradePool.BUY_TREASURE;
+    }
+
+    /** Sorts generated purchase offers into the UI's low-to-high quality grouping. */
+    static void sortPurchaseOffers(List<DailyOffer> offers) {
+        if (offers == null) {
+            throw new IllegalArgumentException("Purchase offers cannot be null.");
+        }
+        Collections.sort(offers, new Comparator<DailyOffer>() {
+            @Override
+            public int compare(DailyOffer left, DailyOffer right) {
+                return getPurchaseQualityRank(left) - getPurchaseQualityRank(right);
+            }
+        });
+    }
+
+    static int getPurchaseQualityRank(DailyOffer offer) {
+        if (offer == null || !offer.isEnabled()) {
+            return -1;
+        }
+        TradeCatalogEntry entry = TradeCatalog.get(offer.getCatalogKey());
+        if (entry == null) {
+            return -1;
+        }
+        switch (entry.getPool()) {
+            case BUY_COMMON:
+                return 0;
+            case BUY_UNCOMMON:
+                return 1;
+            case BUY_RARE:
+                return 2;
+            case BUY_TREASURE:
+                return 3;
+            default:
+                return -1;
+        }
+    }
+
+    private static boolean hasSortedBuyOffers(DailyOfferState state) {
+        if (state == null) {
+            return false;
+        }
+        int previousRank = -1;
+        for (DailyOffer offer : state.getBuyOffers()) {
+            int rank = getPurchaseQualityRank(offer);
+            if (rank < 0 || rank < previousRank) {
+                return false;
+            }
+            previousRank = rank;
+        }
+        return true;
     }
 
     private static boolean hasUniqueBuyProducts(DailyOfferState state) {
@@ -82,21 +152,6 @@ public final class MerchantOfferService {
             }
         }
         return result;
-    }
-
-    private static boolean isOfferFromPool(DailyOffer offer, TradePool pool) {
-        if (offer == null || !offer.isEnabled()) {
-            return false;
-        }
-        TradeCatalogEntry entry = TradeCatalog.get(offer.getCatalogKey());
-        if (entry == null || entry.getPool() != pool) {
-            return false;
-        }
-        if (entry.isEnchantment()) {
-            return offer.getEnchantmentLevel() >= 1
-                    && offer.getEnchantmentLevel() <= entry.getEnchantmentDefinition().getMaxLevel();
-        }
-        return offer.getEnchantmentLevel() == 0;
     }
 
     private static void appendPoolOffers(MerchantRecord merchant, TradePool pool, int count, List<DailyOffer> output,

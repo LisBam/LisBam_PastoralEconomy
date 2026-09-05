@@ -12,7 +12,7 @@ import java.util.Set;
 /** Persisted offer and stock state for exactly one logical merchant and one world day. */
 public final class DailyOfferState {
     public static final int SELL_OFFER_COUNT = 6;
-    public static final int BUY_OFFER_COUNT = 10;
+    public static final int BUY_OFFER_COUNT = 8;
 
     private static final String KEY_DAY = "worldDay";
     private static final String KEY_SELL = "sellOffers";
