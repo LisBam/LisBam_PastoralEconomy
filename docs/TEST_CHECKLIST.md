@@ -307,19 +307,22 @@
 ## 1.5 附魔维护回归
 
 - [x] Temurin Java 8 `1.8.0_504`：`compileJava`、`processResources`、`compileTestJava`、`enchantmentSelfTest`、`merchantCatalogSelfTest`、`pinyinSearchSelfTest` 和最终 `build`（含 `reobfJar`、`exportReleaseJar`）均 PASS（2026-09-05）。
-- [x] `enchantmentSelfTest`：十三个定义的等级、装备范围、剪刀效率兼容、束锋诅咒的宝藏/诅咒/附魔台排除/横扫互斥、剪刀 Harvest/Range 白名单、攻速/百炼如新不进入剪刀白名单、剪毛增产随机式及百炼如新的首次费用/输入 NBT 不变。PASS。
+- [x] `enchantmentSelfTest`：十二个模组附魔的等级、装备范围、原版效率的剪刀兼容、束锋诅咒的宝藏/诅咒/附魔台排除/横扫互斥、剪刀 Harvest/Range 白名单、攻速/百炼如新不进入剪刀白名单、剪毛增产随机式及百炼如新的首次费用/输入 NBT 不变。PASS。
 - [x] `merchantCatalogSelfTest`：珍宝书池共 37 个等级商品，新增攻速、范围、百炼如新、束锋诅咒的等级边界、权重、价格和实际附魔书 NBT。PASS；`pinyinSearchSelfTest` 同时覆盖“耕地行者”和“百炼如新”。PASS。
 - [x] Forge 1.12.2 strict audit：0 ERROR；6 条既有 `packet-thread` 保守 WARNING 已复核为通用网络注册/Proxy 主线程桥接，新增附魔逻辑不使用网络包。PASS。
 - [x] Release：`release/LisBam_PastoralEconomy-1.5.jar` 非空（401,456 bytes），SHA-256 `f53d2731695a805fff26a3ea497984e8f0dba8cc5c002359992f40d6320fc2e2`，`unzip -t` PASS。
 - [ ] 游戏内单人/多人：捷足 I--IV 不改变 FOV，夜视头盔实际明亮且摘下恢复，耕地行者跳跃/落地不伤耕地或作物。NOT RUN：当前环境无法创建可操作 Forge 客户端/世界。
 - [ ] 游戏内：攻速 I--V 冷却、范围 I--V 客户端选取与服务器攻击/方块/实体距离、束锋诅咒无横扫且直击正常、与横扫之刃的铁砧拒绝。NOT RUN：需要可运行客户端和 Dedicated Server。
 - [ ] 游戏内：百炼如新的修理、装备合并、附魔书、普通改名与 `>=40` 极端改名；确认左右输入不变、输出费用正确。NOT RUN：需要实际铁砧界面。
-- [ ] 游戏内：剪刀在附魔台的效率/耐久/丰收/范围候选；经验修补/消失诅咒书应用；羊和哞菇成功剪毛的额外掉落、已剪羊/失败交互不补发。NOT RUN：需要实际世界。
+- [ ] 游戏内：剪刀在附魔台的原版效率/耐久/丰收/范围候选，锄头按材质取得候选；经验修补/消失诅咒书应用；羊和哞菇成功剪毛的额外掉落、已剪羊/失败交互不补发。NOT RUN：需要实际世界。
 # 2026-09-05 维护回归
 
 - [x] `MilkCooldownRules`：5 分钟 = 6000 tick，冷却边界、时间回拨和剩余 tick 计算通过代码审查；`compileJava` PASS。
 - [x] `MarketCatalog`：出售/购买基础价按调价工作簿 ×50 更新，market key 与 16 色羊毛共享行情保持不变；`merchantCatalogSelfTest`、`marketCoreSelfTest` PASS（2026-09-05，Temurin Java 8）。
 - [ ] 游戏内：同一成年牛连续挤奶、区块重载/重启后冷却保持；开启“取消挤奶冷却”后可连续挤奶。NOT RUN：当前环境无可操作 Forge 客户端。
-- [x] 静态/自检：剪刀效率 I～V 兼容附魔、原版 BREAKABLE 的经验修补/消失诅咒/耐久可应用，Harvest/Range 白名单与剪毛增产公式通过 `enchantmentSelfTest`。PASS（2026-09-05，Temurin Java 8）。
-- [ ] 游戏内：剪刀附魔台实际候选及丰收增产。NOT RUN：当前环境无可操作 Forge 客户端。
-- [x] 最终 release：`compileJava processResources build`（含 `test`、`reobfJar`、`exportReleaseJar`）PASS；JAR 401,456 bytes，SHA-256 `f53d2731695a805fff26a3ea497984e8f0dba8cc5c002359992f40d6320fc2e2`，`unzip -t` PASS。
+- [x] 静态/自检：Coremod 后的 `Item` 字节码包含剪刀/五种锄头附魔力钩子与原版效率剪刀筛选，并通过 ASM verifier；`enchantmentSelfTest` 还覆盖原版 BREAKABLE 的经验修补/消失诅咒/耐久、Harvest/Range 白名单与剪毛增产公式。PASS（2026-09-05，Temurin Java 8）。
+- [x] `milkCooldownSelfTest`：6000 tick 边界、时间回拨、每牛独立 tick 与配置绕过规则。PASS（2026-09-05，Temurin Java 8）。
+- [x] 静态审计：Forge 1.12.2 audit 为 0 ERROR、6 条既有 `packet-thread` WARNING；Coremod 和挤奶处理器均不引用客户端类。PASS（2026-09-05）。
+- [ ] 游戏内：剪刀/锄头附魔台实际候选、剪刀原版效率书本/铁砧和丰收增产。NOT RUN：当前环境无可操作 Forge 客户端。
+- [ ] Dedicated Server：完整加载 Coremod 后以空桶依次对两头牛挤奶，确认仅已挤牛冷却、真实牛奶桶可饮用、区块重载/重启保持且“取消挤奶冷却”会绕过限制。NOT RUN：60 秒 `runServer` 已发现并入队 Coremod，但在完整模组/世界加载前超时；`run/eula.txt` 保持 `eula=false`。
+- [x] 最终 release：`compileJava processResources build`（含 `test`、`reobfJar`、`exportReleaseJar`）PASS；JAR 404,092 bytes，SHA-256 `a0b82c6dcfbc5e680c39d18f9f4e0643f7f77635521fc4c9bdff5fadc5efb641`，`unzip -t` PASS；manifest 含 `FMLCorePlugin`/`FMLCorePluginContainsFMLMod`，包内含三项 core 类且不含已删除的剪刀专属效率类。

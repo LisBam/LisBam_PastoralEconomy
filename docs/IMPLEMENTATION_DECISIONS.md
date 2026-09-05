@@ -439,6 +439,6 @@ Reforged 对有右输入的修理、合并和附魔书操作通过 `AnvilUpdateE
 兼容性与影响：Packet 7/8 为追加 discriminator，0～6 的编码不变；没有 WorldSavedData、Capability、Tile NBT 或 registry 迁移。旧疾步靴子 NBT 可正常保留但不再有效，护腿需按当前附魔规则获得。前往费不持久化，下一次旅行立即按四倍曲线结算。
 # 2026-09-05 维护决定：挤奶与调价
 
-- 成年牛的挤奶冷却归属于牛实体，而非玩家；最近一次挤奶 tick 写入 `Entity#getEntityData()`，因此区块卸载、重启和多人共享同一头牛时仍保持 6000 tick 冷却。`disableMilkingCooldown=false` 为默认安全值，开启后不拦截原版交互。
+- 成年牛的挤奶冷却归属于牛实体，而非玩家；最近一次成功挤奶 tick 写入 `Entity#getEntityData()`，因此区块卸载、重启和多人共享同一头牛时仍保持 6000 tick 冷却。`disableMilkingCooldown=false` 为默认安全值，开启后不拦截原版交互。非冷却交互绝不再手动扣空桶或制造牛奶桶，而是记录时间后交还 `EntityCow` 的原版成功分支；冷却中的交互才在逻辑服务端拒绝。
 - 价格表以工作簿手调小麦值乘 50 转为现有整数金币基准，保留全部既有 market key、历史和存档结构，不迁移旧价格快照；新值仅在新世界日生成时生效，已冻结的历史点不重写。
-- 剪刀的效率需求无法由 1.12.2 原版 `EnchantmentEfficiency` 直接满足（其 `DIGGER` 类型硬编码 `ItemTool`）。新增独立稳定 registry ID `shears_efficiency`，使用原版“效率”本地化文本、I～V 的原版成本区间，并在服务端/客户端 `BreakSpeed` 事件按原版平方增速公式应用；耐久、经验修补和消失诅咒仍直接使用原版 BREAKABLE 附魔。
+- Forge 1.12.2 在剪刀/锄头的原始 enchantability 为 0 时，会在附魔台生成候选前直接退出；同时原版 `Efficiency` 的附魔台筛选不接受剪刀，虽然原版效率书可正常经铁砧应用。公开 Forge 事件无法补回候选，故发行 JAR 用带 manifest 的最小 Coremod 精确补丁 `Item#getItemEnchantability(ItemStack)` 和原版效率筛选：剪刀使用铁工具附魔力、各锄头使用其材质附魔力，剪刀效率直接使用原版 `Efficiency`。不再注册/生成 `shears_efficiency`；旧存档的同名 MissingMapping 重映射到原版效率，避免旧物品失去附魔。耐久直接在附魔台可得；经验修补与消失诅咒保留原版书本/铁砧路径。

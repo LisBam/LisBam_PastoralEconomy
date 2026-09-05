@@ -4,10 +4,8 @@ import lisbam.pastoraleconomy.LisBamPastoralEconomy;
 import lisbam.pastoraleconomy.config.ModSettings;
 import net.minecraft.entity.passive.EntityCow;
 import net.minecraft.init.Items;
-import net.minecraft.init.SoundEvents;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.EnumActionResult;
-import net.minecraft.util.EnumHand;
 import net.minecraftforge.event.entity.player.PlayerInteractEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.common.eventhandler.EventPriority;
@@ -21,7 +19,7 @@ public final class MilkingCooldownEventHandler {
     private MilkingCooldownEventHandler() {
     }
 
-    @SubscribeEvent(priority = EventPriority.HIGHEST)
+    @SubscribeEvent(priority = EventPriority.LOWEST)
     public static void handleMilking(PlayerInteractEvent.EntityInteract event) {
         if (event.isCanceled() || !(event.getTarget() instanceof EntityCow)) {
             return;
@@ -35,8 +33,9 @@ public final class MilkingCooldownEventHandler {
             return;
         }
 
-        // The logical server is authoritative.  Leave the vanilla path alone
-        // when the option is disabled so existing worlds retain vanilla timing.
+        // The logical server owns the timer. Client interaction is left to
+        // vanilla so its prediction and inventory synchronization remain
+        // exactly the normal cow-milking path.
         if (event.getWorld().isRemote || ModSettings.isDisableMilkingCooldown()) {
             return;
         }
@@ -50,17 +49,11 @@ public final class MilkingCooldownEventHandler {
             return;
         }
 
-        // Reproduce EntityCow.processInteract's successful bucket branch and
-        // cancel the original call to prevent a second interaction.
-        event.setCanceled(true);
-        event.setCancellationResult(EnumActionResult.SUCCESS);
-        event.getEntityPlayer().playSound(SoundEvents.ENTITY_COW_MILK, 1.0F, 1.0F);
-        held.shrink(1);
-        if (held.isEmpty()) {
-            event.getEntityPlayer().setHeldItem(event.getHand(), new ItemStack(Items.MILK_BUCKET));
-        } else if (!event.getEntityPlayer().inventory.addItemStackToInventory(new ItemStack(Items.MILK_BUCKET))) {
-            event.getEntityPlayer().dropItem(new ItemStack(Items.MILK_BUCKET), false);
-        }
+        // Other interaction handlers have now had a chance to cancel. An adult
+        // non-creative player holding a vanilla bucket is the exact branch
+        // EntityCow.processInteract will successfully milk. Record the server
+        // timestamp, then let that original branch create the genuine milk
+        // bucket and perform all inventory synchronization.
         cow.getEntityData().setLong(LAST_MILKED_TICK_KEY, now);
     }
 }

@@ -2,11 +2,11 @@
 
 当前发行版本：`1.5`；既有第 15 批功能完成，1.5 为维护更新。
 
-最近一次成功构建记录（本次 Tooltip、夜视与疾步修复后）：
+最近一次成功构建记录（本次原版效率附魔台兼容与挤奶路径修复后）：
 
 - `JDK8_HOME=/tmp/lbpe-jdk8; env JAVA_HOME="$JDK8_HOME" PATH="$JDK8_HOME/bin:$PATH" ./gradlew compileJava processResources build`
 - 日期：2026-09-05
-- 结果：PASS（Forge 14.23.5.2859 / Temurin Java 8 `1.8.0_504`；`build` 包含 `test`、`reobfJar` 与 `exportReleaseJar`。`release/LisBam_PastoralEconomy-1.5.jar` 为 396,136 bytes，SHA-256 `1f1f106150703828330c65c3c5bca2bb99e153f617d17acca38e8d03ec384e6e`，`unzip -t` PASS。）
+- 结果：PASS（Forge 14.23.5.2859 / Temurin Java 8 `1.8.0_504`；`build` 包含 `test`、`reobfJar` 与 `exportReleaseJar`。`release/LisBam_PastoralEconomy-1.5.jar` 为 404,092 bytes，SHA-256 `a0b82c6dcfbc5e680c39d18f9f4e0643f7f77635521fc4c9bdff5fadc5efb641`，`unzip -t` PASS。）
 
 ## 维护：行情展示、附魔节奏与旅行费（2026-09-05）
 
@@ -644,7 +644,14 @@
 - 默认链式行情增加类别最低/最高价、50%/55%/65%/75%/85% 动态回归概率、边界强制反弹和整数方向保留；同一 Item/meta 买卖渠道共享随机身份。更新了市场、商人、交通自检以及内容书和维护文档。
 # 2026-09-05 维护：挤奶冷却、全商品调价与剪刀附魔
 
-- 新增成年牛/哞菇每头 6000 tick 挤奶冷却及默认关闭的 `disableMilkingCooldown` 配置；服务端在桶交互时原子替换牛奶桶并记录实体 NBT，冷却期间拒绝交互。
+- 新增成年牛/哞菇每头 6000 tick 挤奶冷却及默认关闭的 `disableMilkingCooldown` 配置；服务端仅在桶交互的冷却命中时拒绝交互，其他成功路径仍由 `EntityCow` 原版创建牛奶桶、播放声音并同步库存，同时记录实体 NBT。
 - 按《聆竹の休闲田园经济_全商品手动调价表_调整后.xlsx》更新出售、购买普通/罕见/稀有/珍宝和附魔书基础价，保持经济 key 与历史兼容。
 - 锄头和剪刀的 Harvest/Range 适用范围保持；剪刀上的 Harvest 成功剪毛后按既有二项式规则追加羊毛或红色蘑菇，原版 BREAKABLE 类附魔可正常用于剪刀。
-- 最终验证：Temurin Java 8 下 `compileJava`、`processResources`、`build`（含 `test`、`reobfJar`、`exportReleaseJar`）PASS；Forge 1.12.2 audit 为 0 ERROR、6 条既有 packet-thread WARNING。`milkCooldownSelfTest`、`marketCoreSelfTest`、`merchantCatalogSelfTest`、`enchantmentSelfTest` 均 PASS。`release/LisBam_PastoralEconomy-1.5.jar` 401,456 bytes，SHA-256 `f53d2731695a805fff26a3ea497984e8f0dba8cc5c002359992f40d6320fc2e2`，`unzip -t` PASS。
+
+## 2026-09-05 修复：原版效率附魔台兼容与原版挤奶路径
+
+根因与修复：Forge 1.12.2 的剪刀和各材质锄头原始附魔力为 0，附魔台会在生成候选前退出；剪刀还会被原版效率的附魔台筛选排除，尽管原版效率书本可以通过铁砧应用。发行 JAR 因而带最小 Coremod，只精确补丁这两个 `Item` 钩子：剪刀按铁工具附魔力、锄头按自身材质附魔力进入原版候选，剪刀效率直接使用原版 `Efficiency`。删除 `shears_efficiency` 注册和专属书本；旧世界加载该旧 ID 时通过 `MissingMappings` 重映射为原版效率，已有物品不会失去附魔。
+
+挤奶问题来自事件处理器自行扣桶、造桶并取消原版 `EntityCow` 交互，因而干扰了原版库存/饮用状态同步。现在处理器只在逻辑服务端、冷却命中时取消；不在冷却的成年牛/哞菇只写入该牛的持久最近成功 tick，随后完全交回原版桶替换路径。计时器降为 `LOWEST` 优先级，避免其他交互处理器已取消时错误记录冷却。
+
+验证：Temurin Java 8 `1.8.0_504` 下 `enchantmentSelfTest`、`milkCooldownSelfTest`、`merchantCatalogSelfTest`、`marketCoreSelfTest`、`compileJava` 与 `compileTestJava` PASS；附魔自测会对补丁后的 `Item` 字节码确认剪刀/锄头附魔力钩子和原版效率筛选，并通过 ASM verifier。Forge 1.12.2 audit 为 0 ERROR、6 条既有 `packet-thread` WARNING。带 `JAVA_TOOL_OPTIONS=-Dfml.coreMods.load=...` 的 60 秒 `runServer` 启动已实际发现并入队该 Coremod，时限到达前尚未完成模组/世界加载；未接受 EULA。最终 `compileJava processResources build` PASS，确认 release JAR 含 Coremod manifest/三项 core 类、不含已删除的剪刀专属效率类，大小 404,092 bytes，SHA-256 `a0b82c6dcfbc5e680c39d18f9f4e0643f7f77635521fc4c9bdff5fadc5efb641`，`unzip -t` PASS。
