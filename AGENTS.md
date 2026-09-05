@@ -71,7 +71,7 @@ JDK8_HOME=/tmp/lbpe-jdk8
 env JAVA_HOME="$JDK8_HOME" PATH="$JDK8_HOME/bin:$PATH" ./gradlew compileJava processResources build
 ```
 
-3. `build` 成功后检查 `release/LisBam_PastoralEconomy-<version>.jar` 存在且非空，并运行 `unzip -t`。`build` 的 `exportReleaseJar` finalizer 会在 `reobfJar` 后复制可安装 JAR；不得直接拿 `build/libs` 中重混淆前的开发 JAR 交付。
+3. `build` 成功后检查 `release/LisBam_PastoralEconomy-<version>.jar` 存在且非空。`build` 的 `exportReleaseJar` finalizer 会在 `reobfJar` 后复制可安装 JAR；不得直接拿 `build/libs` 中重混淆前的开发 JAR 交付。
 
 若没有任何可用 JDK 8，报告实际检查过的路径和第一个 Gradle 错误；不要将 JDK 11+ 当作 Forge 1.12.2 的替代，也不要在未经用户允许时下载或安装 JDK。
 
