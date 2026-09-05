@@ -22,6 +22,7 @@ import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.JumpInsnNode;
 import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
+import org.objectweb.asm.tree.VarInsnNode;
 import org.objectweb.asm.util.CheckClassAdapter;
 
 import java.io.ByteArrayOutputStream;
@@ -166,6 +167,7 @@ public final class EnchantmentSelfTest {
         ClassNode node = new ClassNode();
         new ClassReader(transformed).accept(node, 0);
         boolean enchantabilityHook = false;
+        boolean enchantabilityUsesItemReceiver = false;
         boolean efficiencyGate = false;
         boolean efficiencyGateHasJump = false;
         for (MethodNode method : node.methods) {
@@ -173,10 +175,22 @@ public final class EnchantmentSelfTest {
                     && "(Lnet/minecraft/item/ItemStack;)I".equals(method.desc)) {
                 for (AbstractInsnNode instruction = method.instructions.getFirst(); instruction != null;
                      instruction = instruction.getNext()) {
-                    if (instruction instanceof MethodInsnNode
-                            && "lisbam/pastoraleconomy/core/EnchantingCompatibilityHooks"
-                            .equals(((MethodInsnNode) instruction).owner)) {
-                        enchantabilityHook = true;
+                    if (instruction instanceof MethodInsnNode) {
+                        MethodInsnNode call = (MethodInsnNode) instruction;
+                        if ("lisbam/pastoraleconomy/core/EnchantingCompatibilityHooks".equals(call.owner)
+                                && "getItemEnchantability".equals(call.name)) {
+                            enchantabilityHook = true;
+                            AbstractInsnNode vanillaCall = previousOpcode(instruction);
+                            AbstractInsnNode vanillaReceiver = previousOpcode(vanillaCall);
+                            AbstractInsnNode helperItem = previousOpcode(vanillaReceiver);
+                            enchantabilityUsesItemReceiver = vanillaCall instanceof MethodInsnNode
+                                    && vanillaReceiver instanceof VarInsnNode
+                                    && helperItem instanceof VarInsnNode
+                                    && vanillaReceiver.getOpcode() == org.objectweb.asm.Opcodes.ALOAD
+                                    && helperItem.getOpcode() == org.objectweb.asm.Opcodes.ALOAD
+                                    && ((VarInsnNode) vanillaReceiver).var == 0
+                                    && ((VarInsnNode) helperItem).var == 0;
+                        }
                     }
                 }
             }
@@ -198,8 +212,20 @@ public final class EnchantmentSelfTest {
                 }
             }
         }
-        require(enchantabilityHook && efficiencyGate && !efficiencyGateHasJump,
+        require(enchantabilityHook && enchantabilityUsesItemReceiver
+                        && efficiencyGate && !efficiencyGateHasJump,
                 "core patch must add table power and a stack-map-safe native Efficiency gate");
+    }
+
+    private static AbstractInsnNode previousOpcode(AbstractInsnNode instruction) {
+        if (instruction == null) {
+            return null;
+        }
+        AbstractInsnNode previous = instruction.getPrevious();
+        while (previous != null && previous.getOpcode() < 0) {
+            previous = previous.getPrevious();
+        }
+        return previous;
     }
 
     private static void verifyBytecode(byte[] transformed) {

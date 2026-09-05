@@ -1,17 +1,17 @@
-[20:56:06] [main/DEBUG] [FML]: Creating vanilla freeze snapshot
-[20:56:06] [main/DEBUG] [FML]: Vanilla freeze snapshot created
-[20:56:06] [main/WARN] [FML]: Potentially Dangerous alternative prefix `lisbam_pastoral_economy` for name `harvest`, expected `minecraft`. This could be a intended override, but in most cases indicates a broken mod.
-[20:56:06] [main/WARN] [FML]: Potentially Dangerous alternative prefix `lisbam_pastoral_economy` for name `farmland_walker`, expected `minecraft`. This could be a intended override, but in most cases indicates a broken mod.
-[20:56:06] [main/WARN] [FML]: Potentially Dangerous alternative prefix `lisbam_pastoral_economy` for name `pastoral_favor`, expected `minecraft`. This could be a intended override, but in most cases indicates a broken mod.
-[20:56:06] [main/WARN] [FML]: Potentially Dangerous alternative prefix `lisbam_pastoral_economy` for name `fine_cultivation`, expected `minecraft`. This could be a intended override, but in most cases indicates a broken mod.
-[20:56:06] [main/WARN] [FML]: Potentially Dangerous alternative prefix `lisbam_pastoral_economy` for name `felling`, expected `minecraft`. This could be a intended override, but in most cases indicates a broken mod.
-[20:56:06] [main/WARN] [FML]: Potentially Dangerous alternative prefix `lisbam_pastoral_economy` for name `slaughter`, expected `minecraft`. This could be a intended override, but in most cases indicates a broken mod.
-[20:56:06] [main/WARN] [FML]: Potentially Dangerous alternative prefix `lisbam_pastoral_economy` for name `fleetfoot`, expected `minecraft`. This could be a intended override, but in most cases indicates a broken mod.
-[20:56:06] [main/WARN] [FML]: Potentially Dangerous alternative prefix `lisbam_pastoral_economy` for name `night_vision`, expected `minecraft`. This could be a intended override, but in most cases indicates a broken mod.
-[20:56:06] [main/WARN] [FML]: Potentially Dangerous alternative prefix `lisbam_pastoral_economy` for name `attack_speed`, expected `minecraft`. This could be a intended override, but in most cases indicates a broken mod.
-[20:56:06] [main/WARN] [FML]: Potentially Dangerous alternative prefix `lisbam_pastoral_economy` for name `range`, expected `minecraft`. This could be a intended override, but in most cases indicates a broken mod.
-[20:56:06] [main/WARN] [FML]: Potentially Dangerous alternative prefix `lisbam_pastoral_economy` for name `reforged`, expected `minecraft`. This could be a intended override, but in most cases indicates a broken mod.
-[20:56:06] [main/WARN] [FML]: Potentially Dangerous alternative prefix `lisbam_pastoral_economy` for name `bluntness_curse`, expected `minecraft`. This could be a intended override, but in most cases indicates a broken mod.
-[20:56:07] [main/INFO] [FML]: Starts to replace vanilla recipe ingredients with ore ingredients.
-[20:56:07] [main/INFO] [FML]: Invalid recipe found with multiple oredict ingredients in the same ingredient...
-[20:56:07] [main/INFO] [FML]: Replaced 1227 ore ingredients
+[21:15:43] [main/DEBUG] [FML]: Creating vanilla freeze snapshot
+[21:15:43] [main/DEBUG] [FML]: Vanilla freeze snapshot created
+[21:15:43] [main/WARN] [FML]: Potentially Dangerous alternative prefix `lisbam_pastoral_economy` for name `harvest`, expected `minecraft`. This could be a intended override, but in most cases indicates a broken mod.
+[21:15:43] [main/WARN] [FML]: Potentially Dangerous alternative prefix `lisbam_pastoral_economy` for name `farmland_walker`, expected `minecraft`. This could be a intended override, but in most cases indicates a broken mod.
+[21:15:43] [main/WARN] [FML]: Potentially Dangerous alternative prefix `lisbam_pastoral_economy` for name `pastoral_favor`, expected `minecraft`. This could be a intended override, but in most cases indicates a broken mod.
+[21:15:43] [main/WARN] [FML]: Potentially Dangerous alternative prefix `lisbam_pastoral_economy` for name `fine_cultivation`, expected `minecraft`. This could be a intended override, but in most cases indicates a broken mod.
+[21:15:43] [main/WARN] [FML]: Potentially Dangerous alternative prefix `lisbam_pastoral_economy` for name `felling`, expected `minecraft`. This could be a intended override, but in most cases indicates a broken mod.
+[21:15:43] [main/WARN] [FML]: Potentially Dangerous alternative prefix `lisbam_pastoral_economy` for name `slaughter`, expected `minecraft`. This could be a intended override, but in most cases indicates a broken mod.
+[21:15:43] [main/WARN] [FML]: Potentially Dangerous alternative prefix `lisbam_pastoral_economy` for name `fleetfoot`, expected `minecraft`. This could be a intended override, but in most cases indicates a broken mod.
+[21:15:43] [main/WARN] [FML]: Potentially Dangerous alternative prefix `lisbam_pastoral_economy` for name `night_vision`, expected `minecraft`. This could be a intended override, but in most cases indicates a broken mod.
+[21:15:43] [main/WARN] [FML]: Potentially Dangerous alternative prefix `lisbam_pastoral_economy` for name `attack_speed`, expected `minecraft`. This could be a intended override, but in most cases indicates a broken mod.
+[21:15:43] [main/WARN] [FML]: Potentially Dangerous alternative prefix `lisbam_pastoral_economy` for name `range`, expected `minecraft`. This could be a intended override, but in most cases indicates a broken mod.
+[21:15:43] [main/WARN] [FML]: Potentially Dangerous alternative prefix `lisbam_pastoral_economy` for name `reforged`, expected `minecraft`. This could be a intended override, but in most cases indicates a broken mod.
+[21:15:43] [main/WARN] [FML]: Potentially Dangerous alternative prefix `lisbam_pastoral_economy` for name `bluntness_curse`, expected `minecraft`. This could be a intended override, but in most cases indicates a broken mod.
+[21:15:44] [main/INFO] [FML]: Starts to replace vanilla recipe ingredients with ore ingredients.
+[21:15:44] [main/INFO] [FML]: Invalid recipe found with multiple oredict ingredients in the same ingredient...
+[21:15:44] [main/INFO] [FML]: Replaced 1227 ore ingredients

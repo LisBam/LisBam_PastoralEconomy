@@ -20,4 +20,8 @@ public final class MilkCooldownRules {
         }
         return COOLDOWN_TICKS - (currentTick - lastMilkedTick);
     }
+
+    public static boolean shouldCancelLocalPrediction(boolean logicalClient, boolean cooldownDisabled) {
+        return logicalClient && !cooldownDisabled;
+    }
 }

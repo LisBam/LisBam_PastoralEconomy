@@ -2,11 +2,11 @@
 
 当前发行版本：`1.5`；既有第 15 批功能完成，1.5 为维护更新。
 
-最近一次成功构建记录（本次 Coremod StackMap 验证修复后）：
+最近一次成功构建记录（本次附魔力实参与挤奶客户端预测修复后）：
 
 - `JDK8_HOME=/tmp/lbpe-jdk8; env JAVA_HOME="$JDK8_HOME" PATH="$JDK8_HOME/bin:$PATH" ./gradlew compileJava processResources build`
 - 日期：2026-09-05
-- 结果：PASS（Forge 14.23.5.2859 / Temurin Java 8 `1.8.0_504`；`build` 包含 `test`、`reobfJar` 与 `exportReleaseJar`。`release/LisBam_PastoralEconomy-1.5.jar` 为 405,030 bytes，SHA-256 `80ad3e648fc357365333c536dc17c6b9d764fe89f91ec102bc597d9d71f40358`，`unzip -t` PASS。）
+- 结果：PASS（Forge 14.23.5.2859 / Temurin Java 8 `1.8.0_504`；`build` 包含 `test`、`reobfJar` 与 `exportReleaseJar`，已导出 405,205-byte `release/LisBam_PastoralEconomy-1.5.jar`。）
 
 ## 维护：行情展示、附魔节奏与旅行费（2026-09-05）
 
@@ -663,3 +663,11 @@
 修复：Coremod 现在按已发现的 `Item` 方法布局选择 `ItemStack` 钩子或旧式无参附魔力路径，helper 全部使用 `Object` 参数描述符，消除 MCP/SRG 内部类名差异。现代效率筛选不再插入任何跳转：它在每个既有 `IRETURN` 前保存原版布尔结果，再调用 `(Object,Object,boolean)` helper 合并剪刀原版效率资格，因此原有控制流和 StackMap frame 保持有效。未知布局改为记录错误且返回原字节码，不再阻止客户端或服务端启动。自测覆盖现代、SRG 和旧式布局，并断言现代效率补丁无跳转。
 
 验证：Temurin Java 8 `1.8.0_504` 下 `enchantmentSelfTest`（含现代、SRG 和旧式 Coremod 注入及无新增跳转断言）与 `milkCooldownSelfTest` PASS。Forge 静态 audit 为 0 ERROR、6 条既有 `packet-thread` WARNING；最终 `compileJava processResources build`（含 `test`、`reobfJar`、`exportReleaseJar`）PASS。重混淆 release JAR 为 405,030 bytes，SHA-256 `80ad3e648fc357365333c536dc17c6b9d764fe89f91ec102bc597d9d71f40358`，`unzip -t` PASS，manifest 含 `FMLCorePlugin`。实际 Windows Forge 2847 客户端启动仍待用户用本次 JAR 验证。
+
+## 2026-09-05 修复：附魔力实参与挤奶客户端预测
+
+根因：附魔力注入在调用 `(Object,int)` helper 前错误压入了 `ALOAD 1`，导致 helper 实际收到 `ItemStack` 而不是 `this Item`；剪刀和五种锄头的身份比较始终失败，附魔力继续为 0，所以补丁虽已加载却没有候选。挤奶冷却只在逻辑服务端拒绝交互，但 1.12.2 客户端在发出 `CPacketUseEntity` 后还会本地执行 `EntityCow` 的桶替换；被服务端拒绝的交互因此在客户端生成无服务端状态支持的假牛奶桶，继而表现为同牛反复挤奶、其他牛无法挤奶和牛奶无法饮用。
+
+修复：附魔力方法现在只压入 `this Item`、原版无参附魔力并调用 helper；自测验证 helper 前两个对象来源均为本地变量 0、没有 `ALOAD 1`，并额外对 Forge 14.23.5.2847 的真实 binpatch 后 `ain.class` 执行转换检查。启用挤奶冷却时，客户端事件在交互包发出后取消本地牛奶桶预测；逻辑服务端仍按目标牛自身 NBT 判定，合法首次交互继续由原版 `EntityCow` 创建和同步真实牛奶桶。关闭冷却时不取消客户端原版路径。
+
+验证：Temurin Java 8 `1.8.0_504` 下 `enchantmentSelfTest` 和 `milkCooldownSelfTest` PASS；Forge 1.12.2 静态审计为 0 ERROR、6 条既有 `packet-thread` WARNING；最终 `compileJava processResources build`（含 `test`、`reobfJar`、`exportReleaseJar`）PASS，已导出 405,205-byte release JAR。游戏内附魔台、两牛连续挤奶和 Dedicated Server 世界测试仍为 NOT RUN，需实际可操作环境确认。
