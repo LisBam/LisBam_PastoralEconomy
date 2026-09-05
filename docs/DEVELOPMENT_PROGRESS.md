@@ -6,7 +6,15 @@
 
 - `env JAVA_HOME=/tmp/lbpe-jdk8 PATH=/tmp/lbpe-jdk8/bin:$PATH ./gradlew processResources build`
 - 日期：2026-09-05
-- 结果：PASS（Forge 14.23.5.2859 / Temurin Java 8 `1.8.0_504`；`build` 包含 `test`、`reobfJar` 与 `exportReleaseJar`。`release/LisBam_PastoralEconomy-1.0.jar` 为 357,843 bytes，SHA-256 `f990838217fbb6f9a5b616237b39ecda24881ea2f288aa8099888d09442fd29f`，`unzip -t` PASS。）
+- 结果：PASS（Forge 14.23.5.2859 / Temurin Java 8 `1.8.0_504`；`build` 包含 `test`、`reobfJar` 与 `exportReleaseJar`。`release/LisBam_PastoralEconomy-1.0.jar` 为 364,651 bytes，SHA-256 `b88b3d48a83cdace34d0e4a2ff3ebebbd24d8de45c04ea64de1045821f26dd76`，`unzip -t` PASS。）
+
+## 维护：商人交易快照与行情书拼音检索（2026-09-05）
+
+根因与修复：上次将商人出售目录从 10 项缩减为 8 项时，服务端 `SyncMerchantTradeMessage` 已按当前快照写出 6+8 条，但客户端读取端仍硬编码 6+10 条。读取越过包尾后整份快照被拒绝，交易 GUI 因而把全部卡片显示为“后续内容”。现改为在读写两端均使用 `MerchantTradeSnapshot` 的槽位常量，并加入完整 6+8 快照往返自测。
+
+行情书购买页新增本地拼音筛选：显示名除原始中文和稳定商品 key 外，接受全拼、首字母和混合拼音输入（例如 `xiaomai`、`xm`、`lvbs`）；`ü` 会规范化为 `v`。客户端只缓存本次实际显示名的分词结果；紧凑字典覆盖原版物品/方块和本模组中文本地化所用汉字，不引入外部运行时库、不发送搜索网络包，也不参与价格或交易判定。搜索提示同步标明名称/拼音/key。
+
+兼容性与影响：未改 registry ID、Packet discriminator、字段顺序、NBT key、`PastoralWorldData` 名称或数据版本。新客户端必须与当前 8 槽协议服务端配套；没有任何存档迁移。Temurin Java 8 `1.8.0_504` 下 `merchantCatalogSelfTest`、`pinyinSearchSelfTest`、干净重建后的 `processResources build` 均 PASS；Forge 静态审计为 0 ERROR、5 条既有 `packet-thread` WARNING。`exportReleaseJar` 已导出 364,651-byte release JAR，SHA-256 `b88b3d48a83cdace34d0e4a2ff3ebebbd24d8de45c04ea64de1045821f26dd76`，`unzip -t` PASS。游戏内商人/行情书界面与 Dedicated Server 为 NOT RUN，需可操作运行环境。
 
 ## 维护：商人出售栏独立品质抽取（2026-09-05）
 

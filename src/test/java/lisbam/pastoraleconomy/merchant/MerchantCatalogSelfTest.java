@@ -1,5 +1,7 @@
 package lisbam.pastoraleconomy.merchant;
 
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
 import net.minecraft.init.Bootstrap;
 import net.minecraft.init.Items;
 import net.minecraft.item.ItemEnchantedBook;
@@ -7,6 +9,7 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
 import lisbam.pastoraleconomy.LisBamPastoralEconomy;
 import lisbam.pastoraleconomy.market.MarketCatalog;
+import lisbam.pastoraleconomy.network.message.SyncMerchantTradeMessage;
 import java.util.List;
 import java.util.HashSet;
 import java.util.Random;
@@ -19,6 +22,7 @@ public final class MerchantCatalogSelfTest {
 
     public static void main(String[] args) {
         Bootstrap.register();
+        verifyMerchantSnapshotRoundTrip();
         check(VillageService.getTargetMerchantCount(2) == 3, "2 villagers");
         check(VillageService.getTargetMerchantCount(15) == 3, "15 villagers");
         check(VillageService.getTargetMerchantCount(16) == 4, "16 villagers");
@@ -231,6 +235,29 @@ public final class MerchantCatalogSelfTest {
                         .equals(find(TradePool.BUY_TREASURE, "nether_star").getProductIdentity(0)),
                 "product identity is stable");
         System.out.println("merchantCatalogSelfTest PASS");
+    }
+
+    private static void verifyMerchantSnapshotRoundTrip() {
+        List<MerchantTradeOfferView> sells = disabledViews(MerchantTradeSnapshot.SELL_COUNT);
+        List<MerchantTradeOfferView> buys = disabledViews(MerchantTradeSnapshot.BUY_COUNT);
+        MerchantTradeSnapshot snapshot = new MerchantTradeSnapshot(java.util.UUID.randomUUID(), 3, 0L, 0L, sells, buys);
+        ByteBuf buffer = Unpooled.buffer();
+        new SyncMerchantTradeMessage(snapshot).toBytes(buffer);
+        SyncMerchantTradeMessage decodedMessage = new SyncMerchantTradeMessage();
+        decodedMessage.fromBytes(buffer);
+        MerchantTradeSnapshot decoded = decodedMessage.getSnapshot();
+        check(decoded != null && decoded.getSellOffers().size() == MerchantTradeSnapshot.SELL_COUNT
+                        && decoded.getBuyOffers().size() == MerchantTradeSnapshot.BUY_COUNT,
+                "merchant snapshot uses the current 6 + 8 protocol counts");
+    }
+
+    private static List<MerchantTradeOfferView> disabledViews(int count) {
+        List<MerchantTradeOfferView> views = new java.util.ArrayList<MerchantTradeOfferView>();
+        for (int index = 0; index < count; index++) {
+            views.add(new MerchantTradeOfferView(false, "", 0, 0L, null,
+                    TradeCatalogEntry.UNLIMITED_STOCK, 0));
+        }
+        return views;
     }
 
     private static TradeCatalogEntry find(TradePool pool, String suffix) {

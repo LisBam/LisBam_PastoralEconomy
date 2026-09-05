@@ -6,6 +6,14 @@
 - [x] `./gradlew processResources`、`build` — PASS（2026-09-05，Temurin Java 8 `1.8.0_504`；含 `test`、`reobfJar`、`exportReleaseJar`；release JAR 已实际覆盖导出、非空，`unzip -t` PASS）
 - [x] Forge 1.12.2 static audit — 0 ERROR；5 条 `packet-thread` WARNING 已审查（通用注册不处理消息；四个 S2C Proxy 桥没有直接修改状态，客户端实际写入均调度至主线程；交通 C2S handler 调度至服务端主线程）。
 
+## 维护：商人交易快照与行情书拼音检索（2026-09-05）
+
+- [x] `merchantCatalogSelfTest`：将一份含当前 6 个出售槽和 8 个购买槽的禁用交易快照写入并读回；客户端解码结果完整，不会再因旧 10 槽常量让所有交易项显示“后续内容”。PASS（Temurin Java 8 `1.8.0_504`）。
+- [x] `pinyinSearchSelfTest`：小麦的 `xiaomai`/`xm`、附魔书的 `fumoshu`、护田行者的 `htxz`、绿宝石的 `lvbaoshi`、带 `ü` 的输入以及不匹配的拼音均通过；全拼、首字母和混合拼音均只在本地过滤。PASS（Temurin Java 8 `1.8.0_504`）。
+- [x] Forge 1.12.2 static audit：0 ERROR；5 条既有 `packet-thread` WARNING 已审查为网络注册/Proxy 到客户端主线程的保守提示，本轮没有增加 common 客户端引用或网络处理器。PASS（2026-09-05）。
+- [x] `./gradlew clean processResources build` 后再次 `build`：PASS（Temurin Java 8 `1.8.0_504`；含 `test`、`reobfJar`、`exportReleaseJar`）。`release/LisBam_PastoralEconomy-1.0.jar` 已覆盖导出，364,651 bytes，SHA-256 `b88b3d48a83cdace34d0e4a2ff3ebebbd24d8de45c04ea64de1045821f26dd76`，`unzip -t` PASS。
+- [ ] 游戏内：以一个既有村庄商人打开交易，确认 6 个收购栏及 8 个出售栏均显示真实快照；在行情书购买页用全拼、首字母、`lvbs` 等混合拼音、原始中文名和 key 搜索，并确认滚动、缓存加载和附魔书 Tooltip 不回归。NOT RUN：当前环境无法创建可操作 Forge 客户端或进入 Dedicated Server 世界。
+
 ## 维护：行情书目录、创造标签与村庄商人范围（2026-09-05）
 
 - [x] 本模组创造标签本地化键 `itemGroup.lisbam_pastoral_economy` 为“聆竹の休闲田园经济”。PASS：`processResources` 与语言文件审查。

@@ -42,8 +42,8 @@ public final class SyncMerchantTradeMessage implements IMessage {
         if (day < 0L || balance < 0L) {
             return;
         }
-        List<MerchantTradeOfferView> sells = readViews(buffer, 6);
-        List<MerchantTradeOfferView> buys = readViews(buffer, 10);
+        List<MerchantTradeOfferView> sells = readViews(buffer, MerchantTradeSnapshot.SELL_COUNT);
+        List<MerchantTradeOfferView> buys = readViews(buffer, MerchantTradeSnapshot.BUY_COUNT);
         if (sells == null || buys == null) {
             return;
         }
