@@ -21,7 +21,24 @@ public final class MilkCooldownRules {
         return COOLDOWN_TICKS - (currentTick - lastMilkedTick);
     }
 
-    public static boolean shouldCancelLocalPrediction(boolean logicalClient, boolean cooldownDisabled) {
-        return logicalClient && !cooldownDisabled;
+    /** Enabled cooldown owns the transaction on the server and blocks client prediction. */
+    public static boolean shouldTakeOwnership(boolean cooldownDisabled) {
+        return !cooldownDisabled;
+    }
+
+    /** A cooled target is rejected only when the feature is enabled. */
+    public static boolean shouldReject(boolean cooldownDisabled, boolean onCooldown) {
+        return !cooldownDisabled && onCooldown;
+    }
+
+    /** Persist the timestamp only after an owned server transaction succeeds. */
+    public static boolean shouldRecordSuccess(boolean cooldownDisabled, boolean onCooldown,
+                                              boolean transactionSucceeded) {
+        return !cooldownDisabled && !onCooldown && transactionSucceeded;
+    }
+
+    /** Client inventory mutation is always deferred until the server response. */
+    public static boolean shouldCancelLocalPrediction(boolean logicalClient) {
+        return logicalClient;
     }
 }

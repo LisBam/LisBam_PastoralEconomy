@@ -319,11 +319,11 @@
 
 - [x] `MilkCooldownRules`：5 分钟 = 6000 tick，冷却边界、时间回拨和剩余 tick 计算通过代码审查；`compileJava` PASS。
 - [x] `MarketCatalog`：出售/购买基础价按调价工作簿 ×50 更新，market key 与 16 色羊毛共享行情保持不变；`merchantCatalogSelfTest`、`marketCoreSelfTest` PASS（2026-09-05，Temurin Java 8）。
-- [ ] 游戏内：同一成年牛连续挤奶、区块重载/重启后冷却保持；开启“取消挤奶冷却”后可连续挤奶。NOT RUN：当前环境无可操作 Forge 客户端。
+- [ ] 游戏内：同一成年牛连续挤奶时第二次不扣空桶、不产牛奶；两头牛可分别挤奶；区块重载/重启后冷却保持；开启“取消挤奶冷却”后恢复原版连续挤奶。NOT RUN：当前环境无可操作 Forge 客户端。
 - [x] 静态/自检：Coremod 后的 `Item` 字节码包含剪刀/五种锄头附魔力钩子与原版效率剪刀筛选，并通过 ASM verifier；附魔力 helper 的对象实参来自 `this Item` 而非 `ItemStack`，效率筛选只在既有返回点合并结果且不会新增跳转；`enchantmentSelfTest` 还覆盖原版 BREAKABLE 的经验修补/消失诅咒/耐久、Harvest/Range 白名单与剪毛增产公式。PASS（2026-09-05，Temurin Java 8）。
 - [x] Coremod 兼容：SRG 名称布局、现代 `ItemStack` 钩子布局和旧式无参 `Item#getItemEnchantability()` 布局均由 `enchantmentSelfTest` 构造并验证；helper 只使用 mapping-neutral `Object` 描述符。Forge 14.23.5.2847 官方 binpatch 后的真实 `ain.class` 也已执行相同转换，并确认附魔力方法为两个 `ALOAD 0`、零个 `ALOAD 1`。PASS（2026-09-05，Temurin Java 8）。
-- [x] `milkCooldownSelfTest`：6000 tick 边界、时间回拨、每牛独立 tick、配置绕过规则，以及启用冷却时只取消客户端本地预测。PASS（2026-09-05，Temurin Java 8）。
+- [x] `milkCooldownSelfTest`：6000 tick 边界、时间回拨、每牛独立 tick、服务端接管/配置绕过、冷却拒绝不产奶、仅成功交易记录时间，以及客户端不预测库存。PASS（2026-09-05，Temurin Java 8）。
 - [x] 静态审计：Forge 1.12.2 audit 为 0 ERROR、6 条既有 `packet-thread` WARNING；Coremod 和挤奶处理器均不引用客户端类。PASS（2026-09-05）。
 - [ ] 游戏内：剪刀/锄头附魔台实际候选、剪刀原版效率书本/铁砧和丰收增产。NOT RUN：当前环境无可操作 Forge 客户端。
-- [ ] Dedicated Server：完整加载 Coremod 后以空桶依次对两头牛挤奶，确认仅已挤牛冷却、真实牛奶桶可饮用、区块重载/重启保持且“取消挤奶冷却”会绕过限制。NOT RUN：60 秒 `runServer` 已发现并入队 Coremod，但在完整模组/世界加载前超时；`run/eula.txt` 保持 `eula=false`。
-- [x] 最终 release：`compileJava processResources build`（含 `test`、`reobfJar`、`exportReleaseJar`）PASS；已导出 405,205-byte `release/LisBam_PastoralEconomy-1.5.jar`。
+- [ ] Dedicated Server：完整加载 Coremod 后以空桶依次对两头牛挤奶，确认已挤牛冷却、冷却命中不扣桶不产奶、服务端生成的牛奶桶可饮用、满背包时牛奶桶掉落、区块重载/重启保持且“取消挤奶冷却”会绕过限制。NOT RUN：60 秒 `runServer` 已发现并入队 Coremod，但在完整模组/世界加载前超时；`run/eula.txt` 保持 `eula=false`。
+- [x] 最终 release：`compileJava processResources build`（含 `test`、`reobfJar`、`exportReleaseJar`）PASS；`release/LisBam_PastoralEconomy-1.5.jar` 已由本次构建覆盖导出且非空。

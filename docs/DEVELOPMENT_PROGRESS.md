@@ -2,11 +2,11 @@
 
 当前发行版本：`1.5`；既有第 15 批功能完成，1.5 为维护更新。
 
-最近一次成功构建记录（本次附魔力实参与挤奶客户端预测修复后）：
+最近一次成功构建记录（挤奶服务端结算重构后）：
 
-- `JDK8_HOME=/tmp/lbpe-jdk8; env JAVA_HOME="$JDK8_HOME" PATH="$JDK8_HOME/bin:$PATH" ./gradlew compileJava processResources build`
+- `env JAVA_HOME=/tmp/lbpe-jdk8 PATH="/tmp/lbpe-jdk8/bin:$PATH" ./gradlew compileJava processResources build --no-daemon --console=plain`
 - 日期：2026-09-05
-- 结果：PASS（Forge 14.23.5.2859 / Temurin Java 8 `1.8.0_504`；`build` 包含 `test`、`reobfJar` 与 `exportReleaseJar`，已导出 405,205-byte `release/LisBam_PastoralEconomy-1.5.jar`。）
+- 结果：PASS（Forge 14.23.5.2859 / Temurin Java 8 `1.8.0_504`；`build` 包含 `test`、`reobfJar` 与 `exportReleaseJar`，`release/LisBam_PastoralEconomy-1.5.jar` 已实际覆盖导出且非空。）
 
 ## 维护：行情展示、附魔节奏与旅行费（2026-09-05）
 
@@ -671,3 +671,11 @@
 修复：附魔力方法现在只压入 `this Item`、原版无参附魔力并调用 helper；自测验证 helper 前两个对象来源均为本地变量 0、没有 `ALOAD 1`，并额外对 Forge 14.23.5.2847 的真实 binpatch 后 `ain.class` 执行转换检查。启用挤奶冷却时，客户端事件在交互包发出后取消本地牛奶桶预测；逻辑服务端仍按目标牛自身 NBT 判定，合法首次交互继续由原版 `EntityCow` 创建和同步真实牛奶桶。关闭冷却时不取消客户端原版路径。
 
 验证：Temurin Java 8 `1.8.0_504` 下 `enchantmentSelfTest` 和 `milkCooldownSelfTest` PASS；Forge 1.12.2 静态审计为 0 ERROR、6 条既有 `packet-thread` WARNING；最终 `compileJava processResources build`（含 `test`、`reobfJar`、`exportReleaseJar`）PASS，已导出 405,205-byte release JAR。游戏内附魔台、两牛连续挤奶和 Dedicated Server 世界测试仍为 NOT RUN，需实际可操作环境确认。
+
+## 2026-09-05 修复：挤奶服务端结算重构
+
+根因：此前只在客户端取消本地预测、服务端仍依赖后续 `EntityCow` 原版分支。1.12.2 客户端会在发送 `CPacketUseEntity` 后先运行本地实体交互；服务端拒绝冷却目标时，两侧库存变化可能先后覆盖，表现为牛奶桶和空桶一起消失、同牛重复挤奶或牛奶桶无法饮用。
+
+修复：冷却启用时 `MilkingCooldownEventHandler` 在两侧都取消原版桶交互。客户端不修改物品栏，只返回 `SUCCESS` 结束预测；服务端先验证成年目标、空桶和实体 NBT 冷却，再独立执行原版等价事务：播放 `ENTITY_COW_MILK`，扣一只空桶，手中耗尽则替换牛奶桶，否则尝试加入主背包，满包时按原版丢出。事务完成后才写入最近成功 tick；冷却命中不扣桶、不产奶、不更新 tick。关闭配置时完全跳过处理器并走原版逻辑。新增纯规则断言覆盖服务端接管、冷却拒绝、成功后记录和客户端延后库存同步。
+
+验证：Temurin Java 8 `1.8.0_504` 下 `compileJava`、`compileTestJava`、`milkCooldownSelfTest`、`compileJava processResources build` 均 PASS；最终构建包含 `test`、`reobfJar` 和 `exportReleaseJar`，release JAR 已覆盖导出且非空。Forge 1.12.2 工具链检查为 0 问题；静态审计为 0 ERROR、6 条既有 `packet-thread` WARNING。游戏内客户端和 Dedicated Server 仍需用户实际验证。
