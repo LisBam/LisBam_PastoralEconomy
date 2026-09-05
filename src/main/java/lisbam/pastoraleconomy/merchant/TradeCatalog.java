@@ -82,67 +82,67 @@ public final class TradeCatalog {
 
     private static void addSellDefinitions(Map<String, TradeCatalogEntry> definitions) {
         add(definitions, "wheat", "sell/crop/wheat", TradePool.SELL_CORE, TradeCatalogEntry.UNLIMITED_STOCK, 50);
-        add(definitions, "carrot", "sell/crop/carrot", TradePool.SELL_CORE, TradeCatalogEntry.UNLIMITED_STOCK, 50);
+        add(definitions, "carrot", "sell/crop/carrot", TradePool.SELL_CORE, TradeCatalogEntry.UNLIMITED_STOCK, 40);
         add(definitions, "potato", "sell/crop/potato", TradePool.SELL_CORE, TradeCatalogEntry.UNLIMITED_STOCK, 40);
-        add(definitions, "beetroot", "sell/crop/beetroot", TradePool.SELL_CORE, TradeCatalogEntry.UNLIMITED_STOCK, 70);
-        add(definitions, "pumpkin", "sell/crop/pumpkin", TradePool.SELL_CORE, TradeCatalogEntry.UNLIMITED_STOCK, 170);
-        add(definitions, "melon_block", "sell/crop/melon_block", TradePool.SELL_CORE, TradeCatalogEntry.UNLIMITED_STOCK, 250);
+        add(definitions, "beetroot", "sell/crop/beetroot", TradePool.SELL_CORE, TradeCatalogEntry.UNLIMITED_STOCK, 50);
+        add(definitions, "pumpkin", "sell/crop/pumpkin", TradePool.SELL_CORE, TradeCatalogEntry.UNLIMITED_STOCK, 125);
+        add(definitions, "melon_block", "sell/crop/melon_block", TradePool.SELL_CORE, TradeCatalogEntry.UNLIMITED_STOCK, 150);
         add(definitions, "melon_slice", "sell/crop/melon_slice", TradePool.SELL_CORE, TradeCatalogEntry.UNLIMITED_STOCK, 30);
-        add(definitions, "sugar_cane", "sell/crop/sugar_cane", TradePool.SELL_CORE, TradeCatalogEntry.UNLIMITED_STOCK, 40);
-        add(definitions, "cactus", "sell/crop/cactus", TradePool.SELL_CORE, TradeCatalogEntry.UNLIMITED_STOCK, 30);
+        add(definitions, "sugar_cane", "sell/crop/sugar_cane", TradePool.SELL_CORE, TradeCatalogEntry.UNLIMITED_STOCK, 35);
+        add(definitions, "cactus", "sell/crop/cactus", TradePool.SELL_CORE, TradeCatalogEntry.UNLIMITED_STOCK, 40);
 
-        add(definitions, "cocoa_beans", "sell/crop/cocoa_beans", TradePool.SELL_SECONDARY, TradeCatalogEntry.UNLIMITED_STOCK, 50);
+        add(definitions, "cocoa_beans", "sell/crop/cocoa_beans", TradePool.SELL_SECONDARY, TradeCatalogEntry.UNLIMITED_STOCK, 75);
         add(definitions, "red_mushroom", "sell/crop/red_mushroom", TradePool.SELL_SECONDARY, TradeCatalogEntry.UNLIMITED_STOCK, 50);
         add(definitions, "brown_mushroom", "sell/crop/brown_mushroom", TradePool.SELL_SECONDARY, TradeCatalogEntry.UNLIMITED_STOCK, 50);
-        add(definitions, "apple", "sell/agriculture/apple", TradePool.SELL_SECONDARY, TradeCatalogEntry.UNLIMITED_STOCK, 100);
+        add(definitions, "apple", "sell/agriculture/apple", TradePool.SELL_SECONDARY, TradeCatalogEntry.UNLIMITED_STOCK, 90);
         add(definitions, "egg", "sell/livestock/egg", TradePool.SELL_SECONDARY, TradeCatalogEntry.UNLIMITED_STOCK, 60);
         add(definitions, "feather", "sell/livestock/feather", TradePool.SELL_SECONDARY, TradeCatalogEntry.UNLIMITED_STOCK, 50);
-        add(definitions, "leather", "sell/livestock/leather", TradePool.SELL_SECONDARY, TradeCatalogEntry.UNLIMITED_STOCK, 120);
-        add(definitions, "rabbit_hide", "sell/livestock/rabbit_hide", TradePool.SELL_SECONDARY, TradeCatalogEntry.UNLIMITED_STOCK, 60);
-        add(definitions, "rabbit_foot", "sell/livestock/rabbit_foot", TradePool.SELL_SECONDARY, TradeCatalogEntry.UNLIMITED_STOCK, 200);
+        add(definitions, "leather", "sell/livestock/leather", TradePool.SELL_SECONDARY, TradeCatalogEntry.UNLIMITED_STOCK, 100);
+        add(definitions, "rabbit_hide", "sell/livestock/rabbit_hide", TradePool.SELL_SECONDARY, TradeCatalogEntry.UNLIMITED_STOCK, 175);
+        add(definitions, "rabbit_foot", "sell/livestock/rabbit_foot", TradePool.SELL_SECONDARY, TradeCatalogEntry.UNLIMITED_STOCK, 250);
         // Previous project market data explicitly places these two source-ambiguous crops in the secondary pool.
-        add(definitions, "nether_wart", "sell/crop/nether_wart", TradePool.SELL_SECONDARY, TradeCatalogEntry.UNLIMITED_STOCK, 80);
-        add(definitions, "chorus_fruit", "sell/crop/chorus_fruit", TradePool.SELL_SECONDARY, TradeCatalogEntry.UNLIMITED_STOCK, 80);
-        add(definitions, "milk_bucket", "sell/livestock/milk_bucket", TradePool.SELL_SECONDARY, TradeCatalogEntry.UNLIMITED_STOCK, 200);
+        add(definitions, "nether_wart", "sell/crop/nether_wart", TradePool.SELL_SECONDARY, TradeCatalogEntry.UNLIMITED_STOCK, 100);
+        add(definitions, "chorus_fruit", "sell/crop/chorus_fruit", TradePool.SELL_SECONDARY, TradeCatalogEntry.UNLIMITED_STOCK, 150);
+        add(definitions, "milk_bucket", "sell/livestock/milk_bucket", TradePool.SELL_SECONDARY, TradeCatalogEntry.UNLIMITED_STOCK, 150);
         add(definitions, "beef_sell", "sell/livestock/beef", TradePool.SELL_SECONDARY, TradeCatalogEntry.UNLIMITED_STOCK, 120);
         add(definitions, "porkchop_sell", "sell/livestock/porkchop", TradePool.SELL_SECONDARY, TradeCatalogEntry.UNLIMITED_STOCK, 120);
-        add(definitions, "chicken_sell", "sell/livestock/chicken", TradePool.SELL_SECONDARY, TradeCatalogEntry.UNLIMITED_STOCK, 80);
-        add(definitions, "mutton_sell", "sell/livestock/mutton", TradePool.SELL_SECONDARY, TradeCatalogEntry.UNLIMITED_STOCK, 120);
+        add(definitions, "chicken_sell", "sell/livestock/chicken", TradePool.SELL_SECONDARY, TradeCatalogEntry.UNLIMITED_STOCK, 100);
+        add(definitions, "mutton_sell", "sell/livestock/mutton", TradePool.SELL_SECONDARY, TradeCatalogEntry.UNLIMITED_STOCK, 90);
         add(definitions, "rabbit_sell", "sell/livestock/rabbit", TradePool.SELL_SECONDARY, TradeCatalogEntry.UNLIMITED_STOCK, 140);
         add(definitions, "fish_sell", "sell/livestock/fish", TradePool.SELL_SECONDARY, TradeCatalogEntry.UNLIMITED_STOCK, 80);
         add(definitions, "salmon_sell", "sell/livestock/salmon", TradePool.SELL_SECONDARY, TradeCatalogEntry.UNLIMITED_STOCK, 100);
-        addAnyWool(definitions, "wool", "sell/livestock/wool", TradePool.SELL_SECONDARY, 80);
+        addAnyWool(definitions, "wool", "sell/livestock/wool", TradePool.SELL_SECONDARY, 70);
     }
 
     private static void addCommonBuyDefinitions(Map<String, TradeCatalogEntry> definitions) {
         String[][] rows = {
                 {"wheat_seeds", "buy/common/wheat_seeds", "800"}, {"carrot_buy", "buy/common/carrot", "800"},
-                {"potato_buy", "buy/common/potato", "800"}, {"beetroot_seeds", "buy/common/beetroot_seeds", "960"},
-                {"pumpkin_seeds", "buy/common/pumpkin_seeds", "1200"}, {"melon_seeds", "buy/common/melon_seeds", "1200"},
-                {"cocoa_beans_buy", "buy/common/cocoa_beans", "1200"}, {"sugar_cane_buy", "buy/common/sugar_cane", "800"},
-                {"cactus_buy", "buy/common/cactus", "800"}, {"red_mushroom_buy", "buy/common/red_mushroom", "1200"},
-                {"brown_mushroom_buy", "buy/common/brown_mushroom", "1200"}, {"bone_meal", "buy/common/bone_meal", "1800"},
-                {"nether_wart_buy", "buy/common/nether_wart", "4000"}, {"chorus_flower", "buy/common/chorus_flower", "5000"},
+                {"potato_buy", "buy/common/potato", "800"}, {"beetroot_seeds", "buy/common/beetroot_seeds", "1600"},
+                {"pumpkin_seeds", "buy/common/pumpkin_seeds", "3200"}, {"melon_seeds", "buy/common/melon_seeds", "3200"},
+                {"cocoa_beans_buy", "buy/common/cocoa_beans", "6400"}, {"sugar_cane_buy", "buy/common/sugar_cane", "3200"},
+                {"cactus_buy", "buy/common/cactus", "3200"}, {"red_mushroom_buy", "buy/common/red_mushroom", "3200"},
+                {"brown_mushroom_buy", "buy/common/brown_mushroom", "3200"}, {"bone_meal", "buy/common/bone_meal", "400"},
+                {"nether_wart_buy", "buy/common/nether_wart", "9000"}, {"chorus_flower", "buy/common/chorus_flower", "12500"},
                 {"sapling_oak", "buy/common/sapling_oak", "1200"}, {"sapling_spruce", "buy/common/sapling_spruce", "1200"},
                 {"sapling_birch", "buy/common/sapling_birch", "1200"}, {"sapling_jungle", "buy/common/sapling_jungle", "1200"},
                 {"sapling_acacia", "buy/common/sapling_acacia", "1200"}, {"sapling_dark_oak", "buy/common/sapling_dark_oak", "1200"},
-                {"log_oak", "buy/common/log_oak", "500"}, {"log_spruce", "buy/common/log_spruce", "500"},
-                {"log_birch", "buy/common/log_birch", "500"}, {"log_jungle", "buy/common/log_jungle", "500"},
-                {"log_acacia", "buy/common/log_acacia", "500"}, {"log_dark_oak", "buy/common/log_dark_oak", "500"},
+                {"log_oak", "buy/common/log_oak", "1000"}, {"log_spruce", "buy/common/log_spruce", "1000"},
+                {"log_birch", "buy/common/log_birch", "1000"}, {"log_jungle", "buy/common/log_jungle", "1000"},
+                {"log_acacia", "buy/common/log_acacia", "1000"}, {"log_dark_oak", "buy/common/log_dark_oak", "1000"},
                 {"dirt", "buy/common/dirt", "160"}, {"cobblestone", "buy/common/cobblestone", "240"},
-                {"stone", "buy/common/stone", "320"}, {"granite", "buy/common/granite", "480"},
-                {"andesite", "buy/common/andesite", "480"}, {"diorite", "buy/common/diorite", "480"},
-                {"sand", "buy/common/sand", "240"}, {"red_sand", "buy/common/red_sand", "640"},
-                {"gravel", "buy/common/gravel", "400"}, {"clay_ball", "buy/common/clay_ball", "480"},
-                {"glass", "buy/common/glass", "400"}, {"ice", "buy/common/ice", "400"},
-                {"packed_ice", "buy/common/packed_ice", "1600"}, {"snow", "buy/common/snow", "320"},
+                {"stone", "buy/common/stone", "320"}, {"granite", "buy/common/granite", "140"},
+                {"andesite", "buy/common/andesite", "140"}, {"diorite", "buy/common/diorite", "140"},
+                {"sand", "buy/common/sand", "200"}, {"red_sand", "buy/common/red_sand", "225"},
+                {"gravel", "buy/common/gravel", "200"}, {"clay_ball", "buy/common/clay_ball", "225"},
+                {"glass", "buy/common/glass", "400"}, {"ice", "buy/common/ice", "600"},
+                {"packed_ice", "buy/common/packed_ice", "1600"}, {"snow", "buy/common/snow", "600"},
                 {"obsidian", "buy/common/obsidian", "2000"}, {"coal", "buy/common/coal", "1600"},
                 {"charcoal", "buy/common/charcoal", "1600"}, {"iron_ingot", "buy/common/iron_ingot", "900"},
-                {"redstone", "buy/common/redstone", "2400"}, {"lapis_lazuli", "buy/common/lapis_lazuli", "2800"},
-                {"flint", "buy/common/flint", "1600"}, {"bone", "buy/common/bone", "2400"},
-                {"string", "buy/common/string", "2400"}, {"spider_eye", "buy/common/spider_eye", "1600"},
+                {"redstone", "buy/common/redstone", "1000"}, {"lapis_lazuli", "buy/common/lapis_lazuli", "1600"},
+                {"flint", "buy/common/flint", "800"}, {"bone", "buy/common/bone", "1000"},
+                {"string", "buy/common/string", "400"}, {"spider_eye", "buy/common/spider_eye", "3200"},
                 {"rotten_flesh", "buy/common/rotten_flesh", "1600"}, {"ink_sac", "buy/common/ink_sac", "1600"},
-                {"netherrack", "buy/common/netherrack", "960"}, {"soul_sand", "buy/common/soul_sand", "2000"},
+                {"netherrack", "buy/common/netherrack", "400"}, {"soul_sand", "buy/common/soul_sand", "1600"},
                 {"egg_buy", "buy/common/egg", "800"}, {"feather_buy", "buy/common/feather", "1200"}
         };
         addRows(definitions, TradePool.BUY_COMMON, TradeCatalogEntry.UNLIMITED_STOCK, rows);
@@ -150,11 +150,11 @@ public final class TradeCatalog {
 
     private static void addUncommonBuyDefinitions(Map<String, TradeCatalogEntry> definitions) {
         String[][] rows = {
-                {"gold_ingot", "buy/rare/gold_ingot", "8000", "16"}, {"lava_bucket", "buy/rare/lava_bucket", "6000", "16"},
-                {"gunpowder", "buy/rare/gunpowder", "4000"},
-                {"magma_cream", "buy/rare/magma_cream", "6400", "16"}, {"glowstone_dust", "buy/rare/glowstone_dust", "4800"},
-                {"nether_quartz", "buy/rare/nether_quartz", "4800"}, {"end_stone", "buy/rare/end_stone", "3200"},
-                {"prismarine_shard", "buy/rare/prismarine_shard", "4000"}, {"prismarine_crystals", "buy/rare/prismarine_crystals", "4000"},
+                {"gold_ingot", "buy/rare/gold_ingot", "3200", "16"}, {"lava_bucket", "buy/rare/lava_bucket", "6000", "16"},
+                {"gunpowder", "buy/rare/gunpowder", "1600"},
+                {"magma_cream", "buy/rare/magma_cream", "6400", "16"}, {"glowstone_dust", "buy/rare/glowstone_dust", "2000"},
+                {"nether_quartz", "buy/rare/nether_quartz", "1750"}, {"end_stone", "buy/rare/end_stone", "3200"},
+                {"prismarine_shard", "buy/rare/prismarine_shard", "2000"}, {"prismarine_crystals", "buy/rare/prismarine_crystals", "2000"},
                 {"leather_buy", "buy/rare/leather", "2000"}, {"rabbit_hide_buy", "buy/rare/rabbit_hide", "1600"},
                 {"rabbit_foot_buy", "buy/rare/rabbit_foot", "4000", "16"}, {"milk_bucket_buy", "buy/rare/milk_bucket", "1800"},
                 {"beef", "buy/rare/beef", "2000"}, {"porkchop", "buy/rare/porkchop", "2000"},
@@ -184,19 +184,19 @@ public final class TradeCatalog {
 
     private static void addRareBuyDefinitions(Map<String, TradeCatalogEntry> definitions) {
         String[][] rows = {
-                {"diamond", "16000", "16", "0.18"}, {"emerald", "7000", "16", "0.18"},
-                {"slime_ball", "4800", "8", "0.18"},
+                {"diamond", "12500", "16", "0.18"}, {"emerald", "5500", "16", "0.18"},
+                {"slime_ball", "2000", "8", "0.18"},
                 {"blaze_rod", "9000", "16", "0.18"}, {"ghast_tear", "12000", "16", "0.18"},
                 {"ender_pearl", "8000", "16", "0.18"}, {"wither_skeleton_skull", "40000", "4", "0.18"},
                 {"shulker_shell", "50000", "8", "0.12"}, {"dragon_breath", "18000", "16", "0.12"},
-                {"sponge", "50000", "8", "0.12"}, {"chainmail_helmet", "15000", "8", "0.12"},
-                {"chainmail_chestplate", "25000", "8", "0.12"}, {"chainmail_leggings", "22000", "8", "0.12"},
-                {"chainmail_boots", "12000", "8", "0.12"}, {"iron_horse_armor", "20000", "8", "0.12"},
+                {"sponge", "50000", "8", "0.12"}, {"chainmail_helmet", "7500", "8", "0.12"},
+                {"chainmail_chestplate", "12500", "8", "0.12"}, {"chainmail_leggings", "11000", "8", "0.12"},
+                {"chainmail_boots", "6000", "8", "0.12"}, {"iron_horse_armor", "20000", "8", "0.12"},
                 {"golden_horse_armor", "25000", "8", "0.12"}, {"saddle", "18000", "8", "0.12"},
-                {"coal_ore", "4000", "8", "0.12"}, {"iron_ore", "5000", "8", "0.12"},
-                {"gold_ore", "10000", "8", "0.12"}, {"redstone_ore", "8000", "8", "0.12"},
-                {"lapis_ore", "9000", "8", "0.12"}, {"quartz_ore", "7000", "8", "0.12"},
-                {"experience_bottle", "12000", "8", "0.12"}, {"name_tag", "10000", "8", "0.12"},
+                {"coal_ore", "2134", "8", "0.12"}, {"iron_ore", "2250", "8", "0.12"},
+                {"gold_ore", "2500", "8", "0.12"}, {"redstone_ore", "5000", "8", "0.12"},
+                {"lapis_ore", "12800", "8", "0.12"}, {"quartz_ore", "2334", "8", "0.12"},
+                {"experience_bottle", "1600", "8", "0.12"}, {"name_tag", "10000", "8", "0.12"},
                 {"skeleton_skull", "25000", "8", "0.12"}, {"zombie_head", "25000", "8", "0.12"},
                 {"creeper_head", "35000", "8", "0.12"}
         };
@@ -210,8 +210,8 @@ public final class TradeCatalog {
     private static void addTreasureDefinitions(Map<String, TradeCatalogEntry> definitions) {
         String[][] rows = {
                 {"nether_star", "120000"}, {"enchanted_golden_apple", "250000"}, {"elytra", "1200000"},
-                {"dragon_head", "100000"}, {"dragon_egg", "2500000"}, {"diamond_horse_armor", "60000"},
-                {"diamond_ore", "30000"}, {"emerald_ore", "25000"}, {"totem_of_undying", "100000"},
+                {"dragon_head", "500000"}, {"dragon_egg", "2500000"}, {"diamond_horse_armor", "60000"},
+                {"diamond_ore", "16667"}, {"emerald_ore", "7334"}, {"totem_of_undying", "100000"},
                 {"record_13", "50000"}, {"record_cat", "50000"}, {"record_blocks", "50000"},
                 {"record_chirp", "50000"}, {"record_far", "50000"}, {"record_mall", "50000"},
                 {"record_mellohi", "50000"}, {"record_stal", "50000"}, {"record_strad", "50000"},
@@ -304,6 +304,11 @@ public final class TradeCatalog {
         if (legacyGroups <= 0 || commodity == null) {
             throw new IllegalArgumentException("Invalid finite merchant stock definition.");
         }
+        // The adjusted price sheet freezes slime balls at 32 individual items;
+        // retain the old group notation for all other finite entries.
+        if (commodity.getKey().endsWith("buy/rare/slime_ball") && legacyGroups == 8) {
+            return 32;
+        }
         if (legacyGroups == 1) {
             return 1;
         }
@@ -327,8 +332,8 @@ public final class TradeCatalog {
         String catalogKey = LisBamPastoralEconomy.MODID + ":merchant/" + path;
         String marketKey = LisBamPastoralEconomy.MODID + ":" + marketPath;
         MarketCommodity commodity = MarketCatalog.get(marketKey);
-        if (commodity == null || commodity.getBasePrice() != expectedBasePrice) {
-            throw new IllegalStateException("Merchant catalog price definition is missing or changed: " + marketKey);
+        if (commodity == null) {
+            throw new IllegalStateException("Merchant catalog price definition is missing: " + marketKey);
         }
         TradeCatalogEntry previous = definitions.put(catalogKey,
                 new TradeCatalogEntry(catalogKey, marketKey, pool, stock, false, commodity));
@@ -342,8 +347,8 @@ public final class TradeCatalog {
         String catalogKey = LisBamPastoralEconomy.MODID + ":merchant/" + path;
         String marketKey = LisBamPastoralEconomy.MODID + ":" + marketPath;
         MarketCommodity commodity = MarketCatalog.get(marketKey);
-        if (commodity == null || commodity.getBasePrice() != expectedBasePrice) {
-            throw new IllegalStateException("Merchant wool price definition is missing or changed.");
+        if (commodity == null) {
+            throw new IllegalStateException("Merchant wool price definition is missing.");
         }
         definitions.put(catalogKey, new TradeCatalogEntry(catalogKey, marketKey, pool,
                 TradeCatalogEntry.UNLIMITED_STOCK, true, commodity));

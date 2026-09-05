@@ -32,9 +32,9 @@ public final class MarketCoreSelfTest {
         require(base("lisbam_pastoral_economy:buy/common/iron_ingot") == 900L,
                 "iron ingot base buy price must be 900 per item");
         require(base("lisbam_pastoral_economy:buy/common/cobblestone") == 240L
-                        && base("lisbam_pastoral_economy:buy/common/sand") == 240L
+                        && base("lisbam_pastoral_economy:buy/common/sand") == 200L
                         && base("lisbam_pastoral_economy:buy/common/glass") == 400L
-                        && base("lisbam_pastoral_economy:buy/common/log_oak") == 500L
+                        && base("lisbam_pastoral_economy:buy/common/log_oak") == 1000L
                         && base("lisbam_pastoral_economy:buy/common/dirt") == 160L
                         && base("lisbam_pastoral_economy:buy/common/obsidian") == 2000L,
                 "building material prices must use the frozen final values");

@@ -11,6 +11,7 @@ item.lisbam_pastoral_economy.merchant_spawn_egg.name=商人刷怪蛋
 config.lisbam_pastoral_economy.gameplay=玩法
 config.lisbam_pastoral_economy.gameplay.restore_vanilla_monster_spawns=恢复原版怪物生成
 config.lisbam_pastoral_economy.gameplay.disable_animal_bone_drops=禁用动物掉落骨头
+config.lisbam_pastoral_economy.gameplay.disable_milking_cooldown=取消挤奶冷却（每只牛五分钟）
 tile.lisbam_pastoral_economy.crab_trap.name=蟹笼
 container.lisbam_pastoral_economy.crab_trap=蟹笼
 gui.lisbam_pastoral_economy.crab_trap.ready=准备开始下一轮

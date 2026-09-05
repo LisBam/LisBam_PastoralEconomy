@@ -61,14 +61,14 @@ public final class MerchantCatalogSelfTest {
                 "treasure purchase quality upper boundary");
         check(find(TradePool.SELL_SECONDARY, "beef_sell").getBasePrice() == 120L, "beef sell price");
         check(find(TradePool.SELL_SECONDARY, "porkchop_sell").getBasePrice() == 120L, "porkchop sell price");
-        check(find(TradePool.SELL_SECONDARY, "chicken_sell").getBasePrice() == 80L, "chicken sell price");
-        check(find(TradePool.SELL_SECONDARY, "mutton_sell").getBasePrice() == 120L, "mutton sell price");
+        check(find(TradePool.SELL_SECONDARY, "chicken_sell").getBasePrice() == 100L, "chicken sell price");
+        check(find(TradePool.SELL_SECONDARY, "mutton_sell").getBasePrice() == 90L, "mutton sell price");
         check(find(TradePool.SELL_SECONDARY, "rabbit_sell").getBasePrice() == 140L, "rabbit sell price");
         check(find(TradePool.SELL_SECONDARY, "fish_sell").getBasePrice() == 80L, "cod sell price");
         check(find(TradePool.SELL_SECONDARY, "salmon_sell").getBasePrice() == 100L, "salmon sell price");
 
         String[][] rareStocks = {
-                {"diamond", "256"}, {"emerald", "256"}, {"slime_ball", "128"}, {"blaze_rod", "256"}, {"ghast_tear", "256"},
+                {"diamond", "256"}, {"emerald", "256"}, {"slime_ball", "32"}, {"blaze_rod", "256"}, {"ghast_tear", "256"},
                 {"ender_pearl", "64"}, {"wither_skeleton_skull", "64"}, {"shulker_shell", "128"},
                 {"dragon_breath", "256"}, {"sponge", "128"}, {"chainmail_helmet", "2"},
                 {"chainmail_chestplate", "2"}, {"chainmail_leggings", "2"}, {"chainmail_boots", "2"},

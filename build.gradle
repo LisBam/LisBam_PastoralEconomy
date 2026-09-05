@@ -208,6 +208,13 @@ task goldenBoneMealSelfTest(type: JavaExec) {
     main = 'lisbam.pastoraleconomy.agriculture.GoldenBoneMealSelfTest'
 }
 
+task milkCooldownSelfTest(type: JavaExec) {
+    group = 'verification'
+    description = 'Runs deterministic per-cow milking cooldown checks.'
+    classpath = sourceSets.test.runtimeClasspath
+    main = 'lisbam.pastoraleconomy.event.MilkCooldownSelfTest'
+}
+
 publishing {
     publications {
         mavenJava(MavenPublication) {

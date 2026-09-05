@@ -642,3 +642,9 @@
 - 商人购买从整组改为按件：有限库存按 16→4、8→2、4→1 组并以原版堆叠上限换算实际件数，原 1 组改为 1 件；`DailyOffer` 持久字段为 `remainingItems`。服务端按件验证库存、价格、金币和背包容量，GUI 仅显示单价/总价/实际剩余件数并移除“一组数量”。
 - `MerchantOfferService` 在服务端跨购买池按 Item/meta/NBT 变体身份去重，继续生成普通 4、罕见 3、稀有 2、珍宝 1；附魔书身份包含附魔注册名和等级，重抽保持轮换确定性。缺少 `remainingItems` 或池/等级非法的旧 Offer 不迁移，读取为无效并在当天重新生成。
 - 默认链式行情增加类别最低/最高价、50%/55%/65%/75%/85% 动态回归概率、边界强制反弹和整数方向保留；同一 Item/meta 买卖渠道共享随机身份。更新了市场、商人、交通自检以及内容书和维护文档。
+# 2026-09-05 维护：挤奶冷却、全商品调价与剪刀附魔
+
+- 新增成年牛/哞菇每头 6000 tick 挤奶冷却及默认关闭的 `disableMilkingCooldown` 配置；服务端在桶交互时原子替换牛奶桶并记录实体 NBT，冷却期间拒绝交互。
+- 按《聆竹の休闲田园经济_全商品手动调价表_调整后.xlsx》更新出售、购买普通/罕见/稀有/珍宝和附魔书基础价，保持经济 key 与历史兼容。
+- 锄头和剪刀的 Harvest/Range 适用范围保持；剪刀上的 Harvest 成功剪毛后按既有二项式规则追加羊毛或红色蘑菇，原版 BREAKABLE 类附魔可正常用于剪刀。
+- 最终验证：Temurin Java 8 下 `compileJava`、`processResources`、`build`（含 `test`、`reobfJar`、`exportReleaseJar`）PASS；Forge 1.12.2 audit 为 0 ERROR、6 条既有 packet-thread WARNING。`milkCooldownSelfTest`、`marketCoreSelfTest`、`merchantCatalogSelfTest`、`enchantmentSelfTest` 均 PASS。`release/LisBam_PastoralEconomy-1.5.jar` 401,456 bytes，SHA-256 `f53d2731695a805fff26a3ea497984e8f0dba8cc5c002359992f40d6320fc2e2`，`unzip -t` PASS。
