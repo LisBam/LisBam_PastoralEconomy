@@ -15,11 +15,12 @@ import net.minecraft.item.ItemEnchantedBook;
 import net.minecraft.item.Item;
 
 import org.objectweb.asm.ClassReader;
+import org.objectweb.asm.ClassWriter;
+import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
-import org.objectweb.asm.tree.TypeInsnNode;
 import org.objectweb.asm.util.CheckClassAdapter;
 
 import java.io.ByteArrayOutputStream;
@@ -27,6 +28,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.util.Iterator;
 import java.util.Random;
 
 /** Standalone deterministic checks for all registered pastoral enchantments. */
@@ -38,6 +40,8 @@ public final class EnchantmentSelfTest {
         Bootstrap.register();
         verifyDefinitions();
         verifyEnchantingTableCompatibilityPatch();
+        verifySrgRuntimeNameCompatibility();
+        verifyForge2847Compatibility();
         verifyReforgedAnvilRule();
         verifyHarvestFormulas();
         verifyProbabilityThresholds();
@@ -134,25 +138,25 @@ public final class EnchantmentSelfTest {
     }
 
     private static void verifyEnchantingTableCompatibilityPatch() {
-        require(EnchantingCompatibilityHooks.getItemEnchantability(Items.SHEARS, new ItemStack(Items.SHEARS), 0)
+        require(EnchantingCompatibilityHooks.getItemEnchantability(Items.SHEARS, 0)
                         == Item.ToolMaterial.IRON.getEnchantability(),
                 "shears must use iron-tier enchanting power");
-        require(EnchantingCompatibilityHooks.getItemEnchantability(Items.WOODEN_HOE, new ItemStack(Items.WOODEN_HOE), 0)
+        require(EnchantingCompatibilityHooks.getItemEnchantability(Items.WOODEN_HOE, 0)
                         == Item.ToolMaterial.WOOD.getEnchantability(),
                 "wood hoe enchanting power");
-        require(EnchantingCompatibilityHooks.getItemEnchantability(Items.STONE_HOE, new ItemStack(Items.STONE_HOE), 0)
+        require(EnchantingCompatibilityHooks.getItemEnchantability(Items.STONE_HOE, 0)
                         == Item.ToolMaterial.STONE.getEnchantability(),
                 "stone hoe enchanting power");
-        require(EnchantingCompatibilityHooks.getItemEnchantability(Items.IRON_HOE, new ItemStack(Items.IRON_HOE), 0)
+        require(EnchantingCompatibilityHooks.getItemEnchantability(Items.IRON_HOE, 0)
                         == Item.ToolMaterial.IRON.getEnchantability(),
                 "iron hoe enchanting power");
-        require(EnchantingCompatibilityHooks.getItemEnchantability(Items.GOLDEN_HOE, new ItemStack(Items.GOLDEN_HOE), 0)
+        require(EnchantingCompatibilityHooks.getItemEnchantability(Items.GOLDEN_HOE, 0)
                         == Item.ToolMaterial.GOLD.getEnchantability(),
                 "gold hoe enchanting power");
-        require(EnchantingCompatibilityHooks.getItemEnchantability(Items.DIAMOND_HOE, new ItemStack(Items.DIAMOND_HOE), 0)
+        require(EnchantingCompatibilityHooks.getItemEnchantability(Items.DIAMOND_HOE, 0)
                         == Item.ToolMaterial.DIAMOND.getEnchantability(),
                 "diamond hoe enchanting power");
-        require(EnchantingCompatibilityHooks.getItemEnchantability(Items.DIAMOND_SWORD, new ItemStack(Items.DIAMOND_SWORD), 10)
+        require(EnchantingCompatibilityHooks.getItemEnchantability(Items.DIAMOND_SWORD, 10)
                         == 10, "unrelated items must retain vanilla enchanting power");
 
         byte[] transformed = new EnchantingTableTransformer().transform("net.minecraft.item.Item",
@@ -176,17 +180,16 @@ public final class EnchantmentSelfTest {
             }
             if ("canApplyAtEnchantingTable".equals(method.name)
                     && "(Lnet/minecraft/item/ItemStack;Lnet/minecraft/enchantment/Enchantment;)Z".equals(method.desc)) {
-                boolean shears = false;
-                boolean efficiency = false;
                 for (AbstractInsnNode instruction = method.instructions.getFirst(); instruction != null;
                      instruction = instruction.getNext()) {
-                    if (instruction instanceof TypeInsnNode) {
-                        String type = ((TypeInsnNode) instruction).desc;
-                        shears |= "net/minecraft/item/ItemShears".equals(type);
-                        efficiency |= "net/minecraft/enchantment/EnchantmentDigging".equals(type);
+                    if (instruction instanceof MethodInsnNode) {
+                        MethodInsnNode call = (MethodInsnNode) instruction;
+                        if ("lisbam/pastoraleconomy/core/EnchantingCompatibilityHooks".equals(call.owner)
+                                && "isShearsEfficiency".equals(call.name)) {
+                            efficiencyGate = true;
+                        }
                     }
                 }
-                efficiencyGate = shears && efficiency;
             }
         }
         require(enchantabilityHook && efficiencyGate,
@@ -198,6 +201,93 @@ public final class EnchantmentSelfTest {
         CheckClassAdapter.verify(new ClassReader(transformed), false, new PrintWriter(diagnostics));
         require(diagnostics.getBuffer().length() == 0,
                 "core patch must produce verifier-clean Item bytecode: " + diagnostics);
+    }
+
+    private static void verifySrgRuntimeNameCompatibility() {
+        ClassNode node = new ClassNode();
+        new ClassReader(readItemClassBytes()).accept(node, 0);
+        node.name = "vg";
+        for (MethodNode method : node.methods) {
+            if ("getItemEnchantability".equals(method.name)
+                    && Type.getArgumentTypes(method.desc).length == 1) {
+                method.desc = "(Ladd;)I";
+                for (AbstractInsnNode instruction = method.instructions.getFirst(); instruction != null;
+                     instruction = instruction.getNext()) {
+                    if (instruction instanceof MethodInsnNode && "()I".equals(((MethodInsnNode) instruction).desc)) {
+                        ((MethodInsnNode) instruction).owner = "vg";
+                        ((MethodInsnNode) instruction).name = "func_77619_b";
+                    }
+                }
+            } else if ("canApplyAtEnchantingTable".equals(method.name)) {
+                method.desc = "(Ladd;Lamz;)Z";
+            }
+        }
+        ClassWriter writer = new ClassWriter(0);
+        node.accept(writer);
+        byte[] transformed = new EnchantingTableTransformer().transform("vg", "net.minecraft.item.Item",
+                writer.toByteArray());
+        ClassNode transformedNode = new ClassNode();
+        new ClassReader(transformed).accept(transformedNode, 0);
+        boolean enchantabilityHook = false;
+        boolean efficiencyHook = false;
+        for (MethodNode method : transformedNode.methods) {
+            for (AbstractInsnNode instruction = method.instructions.getFirst(); instruction != null;
+                 instruction = instruction.getNext()) {
+                if (!(instruction instanceof MethodInsnNode)) {
+                    continue;
+                }
+                MethodInsnNode call = (MethodInsnNode) instruction;
+                if (!"lisbam/pastoraleconomy/core/EnchantingCompatibilityHooks".equals(call.owner)) {
+                    continue;
+                }
+                enchantabilityHook |= "getItemEnchantability".equals(call.name)
+                        && "(Ljava/lang/Object;I)I".equals(call.desc);
+                efficiencyHook |= "isShearsEfficiency".equals(call.name)
+                        && "(Ljava/lang/Object;Ljava/lang/Object;)Z".equals(call.desc);
+            }
+        }
+        require(enchantabilityHook && efficiencyHook,
+                "core patch must use runtime class descriptors instead of MCP-only names");
+    }
+
+    private static void verifyForge2847Compatibility() {
+        ClassNode node = new ClassNode();
+        new ClassReader(readItemClassBytes()).accept(node, 0);
+        node.name = "vg";
+        for (Iterator<MethodNode> iterator = node.methods.iterator(); iterator.hasNext();) {
+            MethodNode method = iterator.next();
+            if ("getItemEnchantability".equals(method.name)
+                    && Type.getArgumentTypes(method.desc).length == 1
+                    || "canApplyAtEnchantingTable".equals(method.name)) {
+                iterator.remove();
+            } else if ("getItemEnchantability".equals(method.name)
+                    && Type.getArgumentTypes(method.desc).length == 0) {
+                method.name = "func_77619_b";
+            }
+        }
+        ClassWriter writer = new ClassWriter(0);
+        node.accept(writer);
+        byte[] transformed = new EnchantingTableTransformer().transform("vg", "net.minecraft.item.Item",
+                writer.toByteArray());
+        ClassNode transformedNode = new ClassNode();
+        new ClassReader(transformed).accept(transformedNode, 0);
+        boolean legacyHook = false;
+        for (MethodNode method : transformedNode.methods) {
+            if (!"func_77619_b".equals(method.name)) {
+                continue;
+            }
+            for (AbstractInsnNode instruction = method.instructions.getFirst(); instruction != null;
+                 instruction = instruction.getNext()) {
+                if (instruction instanceof MethodInsnNode) {
+                    MethodInsnNode call = (MethodInsnNode) instruction;
+                    legacyHook |= "lisbam/pastoraleconomy/core/EnchantingCompatibilityHooks".equals(call.owner)
+                            && "getItemEnchantability".equals(call.name)
+                            && "(Ljava/lang/Object;I)I".equals(call.desc);
+                }
+            }
+        }
+        require(legacyHook,
+                "Forge 14.23.5.2847 Item layout must receive the legacy enchantability hook");
     }
 
     private static byte[] readItemClassBytes() {

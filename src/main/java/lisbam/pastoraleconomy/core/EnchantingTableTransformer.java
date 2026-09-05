@@ -1,9 +1,11 @@
 package lisbam.pastoraleconomy.core;
 
 import net.minecraft.launchwrapper.IClassTransformer;
+import net.minecraftforge.fml.common.FMLLog;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.Opcodes;
+import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.InsnList;
@@ -12,21 +14,14 @@ import org.objectweb.asm.tree.JumpInsnNode;
 import org.objectweb.asm.tree.LabelNode;
 import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
-import org.objectweb.asm.tree.TypeInsnNode;
 import org.objectweb.asm.tree.VarInsnNode;
+import org.apache.logging.log4j.Level;
 
 /**
  * Patches only the two Forge hooks that otherwise reject vanilla shears and
  * hoes before enchanting-table candidates are generated.
  */
 public final class EnchantingTableTransformer implements IClassTransformer, Opcodes {
-    private static final String ITEM = "net/minecraft/item/Item";
-    private static final String ITEM_STACK = "net/minecraft/item/ItemStack";
-    private static final String ENCHANTMENT = "net/minecraft/enchantment/Enchantment";
-    private static final String SHEARS = "net/minecraft/item/ItemShears";
-    private static final String EFFICIENCY = "net/minecraft/enchantment/EnchantmentDigging";
-    private static final String ENCHANTABILITY_DESC = "(L" + ITEM_STACK + ";)I";
-    private static final String APPLY_DESC = "(L" + ITEM_STACK + ";L" + ENCHANTMENT + ";)Z";
     private static final String HOOKS = "lisbam/pastoraleconomy/core/EnchantingCompatibilityHooks";
 
     @Override
@@ -36,10 +31,29 @@ public final class EnchantingTableTransformer implements IClassTransformer, Opco
         }
         ClassNode node = new ClassNode();
         new ClassReader(basicClass).accept(node, 0);
-        boolean patchedEnchantability = patchEnchantability(node);
-        boolean patchedEfficiency = patchNativeEfficiencyGate(node);
+        boolean hasModernEnchantability = hasModernEnchantabilityMethod(node);
+        boolean hasModernEfficiencyGate = hasModernEfficiencyGate(node);
+        boolean patchedEnchantability;
+        boolean patchedEfficiency;
+        if (hasModernEnchantability || hasModernEfficiencyGate) {
+            patchedEnchantability = hasModernEnchantability && patchEnchantability(node);
+            patchedEfficiency = hasModernEfficiencyGate && patchNativeEfficiencyGate(node);
+        } else {
+            // Forge 14.23.5.2847 has neither ItemStack overload. Its table
+            // rolls use Item#getItemEnchantability() plus
+            // Enchantment#canApply(ItemStack), where vanilla Efficiency
+            // already explicitly accepts shears.
+            patchedEnchantability = patchLegacyEnchantability(node);
+            patchedEfficiency = patchedEnchantability;
+        }
         if (!patchedEnchantability || !patchedEfficiency) {
-            throw new IllegalStateException("Unable to apply LisBam 1.12.2 enchanting compatibility patch.");
+            // Forge 1.12.2 runs this Coremod before all later gameplay code. A
+            // mapping variation must leave vanilla Item intact rather than make
+            // the whole client/server unable to launch.
+            FMLLog.log(Level.ERROR, "LisBam skipped the enchanting-table compatibility patch for %s "
+                            + "(enchantability=%s, efficiency=%s).",
+                    node.name, Boolean.valueOf(patchedEnchantability), Boolean.valueOf(patchedEfficiency));
+            return basicClass;
         }
         ClassWriter writer = new ClassWriter(ClassWriter.COMPUTE_MAXS);
         node.accept(writer);
@@ -48,7 +62,7 @@ public final class EnchantingTableTransformer implements IClassTransformer, Opco
 
     private static boolean patchEnchantability(ClassNode node) {
         for (MethodNode method : node.methods) {
-            if (!"getItemEnchantability".equals(method.name) || !ENCHANTABILITY_DESC.equals(method.desc)) {
+            if (!isModernEnchantabilityMethod(method)) {
                 continue;
             }
             String vanillaMethod = findVanillaEnchantabilityMethod(method);
@@ -60,10 +74,33 @@ public final class EnchantingTableTransformer implements IClassTransformer, Opco
             method.instructions.add(new VarInsnNode(ALOAD, 0));
             method.instructions.add(new VarInsnNode(ALOAD, 1));
             method.instructions.add(new VarInsnNode(ALOAD, 0));
-            method.instructions.add(new MethodInsnNode(INVOKEVIRTUAL, ITEM, vanillaMethod, "()I", false));
+            method.instructions.add(new MethodInsnNode(INVOKEVIRTUAL, node.name, vanillaMethod, "()I", false));
             method.instructions.add(new MethodInsnNode(INVOKESTATIC, HOOKS, "getItemEnchantability",
-                    "(L" + ITEM + ";L" + ITEM_STACK + ";I)I", false));
+                    "(Ljava/lang/Object;I)I", false));
             method.instructions.add(new InsnNode(IRETURN));
+            method.maxStack = 0;
+            method.maxLocals = 0;
+            return true;
+        }
+        return false;
+    }
+
+    private static boolean patchLegacyEnchantability(ClassNode node) {
+        for (MethodNode method : node.methods) {
+            if (!isLegacyEnchantabilityMethod(method)) {
+                continue;
+            }
+            InsnList hook = new InsnList();
+            hook.add(new VarInsnNode(ALOAD, 0));
+            // The 1.12.2 Item base implementation is the zero-enchantability
+            // default. Item-specific overrides remain untouched.
+            hook.add(new InsnNode(ICONST_0));
+            hook.add(new MethodInsnNode(INVOKESTATIC, HOOKS, "getItemEnchantability",
+                    "(Ljava/lang/Object;I)I", false));
+            hook.add(new InsnNode(IRETURN));
+            method.instructions.clear();
+            method.tryCatchBlocks.clear();
+            method.instructions.add(hook);
             method.maxStack = 0;
             method.maxLocals = 0;
             return true;
@@ -76,7 +113,7 @@ public final class EnchantingTableTransformer implements IClassTransformer, Opco
              instruction = instruction.getNext()) {
             if (instruction instanceof MethodInsnNode) {
                 MethodInsnNode call = (MethodInsnNode) instruction;
-                if (ITEM.equals(call.owner) && "()I".equals(call.desc)) {
+                if (call.getOpcode() == INVOKEVIRTUAL && "()I".equals(call.desc)) {
                     return call.name;
                 }
             }
@@ -86,16 +123,15 @@ public final class EnchantingTableTransformer implements IClassTransformer, Opco
 
     private static boolean patchNativeEfficiencyGate(ClassNode node) {
         for (MethodNode method : node.methods) {
-            if (!"canApplyAtEnchantingTable".equals(method.name) || !APPLY_DESC.equals(method.desc)) {
+            if (!isModernEfficiencyGate(method)) {
                 continue;
             }
             LabelNode continueVanilla = new LabelNode();
             InsnList gate = new InsnList();
             gate.add(new VarInsnNode(ALOAD, 0));
-            gate.add(new TypeInsnNode(INSTANCEOF, SHEARS));
-            gate.add(new JumpInsnNode(IFEQ, continueVanilla));
             gate.add(new VarInsnNode(ALOAD, 2));
-            gate.add(new TypeInsnNode(INSTANCEOF, EFFICIENCY));
+            gate.add(new MethodInsnNode(INVOKESTATIC, HOOKS, "isShearsEfficiency",
+                    "(Ljava/lang/Object;Ljava/lang/Object;)Z", false));
             gate.add(new JumpInsnNode(IFEQ, continueVanilla));
             gate.add(new InsnNode(ICONST_1));
             gate.add(new InsnNode(IRETURN));
@@ -104,5 +140,41 @@ public final class EnchantingTableTransformer implements IClassTransformer, Opco
             return true;
         }
         return false;
+    }
+
+    private static boolean hasModernEnchantabilityMethod(ClassNode node) {
+        for (MethodNode method : node.methods) {
+            if (isModernEnchantabilityMethod(method)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static boolean hasModernEfficiencyGate(ClassNode node) {
+        for (MethodNode method : node.methods) {
+            if (isModernEfficiencyGate(method)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static boolean isModernEnchantabilityMethod(MethodNode method) {
+        return "getItemEnchantability".equals(method.name)
+                && Type.getArgumentTypes(method.desc).length == 1
+                && Type.getReturnType(method.desc).getSort() == Type.INT;
+    }
+
+    private static boolean isModernEfficiencyGate(MethodNode method) {
+        return "canApplyAtEnchantingTable".equals(method.name)
+                && Type.getArgumentTypes(method.desc).length == 2
+                && Type.getReturnType(method.desc).getSort() == Type.BOOLEAN;
+    }
+
+    private static boolean isLegacyEnchantabilityMethod(MethodNode method) {
+        return ("getItemEnchantability".equals(method.name) || "func_77619_b".equals(method.name))
+                && Type.getArgumentTypes(method.desc).length == 0
+                && Type.getReturnType(method.desc).getSort() == Type.INT;
     }
 }
