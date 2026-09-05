@@ -3,7 +3,7 @@ package lisbam.pastoraleconomy.entity;
 import com.google.common.base.Predicate;
 import lisbam.pastoraleconomy.merchant.MerchantNameGenerator;
 import lisbam.pastoraleconomy.merchant.MerchantTradeService;
-import lisbam.pastoraleconomy.merchant.StationRole;
+import lisbam.pastoraleconomy.merchant.VillageService;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.SharedMonsterAttributes;
 import net.minecraft.entity.ai.EntityAIAvoidEntity;
@@ -36,13 +36,17 @@ public final class EntityMerchant extends EntityCreature {
     private static final String KEY_STATION_X = "stationX";
     private static final String KEY_STATION_Y = "stationY";
     private static final String KEY_STATION_Z = "stationZ";
+    private static final String KEY_VILLAGE_HOME_X = "villageHomeX";
+    private static final String KEY_VILLAGE_HOME_Y = "villageHomeY";
+    private static final String KEY_VILLAGE_HOME_Z = "villageHomeZ";
     private static final String KEY_SKIN_VARIANT = "merchantSkin";
     /** Old releases wrote this generic custom name; it is treated as unnamed during migration. */
     private static final String LEGACY_GENERIC_NAME = "商人";
     private static final DataParameter<Integer> SKIN_VARIANT = EntityDataManager.createKey(EntityMerchant.class,
             DataSerializers.VARINT);
-    private static final int HOME_RADIUS = 64;
-    private static final int RETURN_DISTANCE = 96;
+    /** Keep the merchant's restriction and return range identical to VillageService's village boundary. */
+    private static final int HOME_RADIUS = VillageService.VILLAGE_REFERENCE_RANGE;
+    private static final int RETURN_DISTANCE = VillageService.VILLAGE_REFERENCE_RANGE;
     private static final int RETURN_REPATH_INTERVAL_TICKS = 20;
     private static final int FLEE_DURATION_TICKS = 200;
     private static final float FLEE_DISTANCE = 12.0F;
@@ -55,6 +59,8 @@ public final class EntityMerchant extends EntityCreature {
     private UUID villageId;
     private UUID stationId;
     private BlockPos stationPosition;
+    /** Persisted village centre so unloaded/reloaded entities retain their villager-style home restriction. */
+    private BlockPos villageHomePosition;
     /** False only until an old NBT record or a new server spawn receives its persistent selection. */
     private boolean skinVariantAssigned;
     /** Runtime-only pathfinding throttle; station identity remains fully persisted above. */
@@ -108,16 +114,28 @@ public final class EntityMerchant extends EntityCreature {
         return false;
     }
 
-    public void bind(UUID newMerchantId, UUID newVillageId, UUID newStationId, BlockPos newStationPosition) {
-        if (newMerchantId == null || newVillageId == null || newStationId == null || newStationPosition == null) {
+    public void bind(UUID newMerchantId, UUID newVillageId, UUID newStationId, BlockPos newStationPosition,
+                     BlockPos newVillageHomePosition) {
+        if (newMerchantId == null || newVillageId == null || newStationId == null || newStationPosition == null
+                || newVillageHomePosition == null) {
             throw new IllegalArgumentException("Merchant binding is incomplete.");
         }
         merchantId = newMerchantId;
         villageId = newVillageId;
         stationId = newStationId;
         stationPosition = newStationPosition.toImmutable();
-        setHomePosAndDistance(stationPosition.up(), HOME_RADIUS);
+        villageHomePosition = newVillageHomePosition.toImmutable();
+        setHomePosAndDistance(villageHomePosition, HOME_RADIUS);
         ensurePresentation();
+    }
+
+    /** Refreshes an old entity's home centre when its persisted VillageRecord becomes available. */
+    public void updateVillageHome(BlockPos newVillageHomePosition) {
+        if (newVillageHomePosition == null) {
+            return;
+        }
+        villageHomePosition = newVillageHomePosition.toImmutable();
+        setHomePosAndDistance(villageHomePosition, HOME_RADIUS);
     }
 
     public UUID getMerchantId() { return merchantId; }
@@ -217,11 +235,11 @@ public final class EntityMerchant extends EntityCreature {
             lookAtNearestPlayer();
             return;
         }
-        if (stationPosition == null || isFleeing()) {
+        if (villageHomePosition == null || isFleeing()) {
             return;
         }
-        if (getDistanceSq(stationPosition.getX() + 0.5D, stationPosition.getY() + 1.0D,
-                stationPosition.getZ() + 0.5D) <= (double) (RETURN_DISTANCE * RETURN_DISTANCE)) {
+        if (getDistanceSq(villageHomePosition.getX() + 0.5D, villageHomePosition.getY() + 1.0D,
+                villageHomePosition.getZ() + 0.5D) <= (double) (RETURN_DISTANCE * RETURN_DISTANCE)) {
             nextReturnPathTick = ticksExisted;
             return;
         }
@@ -229,8 +247,8 @@ public final class EntityMerchant extends EntityCreature {
             return;
         }
         nextReturnPathTick = ticksExisted + RETURN_REPATH_INTERVAL_TICKS;
-        getNavigator().tryMoveToXYZ(stationPosition.getX() + 0.5D, stationPosition.getY() + 1.0D,
-                stationPosition.getZ() + 0.5D, 1.0D);
+        getNavigator().tryMoveToXYZ(villageHomePosition.getX() + 0.5D, villageHomePosition.getY() + 1.0D,
+                villageHomePosition.getZ() + 0.5D, 1.0D);
         // Villager-style navigation is intentionally allowed to fail while a
         // chunk is unavailable; never teleport a merchant across the village.
     }
@@ -277,6 +295,11 @@ public final class EntityMerchant extends EntityCreature {
             compound.setInteger(KEY_STATION_Y, stationPosition.getY());
             compound.setInteger(KEY_STATION_Z, stationPosition.getZ());
         }
+        if (villageHomePosition != null) {
+            compound.setInteger(KEY_VILLAGE_HOME_X, villageHomePosition.getX());
+            compound.setInteger(KEY_VILLAGE_HOME_Y, villageHomePosition.getY());
+            compound.setInteger(KEY_VILLAGE_HOME_Z, villageHomePosition.getZ());
+        }
         if (skinVariantAssigned) {
             compound.setInteger(KEY_SKIN_VARIANT, getSkinVariant());
         }
@@ -294,6 +317,18 @@ public final class EntityMerchant extends EntityCreature {
             setHomePosAndDistance(stationPosition.up(), HOME_RADIUS);
         } else {
             stationPosition = null;
+        }
+        if (compound.hasKey(KEY_VILLAGE_HOME_X) && compound.hasKey(KEY_VILLAGE_HOME_Y)
+                && compound.hasKey(KEY_VILLAGE_HOME_Z)) {
+            villageHomePosition = new BlockPos(compound.getInteger(KEY_VILLAGE_HOME_X),
+                    compound.getInteger(KEY_VILLAGE_HOME_Y), compound.getInteger(KEY_VILLAGE_HOME_Z));
+        } else {
+            // Existing saves have only a station coordinate. VillageService
+            // supplies the exact legacy-village centre during reconciliation.
+            villageHomePosition = stationPosition;
+        }
+        if (villageHomePosition != null) {
+            setHomePosAndDistance(villageHomePosition, HOME_RADIUS);
         }
         skinVariantAssigned = compound.hasKey(KEY_SKIN_VARIANT)
                 && MerchantSkinCatalog.isValid(compound.getInteger(KEY_SKIN_VARIANT));

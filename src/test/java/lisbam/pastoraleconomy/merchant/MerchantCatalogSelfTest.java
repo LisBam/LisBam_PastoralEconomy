@@ -6,6 +6,7 @@ import net.minecraft.item.ItemEnchantedBook;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
 import lisbam.pastoraleconomy.LisBamPastoralEconomy;
+import lisbam.pastoraleconomy.market.MarketCatalog;
 import java.util.List;
 import java.util.HashSet;
 import java.util.Random;
@@ -34,6 +35,13 @@ public final class MerchantCatalogSelfTest {
         check(TradeCatalog.getPool(TradePool.BUY_UNCOMMON).size() == 42, "uncommon buy pool");
         check(TradeCatalog.getPool(TradePool.BUY_RARE).size() == 28, "rare buy pool");
         check(TradeCatalog.getPool(TradePool.BUY_TREASURE).size() == 33, "treasure buy pool");
+        check(find(TradePool.SELL_SECONDARY, "beef_sell").getBasePrice() == 120L, "beef sell price");
+        check(find(TradePool.SELL_SECONDARY, "porkchop_sell").getBasePrice() == 120L, "porkchop sell price");
+        check(find(TradePool.SELL_SECONDARY, "chicken_sell").getBasePrice() == 80L, "chicken sell price");
+        check(find(TradePool.SELL_SECONDARY, "mutton_sell").getBasePrice() == 120L, "mutton sell price");
+        check(find(TradePool.SELL_SECONDARY, "rabbit_sell").getBasePrice() == 140L, "rabbit sell price");
+        check(find(TradePool.SELL_SECONDARY, "fish_sell").getBasePrice() == 80L, "cod sell price");
+        check(find(TradePool.SELL_SECONDARY, "salmon_sell").getBasePrice() == 100L, "salmon sell price");
 
         String[][] rareStocks = {
                 {"diamond", "256"}, {"emerald", "256"}, {"slime_ball", "128"}, {"blaze_rod", "256"}, {"ghast_tear", "256"},
@@ -76,6 +84,12 @@ public final class MerchantCatalogSelfTest {
                 check(entry.getBasePrice() > 0L, "positive base price");
                 check(entry.getItemStackLimit() > 0, "positive stack limit");
                 check(entry.getInitialRemainingItems() > 0 || entry.isUnlimitedStock(), "valid stock");
+                if (pool == TradePool.BUY_COMMON || pool == TradePool.BUY_UNCOMMON
+                        || pool == TradePool.BUY_RARE || pool == TradePool.BUY_TREASURE) {
+                    check(MarketCatalog.get(entry.getMarketKey()) != null
+                                    && MarketCatalog.get(entry.getMarketKey()).isHistoryTracked(),
+                            "all merchant purchase goods need market-book history");
+                }
                 ItemStack singleItem = entry.createStack(1, entry.isEnchantment() ? 1 : 0);
                 check(entry.getItemStackLimit() == singleItem.getMaxStackSize(),
                         "merchant stack limit must equal vanilla maximum stack size");

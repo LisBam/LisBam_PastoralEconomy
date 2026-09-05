@@ -1,0 +1,19 @@
+[12:49:13] [main/DEBUG] [io.netty.util.internal.logging.InternalLoggerFactory]: Using SLF4J as the default logging framework
+[12:49:13] [main/DEBUG] [io.netty.util.internal.PlatformDependent]: -Dio.netty.noUnsafe: false
+[12:49:13] [main/DEBUG] [io.netty.util.internal.PlatformDependent0]: sun.misc.Unsafe.theUnsafe: available
+[12:49:13] [main/DEBUG] [io.netty.util.internal.PlatformDependent0]: sun.misc.Unsafe.copyMemory: available
+[12:49:13] [main/DEBUG] [io.netty.util.internal.PlatformDependent0]: java.nio.Buffer.address: available
+[12:49:13] [main/DEBUG] [io.netty.util.internal.PlatformDependent0]: direct buffer constructor: available
+[12:49:13] [main/DEBUG] [io.netty.util.internal.PlatformDependent0]: java.nio.Bits.unaligned: available, true
+[12:49:13] [main/DEBUG] [io.netty.util.internal.PlatformDependent0]: java.nio.DirectByteBuffer.<init>(long, int): available
+[12:49:13] [main/DEBUG] [io.netty.util.internal.Cleaner0]: java.nio.ByteBuffer.cleaner(): available
+[12:49:13] [main/DEBUG] [io.netty.util.internal.PlatformDependent]: Java version: 8
+[12:49:13] [main/DEBUG] [io.netty.util.internal.PlatformDependent]: sun.misc.Unsafe: available
+[12:49:13] [main/DEBUG] [io.netty.util.internal.PlatformDependent]: -Dio.netty.tmpdir: /tmp (java.io.tmpdir)
+[12:49:13] [main/DEBUG] [io.netty.util.internal.PlatformDependent]: -Dio.netty.bitMode: 64 (sun.arch.data.model)
+[12:49:13] [main/DEBUG] [io.netty.util.internal.PlatformDependent]: -Dio.netty.noPreferDirect: false
+[12:49:13] [main/DEBUG] [io.netty.util.internal.PlatformDependent]: io.netty.maxDirectMemory: 3629645824 bytes
+[12:49:13] [main/DEBUG] [io.netty.buffer.AbstractByteBuf]: -Dio.netty.buffer.bytebuf.checkAccessible: true
+[12:49:13] [main/DEBUG] [io.netty.util.ResourceLeakDetector]: -Dio.netty.leakDetection.level: simple
+[12:49:14] [main/DEBUG] [io.netty.util.ResourceLeakDetector]: -Dio.netty.leakDetection.maxRecords: 4
+[12:49:14] [main/DEBUG] [io.netty.util.ResourceLeakDetectorFactory]: Loaded default ResourceLeakDetector: io.netty.util.ResourceLeakDetector@55fe41ea

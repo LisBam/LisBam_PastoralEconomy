@@ -3,8 +3,16 @@
 ## 构建
 
 - [x] `./gradlew compileJava`、`compileTestJava` — PASS（2026-09-04，Temurin Java 8 `1.8.0_504`）
-- [x] `./gradlew processResources`、`build` — PASS（2026-09-05，Temurin Java 8 `1.8.0_504`；含 `reobfJar`、`exportReleaseJar`；release JAR 344,747 bytes，SHA-256 `6be402b55305362b6a7e02b6f4cc1680298e4edb2825a9aaa2a789d341fcbc5a`，`unzip -t` PASS）
+- [x] `./gradlew processResources`、`build` — PASS（2026-09-05，Temurin Java 8 `1.8.0_504`；含 `test`、`reobfJar`、`exportReleaseJar`；release JAR 356,074 bytes，SHA-256 `0a660a9d465461ce9ed0240b2ec2af31bef2b853a8789f3a16b65318851ebb33`，`unzip -t` PASS）
 - [x] Forge 1.12.2 static audit — 0 ERROR；5 条 `packet-thread` WARNING 已审查（通用注册不处理消息；四个 S2C Proxy 桥没有直接修改状态，客户端实际写入均调度至主线程；交通 C2S handler 调度至服务端主线程）。
+
+## 维护：行情书目录、创造标签与村庄商人范围（2026-09-05）
+
+- [x] 本模组创造标签本地化键 `itemGroup.lisbam_pastoral_economy` 为“聆竹の休闲田园经济”。PASS：`processResources` 与语言文件审查。
+- [x] `marketCoreSelfTest`、`marketPacketSelfTest`：30 日市场历史、每项有界 Packet、选中窗口与独立低优先缓存窗口通过。PASS（Temurin Java 8 `1.8.0_504`）。
+- [x] `merchantCatalogSelfTest`：29 条收购商品包含七种肉类，基础单价为牛肉/猪排/羊肉 120、鸡肉/鳕鱼 80、兔肉 140、鲑鱼 100；所有商人购买目录商品标记为行情书历史商品。PASS（Temurin Java 8 `1.8.0_504`）。
+- [x] 源码审查：购买页只创建可见 3 列图标格，名称/key 搜索和滚轮按行滚动不改变服务器价格；选中请求超时 40 tick 重试，预取仍为 4 tick 一项、服务端仍为 2 tick 合并。商人出生点在 128 格圆内，实体保存村庄中心并以同一半径限制/寻路返回，越界维护解除绑定且无传送。PASS：`compileJava`。
+- [ ] 游戏内：320×240、常规和高分辨率 GUI Scale 下，购买页搜索、滚轮、快速切换、请求重试、图标 tooltip 和曲线无越界/重叠；刷怪蛋商人收编、128 格边界返航/解绑和保存重载。NOT RUN：当前环境无法创建可操作 Forge 客户端或进入 Dedicated Server 世界。
 
 ## 维护：链式市场价格边界与动态回归
 
@@ -42,7 +50,7 @@
 ## 维护：商人按件交易、行情书与蟹笼规则
 
 - [x] `merchantCatalogSelfTest`：价格按单个物品；有限库存按 16→4、8→2、4→1 组并以原版堆叠上限换算实际件数，1 组→1 件；`remainingItems` NBT 往返、按件扣减和重复商品拒绝通过。PASS（2026-09-05，Temurin Java 8）。
-- [x] `marketCoreSelfTest`、`marketPacketSelfTest`：准确追踪并首开预取全部 22 种商人收购商品，16 色羊毛只占共享的一条行情。PASS（2026-09-04，Temurin Java 8）。`processResources` 与 release JAR 资源清单确认无序配方包含 `minecraft:wool` wildcard metadata 且输出 4 根线。
+- [x] `marketCoreSelfTest`、`marketPacketSelfTest`：准确追踪全部 29 种商人收购商品，16 色羊毛只占共享的一条行情；购买目录以选中优先、渐进预取而非首开全量同步。PASS（2026-09-05，Temurin Java 8 `1.8.0_504`）。`processResources` 与 release JAR 资源清单确认无序配方包含 `minecraft:wool` wildcard metadata 且输出 4 根线。
 - [x] `crabTrapSelfTest`：基础等待为 2,000～12,000 tick，Lure 每级减少 2,000 tick；其后续专用槽回归规则见上方维护项。PASS（2026-09-04，Temurin Java 8）。
 - [ ] 游戏内：验证商人的 64/16/1 物品组、所有 22 条行情书选择项、任意颜色羊毛配方、蟹笼手动与 Hopper 存取及 Lure I～III 等待时间。NOT RUN：当前环境没有可操作 Forge 客户端。
 
