@@ -19,8 +19,6 @@ import net.minecraftforge.fml.client.registry.IRenderFactory;
 import net.minecraftforge.fml.client.registry.RenderingRegistry;
 import lisbam.pastoraleconomy.entity.EntityMerchant;
 import lisbam.pastoraleconomy.tile.TileCrabTrap;
-import lisbam.pastoraleconomy.tile.TileTransportStation;
-import lisbam.pastoraleconomy.tile.TileVillageStation;
 import lisbam.pastoraleconomy.transport.TransportStateSnapshot;
 
 public final class ClientProxy extends CommonProxy {
@@ -53,9 +51,7 @@ public final class ClientProxy extends CommonProxy {
             return new GuiCrabTrap(player.inventory,
                     (TileCrabTrap) world.getTileEntity(new net.minecraft.util.math.BlockPos(x, y, z)));
         }
-        if (guiId == GuiIds.TRANSPORT_STATION
-                && (world.getTileEntity(new net.minecraft.util.math.BlockPos(x, y, z)) instanceof TileTransportStation
-                || world.getTileEntity(new net.minecraft.util.math.BlockPos(x, y, z)) instanceof TileVillageStation)) {
+        if (guiId == GuiIds.TRANSPORT_STATION) {
             return new GuiTransportStation(new net.minecraft.util.math.BlockPos(x, y, z));
         }
         return null;

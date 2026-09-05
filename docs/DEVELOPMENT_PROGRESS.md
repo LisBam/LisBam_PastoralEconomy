@@ -2,21 +2,23 @@
 
 当前发行版本：`1.5`；既有第 15 批功能完成，1.5 为维护更新。
 
-## 紧急修复：Esc 关闭后遗留服务端容器（2026-09-06）
+## 紧急修复：客户端窗口号污染与界面暂停（2026-09-06）
 
-根因与修复：行情书、商人交易和交通站均为自定义 `GuiScreen`，却同时保持各自的服务端 `Container`。原来的共用按键处理只拦截可改键的“打开背包”键；按 Esc 时会进入 1.12.2 `GuiScreen` 的默认本地 `displayGuiScreen(null)` 分支，未发出关闭窗口包，服务端因而持续把玩家绑定在已经看不见的旧 Container 上。无槽 `ContainerMarketBook` 会特别使后续物品拾取、合成、骨粉交互和背包四格合成栏全按错误窗口验证，造成物品不入包、无法合成及关闭背包时合成格不回收。
+真正根因位于 Forge 1.12.2 的双端 GUI 打开协议。服务端创建 `Container` 并发送 `OpenGui` 后，客户端处理器会先显示本地 GUI，再把服务端 `windowId` 写入客户端玩家当前的 `openContainer`。行情书、商人交易和交通站此前继承普通 `GuiScreen`；它们没有执行 `GuiContainer#initGui`，因此客户端 `openContainer` 仍是永久的 `inventoryContainer`。Forge 随即把模组窗口号直接写进窗口 0 的玩家背包容器。即使后来正确发送关窗包，`EntityPlayer#closeScreen` 也只把引用切回同一个 `inventoryContainer`，不会把被污染的 `windowId` 恢复为 0。此后原版背包点击和四格合成包携带错误窗口号，被服务端窗口 0 校验拒绝；物品拾取、骨粉与背包同步也随之表现异常。上一轮只补 Esc 关窗包只能解决服务端孤儿 Container，不能修复这个更早发生的客户端窗口号污染。
 
-`ModGuiInput` 现将 Esc 与原版“打开背包”键统一转至 `EntityPlayerSP#closeScreen`，确保发送 `CPacketCloseWindow` 并执行服务端 Container 收尾；行情书、商人、交通主界面和交通确认层全部使用该路径。新增 `modGuiInputSelfTest` 覆盖 Esc、改键背包键和无关键分支。验证中还发现 `TransportCoreSelfTest` 的费用断言仍是早已废弃的十倍数值，已同步为当前 `TransportCost`、内容书与旅行自检一致的冻结费用，防止误报。
+修复后 `GuiMarketBook`、`GuiMerchantTrade`、`GuiTransportStation` 都继承 `GuiContainer`，并分别持有与服务端同类型、但不拥有权威数据的客户端无槽生命周期 Container。三个 `initGui` 都先调用 `super.initGui()`，保证 Forge 分配窗口号时写入这个专用容器而不是玩家永久背包。商人客户端容器只携带实体 ID，交通客户端容器只携带坐标；服务端仍只使用绑定真实实体/Tile UUID 的权威构造器和既有校验。交通 GUI 的客户端创建不再依赖 TileEntity 已先同步到本地，避免合法服务端开窗因客户端短暂缺 Tile 而返回 `null`、再次污染背包容器。Esc 与改键背包键继续统一调用 `EntityPlayerSP#closeScreen`。
 
-兼容性与影响：没有修改 Packet discriminator、数据编码、registry ID、NBT、Capability、WorldSavedData、金币、库存或交通费用公式；旧存档无需迁移。实际客户端/Dedicated Server 交互仍需在可进入世界的环境中确认。
+行情书、商人交易、交通站现都明确返回 `doesGuiPauseGame=false`；交通的原版 `GuiYesNo` 确认层也覆写为不暂停。单人世界打开这些界面时，集成服务端会继续 tick，行情/交易/交通请求可以即时处理。
 
-验证：Temurin Java 8 `1.8.0_504` 下 `modGuiInputSelfTest`、`marketPacketSelfTest`、`merchantCatalogSelfTest`、`transportCoreSelfTest` 和 `transportTravelSelfTest` 均 PASS；严格 Forge audit 为 0 ERROR、6 条既有 `packet-thread` 保守 WARNING。最终 `compileJava processResources build` PASS，包含 `reobfJar` 与 `exportReleaseJar`。`release/LisBam_PastoralEconomy-1.5.jar` 已由本次构建覆盖导出，406,009 bytes，SHA-256 `d0b1d35a707fb03eb6489bc3d9ebbb6d1a7f61b1dd707b4939124223b276138d`，`unzip -t` PASS。
+兼容性与影响：没有修改 Packet discriminator、数据编码、registry ID、NBT、Capability、WorldSavedData、金币、库存或交通费用公式；客户端生命周期容器不保存数据，旧存档无需迁移。实际游戏内打开/关闭后合成、拾取、骨粉以及单人不暂停行为仍需在可进入世界的环境中确认。
 
-最近一次成功构建记录（本次 Esc 服务端容器修复后）：
+验证：Temurin Java 8 `1.8.0_504` 下 `compileJava`、`modGuiInputSelfTest`、`marketPacketSelfTest`、`merchantCatalogSelfTest`、`transportCoreSelfTest`、`transportTravelSelfTest` 和 `goldenBoneMealSelfTest` 均 PASS；严格 Forge audit 为 0 ERROR、6 条既有 `packet-thread` 保守 WARNING。最终 `./gradlew compileJava processResources build --no-daemon --console=plain` PASS，包含 `test`、`reobfJar` 与 `exportReleaseJar`。`release/LisBam_PastoralEconomy-1.5.jar` 已由本次构建覆盖导出，406,463 bytes，SHA-256 `fc2f462ea631113b77272b3edfa706550cb165d921026892402f60e96db4ad44`；`unzip -t` PASS，并确认包含三类 GUI、对应 Container 与共用关窗类。游戏内与 Dedicated Server 为 NOT RUN：当前环境无法创建可操作客户端或进入服务器世界。
+
+最近一次成功构建记录（本次客户端容器生命周期修复后）：
 
 - `env JAVA_HOME=/tmp/lbpe-jdk8 PATH="/tmp/lbpe-jdk8/bin:$PATH" ./gradlew compileJava processResources build --no-daemon --console=plain`
 - 日期：2026-09-06
-- 结果：PASS（Forge 14.23.5.2859 / Temurin Java 8 `1.8.0_504`；`build` 包含 `test`、`reobfJar` 与 `exportReleaseJar`，`release/LisBam_PastoralEconomy-1.5.jar` 已实际覆盖导出且非空。）
+- 结果：PASS（Forge 14.23.5.2859 / Temurin Java 8 `1.8.0_504`；release JAR 已实际覆盖导出且非空。）
 
 ## 维护：行情展示、附魔节奏与旅行费（2026-09-05）
 

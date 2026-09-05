@@ -31,6 +31,18 @@ public final class ContainerTransportStation extends Container {
         position = tile.getPos().toImmutable();
     }
 
+    /**
+     * Client-side lifecycle counterpart for Forge's OpenGui protocol. The
+     * authoritative server always uses one of the tile-bound constructors.
+     */
+    public ContainerTransportStation(BlockPos position) {
+        if (position == null) {
+            throw new IllegalArgumentException("Transport station client container needs a position.");
+        }
+        stationId = null;
+        this.position = position.toImmutable();
+    }
+
     public UUID getStationId() {
         return stationId;
     }
@@ -41,6 +53,9 @@ public final class ContainerTransportStation extends Container {
 
     @Override
     public boolean canInteractWith(EntityPlayer player) {
+        if (stationId == null) {
+            return false;
+        }
         TileEntity tile = player.world.getTileEntity(position);
         boolean identity = tile instanceof TileTransportStation
                 ? stationId.equals(((TileTransportStation) tile).getStationId())

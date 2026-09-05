@@ -1,6 +1,7 @@
 package lisbam.pastoraleconomy.client.gui;
 
 import lisbam.pastoraleconomy.client.ClientMarketState;
+import lisbam.pastoraleconomy.gui.ContainerMarketBook;
 import lisbam.pastoraleconomy.market.MarketCatalog;
 import lisbam.pastoraleconomy.market.MarketCommodity;
 import lisbam.pastoraleconomy.market.MarketHistoryPoint;
@@ -10,8 +11,8 @@ import lisbam.pastoraleconomy.merchant.TradeCatalog;
 import lisbam.pastoraleconomy.network.ModNetwork;
 import lisbam.pastoraleconomy.network.message.RequestMarketHistoryMessage;
 import net.minecraft.client.gui.GuiButton;
-import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.client.gui.GuiTextField;
+import net.minecraft.client.gui.inventory.GuiContainer;
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.client.resources.I18n;
 import net.minecraft.item.ItemStack;
@@ -25,7 +26,7 @@ import java.util.List;
 import java.util.Locale;
 
 /** Client-only, display-only market book with a bounded historical line chart. */
-public final class GuiMarketBook extends GuiScreen {
+public final class GuiMarketBook extends GuiContainer {
     private static final int BUTTON_SELL_PAGE = 1;
     private static final int BUTTON_BUY_PAGE = 2;
     private static final int BUTTON_SCROLL_UP = 3;
@@ -60,8 +61,15 @@ public final class GuiMarketBook extends GuiScreen {
     private double graphDisplayMinimum;
     private double graphDisplayMaximum;
 
+    public GuiMarketBook() {
+        super(new ContainerMarketBook());
+    }
+
     @Override
     public void initGui() {
+        // GuiContainer installs this screen's dedicated client container before
+        // Forge writes the server window id into EntityPlayer#openContainer.
+        super.initGui();
         if (!initialRequestSent) {
             ClientMarketState.beginBookSession();
         }
@@ -290,6 +298,17 @@ public final class GuiMarketBook extends GuiScreen {
         graphSnapshot = null;
         graphNodes = Collections.emptyList();
         super.onGuiClosed();
+    }
+
+    /** Market requests must continue to reach the integrated server while open. */
+    @Override
+    public boolean doesGuiPauseGame() {
+        return false;
+    }
+
+    @Override
+    protected void drawGuiContainerBackgroundLayer(float partialTicks, int mouseX, int mouseY) {
+        // This slotless container keeps the existing responsive vanilla-texture layout in drawScreen.
     }
 
     @Override
