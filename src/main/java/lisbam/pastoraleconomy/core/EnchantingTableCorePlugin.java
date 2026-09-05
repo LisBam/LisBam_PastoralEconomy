@@ -4,14 +4,14 @@ import net.minecraftforge.fml.relauncher.IFMLLoadingPlugin;
 
 import java.util.Map;
 
-/** Loads the narrowly scoped 1.12.2 enchanting-table compatibility transformer. */
+/** Loads the narrowly scoped 1.12.2 enchanting and shoulder-equipment transformers. */
 @IFMLLoadingPlugin.Name("LisBam Pastoral Economy Enchanting Compatibility")
 @IFMLLoadingPlugin.MCVersion("1.12.2")
 @IFMLLoadingPlugin.TransformerExclusions({"lisbam.pastoraleconomy.core"})
 public final class EnchantingTableCorePlugin implements IFMLLoadingPlugin {
     @Override
     public String[] getASMTransformerClass() {
-        return new String[]{EnchantingTableTransformer.class.getName()};
+        return new String[]{EnchantingTableTransformer.class.getName(), ShoulderEquipmentTransformer.class.getName()};
     }
 
     @Override

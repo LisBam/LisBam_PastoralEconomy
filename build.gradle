@@ -224,6 +224,13 @@ task milkCooldownSelfTest(type: JavaExec) {
     main = 'lisbam.pastoraleconomy.event.MilkCooldownSelfTest'
 }
 
+task shoulderEquipmentSelfTest(type: JavaExec) {
+    group = 'verification'
+    description = 'Runs the shoulder-slot persistence and Coremod bytecode regression checks.'
+    classpath = sourceSets.test.runtimeClasspath
+    main = 'lisbam.pastoraleconomy.core.ShoulderEquipmentCoremodSelfTest'
+}
+
 publishing {
     publications {
         mavenJava(MavenPublication) {

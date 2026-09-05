@@ -6,6 +6,7 @@ import lisbam.pastoraleconomy.data.player.IPlayerData;
 import lisbam.pastoraleconomy.data.player.PlayerDataCapability;
 import lisbam.pastoraleconomy.data.player.PlayerDataProvider;
 import lisbam.pastoraleconomy.data.world.PastoralWorldData;
+import lisbam.pastoraleconomy.equipment.ShoulderEquipmentService;
 import lisbam.pastoraleconomy.merchant.VillageService;
 import lisbam.pastoraleconomy.transport.TransportService;
 import net.minecraft.entity.Entity;
@@ -78,6 +79,7 @@ public final class PersistenceEventHandler {
 
     private static void syncPlayer(EntityPlayer player) {
         if (player instanceof EntityPlayerMP && !player.world.isRemote) {
+            ShoulderEquipmentService.migrateLegacyChestElytra((EntityPlayerMP) player);
             TransportService.grantStarterTransportIfNeeded((EntityPlayerMP) player);
             CoinService.syncToClient((EntityPlayerMP) player);
         }

@@ -3,6 +3,9 @@ package lisbam.pastoraleconomy.data.player;
 import lisbam.pastoraleconomy.client.ClientHudEventHandler;
 import lisbam.pastoraleconomy.client.ClientPlayerState;
 import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.init.Items;
+import net.minecraft.init.Bootstrap;
+import net.minecraft.item.ItemStack;
 
 /**
  * Standalone verification only; it is not registered as a Minecraft command
@@ -13,6 +16,7 @@ public final class PlayerDataSelfTest {
     }
 
     public static void main(String[] args) {
+        Bootstrap.register();
         PlayerData data = new PlayerData();
         require(data.getCoins() == 0L, "new player data must start at zero");
         require(data.canAfford(0L), "zero cost must be affordable");
@@ -36,9 +40,18 @@ public final class PlayerDataSelfTest {
         restored.readFromNBT(saved);
         require(restored.getCoins() == Long.MAX_VALUE, "saved balance must round-trip");
 
+        data.setShoulderStack(new ItemStack(Items.ELYTRA));
+        NBTTagCompound shoulderSaved = data.writeToNBT();
+        restored.readFromNBT(shoulderSaved);
+        require(restored.getShoulderStack().getItem() == Items.ELYTRA
+                        && restored.getShoulderStack().getCount() == 1,
+                "shoulder Elytra must persist as one item");
         PlayerData clone = new PlayerData();
         clone.copyFrom(restored);
-        require(clone.getCoins() == Long.MAX_VALUE, "clone data must preserve the balance");
+        require(clone.getCoins() == Long.MAX_VALUE && clone.getShoulderStack().getItem() == Items.ELYTRA,
+                "clone data must preserve the balance and shoulder Elytra");
+        restored.setShoulderStack(new ItemStack(Items.DIAMOND_CHESTPLATE));
+        require(restored.getShoulderStack().isEmpty(), "shoulder slot rejects non-Elytra stacks");
 
         NBTTagCompound corrupt = new NBTTagCompound();
         corrupt.setLong("coins", -1L);

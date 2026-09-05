@@ -3,6 +3,8 @@ package lisbam.pastoraleconomy.data.player;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.nbt.NBTTagList;
 import net.minecraft.nbt.NBTTagString;
+import net.minecraft.item.ItemStack;
+import net.minecraft.init.Items;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -15,11 +17,12 @@ import java.util.UUID;
 
 /** Package-private mutable implementation; CoinService is the only gameplay mutator. */
 final class PlayerData implements IPlayerData {
-    static final int DATA_VERSION = 2;
+    static final int DATA_VERSION = 3;
     private static final int MAX_TRANSPORT_NODES = 2048;
 
     private static final String KEY_DATA_VERSION = "dataVersion";
     private static final String KEY_COINS = "coins";
+    private static final String KEY_SHOULDER = "shoulder";
     private static final String KEY_TRANSPORT = "transport";
     private static final String KEY_STARTER_TRANSPORT_GRANTED = "starterTransportGranted";
     private static final String KEY_FIRST_SELF_BUILT_STATION_ESTABLISHED = "firstSelfBuiltStationEstablished";
@@ -34,6 +37,7 @@ final class PlayerData implements IPlayerData {
 
     private int dataVersion = DATA_VERSION;
     private long coins;
+    private ItemStack shoulderStack = ItemStack.EMPTY;
     private boolean starterTransportGranted;
     private boolean firstSelfBuiltStationEstablished;
     private boolean firstSelfBuiltStationFreeUsed;
@@ -49,6 +53,22 @@ final class PlayerData implements IPlayerData {
     @Override
     public long getCoins() {
         return coins;
+    }
+
+    @Override
+    public ItemStack getShoulderStack() {
+        return shoulderStack;
+    }
+
+    @Override
+    public void setShoulderStack(ItemStack stack) {
+        if (stack == null || stack.isEmpty() || stack.getItem() != Items.ELYTRA) {
+            shoulderStack = ItemStack.EMPTY;
+            return;
+        }
+        ItemStack normalized = stack.copy();
+        normalized.setCount(1);
+        shoulderStack = normalized;
     }
 
     boolean canAfford(long amount) {
@@ -83,6 +103,7 @@ final class PlayerData implements IPlayerData {
 
         PlayerData sourceData = (PlayerData) source;
         coins = sourceData.coins;
+        shoulderStack = sourceData.shoulderStack.isEmpty() ? ItemStack.EMPTY : sourceData.shoulderStack.copy();
         starterTransportGranted = sourceData.starterTransportGranted;
         firstSelfBuiltStationEstablished = sourceData.firstSelfBuiltStationEstablished;
         firstSelfBuiltStationFreeUsed = sourceData.firstSelfBuiltStationFreeUsed;
@@ -102,6 +123,9 @@ final class PlayerData implements IPlayerData {
         dataVersion = DATA_VERSION;
         root.setInteger(KEY_DATA_VERSION, dataVersion);
         root.setLong(KEY_COINS, coins);
+        if (!shoulderStack.isEmpty()) {
+            root.setTag(KEY_SHOULDER, shoulderStack.writeToNBT(new NBTTagCompound()));
+        }
 
         NBTTagCompound transport = new NBTTagCompound();
         transport.setBoolean(KEY_STARTER_TRANSPORT_GRANTED, starterTransportGranted);
@@ -129,6 +153,10 @@ final class PlayerData implements IPlayerData {
             coins = loadedCoins < 0L ? 0L : loadedCoins;
         }
 
+        if (root.hasKey(KEY_SHOULDER, 10)) {
+            setShoulderStack(new ItemStack(root.getCompoundTag(KEY_SHOULDER)));
+        }
+
         if (!root.hasKey(KEY_TRANSPORT)) {
             return;
         }
@@ -148,6 +176,7 @@ final class PlayerData implements IPlayerData {
     private void resetToDefaults() {
         dataVersion = DATA_VERSION;
         coins = 0L;
+        shoulderStack = ItemStack.EMPTY;
         starterTransportGranted = false;
         firstSelfBuiltStationEstablished = false;
         firstSelfBuiltStationFreeUsed = false;

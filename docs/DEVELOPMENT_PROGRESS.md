@@ -2,6 +2,16 @@
 
 当前发行版本：`1.5`；既有第 15 批功能完成，1.5 为维护更新。
 
+## 维护：村庄交通方块指南针与肩部鞘翅栏（2026-09-06）
+
+实现：新增“村庄交通方块指南针”，其 `angle` 模型和指针摆动沿用 Java 1.12.2 原版罗盘路径，但由逻辑服务端把同维度最近的已登记村庄交通站写入所持 ItemStack；自建交通方块不参与目标选择，Y 高度不影响最近判定。配方为指南针、铁锭、红石粉、绿宝石各一的无序合成。资源使用生成的绿/青针 16×16 原版风第 00 帧，并配合仅变色的原版帧完成 32 帧动画。
+
+玩家 Capability 升为 v3 并持久保存一个肩部鞘翅槽。Coremod 为原版玩家背包追加真实同步 Slot、从原版库存贴图裁取槽背景，并让 Shift-click 的鞘翅进入肩部。胸甲槽拒绝鞘翅；客户端起飞、服务端动作包验证和飞行中耐久消耗三个原版胸甲读取都改读肩部，因此胸甲可保留且鞘翅仍是原版飞行/耐久行为。旧存档胸甲鞘翅在下一次登录、重生或换维度时自动迁移，肩部已占用时进入背包或满包掉落。
+
+兼容性与影响：新增一个 Item ID、配方、语言/模型/贴图和 PlayerData 的 `shoulder` NBT；既有 registry ID、Packet discriminator、WorldSavedData 名称与交通节点 NBT 均不变。旧 `dataVersion<=2` 的玩家数据按空肩部读取，无物品损失迁移。游戏内和 Dedicated Server 端到端验收仍待可操作 Forge 世界。
+
+验证：Temurin Java 8 `1.8.0_504` 下 `compileJava`、`processResources`、`playerDataSelfTest`、`transportCoreSelfTest` 和新增 `shoulderEquipmentSelfTest` 通过；后者以实际 Forge 1.12.2 映射类验证 ContainerPlayer、客户端起飞、服务端动作验证和飞行耐久路径均已注入。严格 Forge audit 为 0 ERROR、6 条既有 `packet-thread` 保守 WARNING。最终 `./gradlew build --no-daemon --console=plain`（含 `test`、`reobfJar`、`exportReleaseJar`）PASS；`release/LisBam_PastoralEconomy-1.5.jar` 已实际覆盖导出且 `unzip -t` PASS。
+
 ## 紧急修复：客户端窗口号污染与界面暂停（2026-09-06）
 
 真正根因位于 Forge 1.12.2 的双端 GUI 打开协议。服务端创建 `Container` 并发送 `OpenGui` 后，客户端处理器会先显示本地 GUI，再把服务端 `windowId` 写入客户端玩家当前的 `openContainer`。行情书、商人交易和交通站此前继承普通 `GuiScreen`；它们没有执行 `GuiContainer#initGui`，因此客户端 `openContainer` 仍是永久的 `inventoryContainer`。Forge 随即把模组窗口号直接写进窗口 0 的玩家背包容器。即使后来正确发送关窗包，`EntityPlayer#closeScreen` 也只把引用切回同一个 `inventoryContainer`，不会把被污染的 `windowId` 恢复为 0。此后原版背包点击和四格合成包携带错误窗口号，被服务端窗口 0 校验拒绝；物品拾取、骨粉与背包同步也随之表现异常。上一轮只补 Esc 关窗包只能解决服务端孤儿 Container，不能修复这个更早发生的客户端窗口号污染。

@@ -1,0 +1,6 @@
+{
+  "parent": "item/generated",
+  "textures": {
+    "layer0": "lisbam_pastoral_economy:items/village_transport_compass_09"
+  }
+}
