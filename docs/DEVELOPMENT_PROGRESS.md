@@ -2,6 +2,14 @@
 
 当前发行版本：`1.5`；既有第 15 批功能完成，1.5 为维护更新。
 
+## 新内容：三档肩部背包（2026-09-06）
+
+实现：新增普通/高级/超级背包三个稳定物品，分别提供 27、54、108 格并装备在既有肩部槽；手持右键或 Shift-click 可穿戴，三者与鞘翅互斥且暂不绘制玩家模型。在原版背包肩部槽对已装备背包右键后打开三行仓储页，高级/超级使用原版按钮切换 2/4 页；容器支持普通拖放与 Shift-click，并拒绝任意背包套娃。内容写入该背包物品自身的有界 NBT，随换装、保存和玩家 Clone 保留。普通配方严格使用皮革/箱子/线；高级配方使用皮革/两个普通背包/拴绳，且非空普通背包不会匹配，避免吞物；超级背包无配方，以 200000 基础价、8% 珍宝波动和库存 1 加入商人珍宝池。三张物品图标均由独立 AI 像素源图处理为 16×16 RGBA，未添加穿戴模型。
+
+架构与兼容性：复用 `PlayerData.shoulder`、现有 Coremod 槽和唯一网络通道；追加 GUI ID 4 与 C2S Packet 10，不重排 Packet 0～9。打开请求和分页在服务端主线程/实际 `ContainerBackpack` 验证，库存修改只经服务端 Container；完整背包 NBT 只同步给所有者，追踪者继续只得到鞘翅渲染所需快照。三个 Item ID、超级背包 market/catalog key 为追加式；Player Capability v3、WorldSavedData v7、旧肩部鞘翅与旧存档均不迁移。
+
+验证：Temurin Java 8 `1.8.0_504` 下 `compileJava`、`compileTestJava`、`processResources`、`backpackSelfTest`、`shoulderEquipmentSelfTest`、`playerDataSelfTest`、`merchantCatalogSelfTest` 与最终 `./gradlew build` 均 PASS。背包自检覆盖 27/54/108 容量、四页首末槽 NBT 往返、禁止嵌套、非空配方材料保护和三张 16×16 RGBA 透明边角贴图；商人自检覆盖 38 项珍宝池、超级背包 200000 基础价/8% 波动/库存 1。Forge 1.12.2 audit 为 0 ERROR、7 条既有保守 `packet-thread` WARNING；新增 C2S Handler 明确调度服务端主线程。`timeout 180s ./gradlew runServer` 已在 Java 8 下到达 `eula=false` 的 EULA 提示，未接受协议（服务器仅刷新了该文件时间戳），因此模组生命周期、世界与多人端到端仍为 NOT RUN。最终构建包含 `reobfJar` 与 `exportReleaseJar`；新 `release/LisBam_PastoralEconomy-1.5.jar` 为 502,564 bytes，SHA-256 `7be4f580e2088e6f60078550b31832edddcfed5d8ff3a767d9886c516a2acf7e`，`unzip -t` PASS、生产 class major version 52。覆盖前的 454,587-byte 成品已备份为 `release/backup/backup_20260906-185437.jar`。
+
 ## 新内容：交易凭证与箱子出售（2026-09-06）
 
 实现：新增最大堆叠为 1 的“空交易凭证”；右键后由逻辑服务端把使用者 UUID 与当时玩家名写入物品 NBT，物品显示为“交易凭证-玩家名”且不能再次绑定。空白/绑定状态共用稳定 registry ID，通过模型属性切换两张 AI 生成后处理为 16×16 RGBA 的原版风卷纸贴图。用户没有指定材料与配方，因此本次不自行扩展生存获取链，当前仅从模组创造栏或命令获得。

@@ -1,12 +1,12 @@
 package lisbam.pastoraleconomy.network.message;
 
 import io.netty.buffer.ByteBuf;
-import net.minecraft.init.Items;
+import lisbam.pastoraleconomy.equipment.ShoulderEquipmentService;
 import net.minecraft.item.ItemStack;
 import net.minecraftforge.fml.common.network.ByteBufUtils;
 import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
 
-/** S2C rendering snapshot for one tracked player's shoulder Elytra. */
+/** S2C shoulder snapshot; backpack NBT is sent only to its owning client. */
 public final class SyncShoulderEquipmentMessage implements IMessage {
     private int entityId = -1;
     private ItemStack stack = ItemStack.EMPTY;
@@ -16,7 +16,8 @@ public final class SyncShoulderEquipmentMessage implements IMessage {
     }
 
     public SyncShoulderEquipmentMessage(int entityId, ItemStack stack) {
-        if (entityId < 0 || stack == null || !stack.isEmpty() && stack.getItem() != Items.ELYTRA) {
+        if (entityId < 0 || stack == null || !stack.isEmpty()
+                && !ShoulderEquipmentService.isValidShoulderStack(stack)) {
             throw new IllegalArgumentException("Invalid shoulder equipment snapshot.");
         }
         this.entityId = entityId;
@@ -46,8 +47,8 @@ public final class SyncShoulderEquipmentMessage implements IMessage {
         }
         int decodedEntityId = buffer.readInt();
         ItemStack decodedStack = ByteBufUtils.readItemStack(buffer);
-        if (decodedEntityId < 0 || decodedStack == null
-                || !decodedStack.isEmpty() && decodedStack.getItem() != Items.ELYTRA) {
+        if (decodedEntityId < 0 || decodedStack == null || !decodedStack.isEmpty()
+                && !ShoulderEquipmentService.isValidShoulderStack(decodedStack)) {
             return;
         }
         entityId = decodedEntityId;

@@ -2,6 +2,9 @@ package lisbam.pastoraleconomy.client;
 
 import lisbam.pastoraleconomy.LisBamPastoralEconomy;
 import lisbam.pastoraleconomy.equipment.SlotShoulderEquipment;
+import lisbam.pastoraleconomy.item.ItemBackpack;
+import lisbam.pastoraleconomy.network.ModNetwork;
+import lisbam.pastoraleconomy.network.message.RequestOpenBackpackMessage;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Gui;
 import net.minecraft.client.gui.inventory.GuiContainer;
@@ -12,10 +15,12 @@ import net.minecraft.inventory.Slot;
 import net.minecraft.util.ResourceLocation;
 import net.minecraftforge.client.event.GuiContainerEvent;
 import net.minecraftforge.client.event.GuiScreenEvent;
+import net.minecraftforge.event.entity.player.ItemTooltipEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.common.ObfuscationReflectionHelper;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import net.minecraftforge.fml.relauncher.Side;
+import org.lwjgl.input.Mouse;
 
 /** Aligns and draws the shoulder cell with the native survival and creative inventory artwork. */
 @Mod.EventBusSubscriber(modid = LisBamPastoralEconomy.MODID, value = Side.CLIENT)
@@ -75,6 +80,48 @@ public final class ShoulderEquipmentGuiHandler {
             GlStateManager.enableLighting();
             GlStateManager.enableDepth();
         }
+    }
+
+    /** Right-clicking the equipped backpack opens its server-backed storage without inventing a custom key. */
+    @SubscribeEvent
+    public static void openBackpackFromShoulder(GuiScreenEvent.MouseInputEvent.Pre event) {
+        if (Mouse.getEventButton() != 1 || !Mouse.getEventButtonState()
+                || !(event.getGui() instanceof GuiContainer)
+                || Minecraft.getMinecraft().player == null
+                || !Minecraft.getMinecraft().player.inventory.getItemStack().isEmpty()) {
+            return;
+        }
+        GuiContainer gui = (GuiContainer) event.getGui();
+        Slot shoulder = findAndAlignShoulderSlot(gui);
+        if (shoulder == null || !ItemBackpack.isBackpack(shoulder.getStack())) {
+            return;
+        }
+        int guiLeft = ObfuscationReflectionHelper.getPrivateValue(GuiContainer.class, gui,
+                "guiLeft", "field_147003_i");
+        int guiTop = ObfuscationReflectionHelper.getPrivateValue(GuiContainer.class, gui,
+                "guiTop", "field_147009_r");
+        int mouseX = Mouse.getEventX() * gui.width / Minecraft.getMinecraft().displayWidth;
+        int mouseY = gui.height - Mouse.getEventY() * gui.height / Minecraft.getMinecraft().displayHeight - 1;
+        int relativeX = mouseX - guiLeft;
+        int relativeY = mouseY - guiTop;
+        if (relativeX >= shoulder.xPos && relativeX < shoulder.xPos + 16
+                && relativeY >= shoulder.yPos && relativeY < shoulder.yPos + 16) {
+            event.setCanceled(true);
+            ModNetwork.CHANNEL.sendToServer(new RequestOpenBackpackMessage());
+        }
+    }
+
+    @SubscribeEvent
+    public static void addBackpackTooltip(ItemTooltipEvent event) {
+        ItemBackpack backpack = ItemBackpack.getBackpack(event.getItemStack());
+        if (backpack == null) {
+            return;
+        }
+        event.getToolTip().add(net.minecraft.util.text.TextFormatting.GRAY
+                + net.minecraft.client.resources.I18n.format(
+                "tooltip.lisbam_pastoral_economy.backpack.capacity", Integer.valueOf(backpack.getCapacity())));
+        event.getToolTip().add(net.minecraft.util.text.TextFormatting.DARK_GRAY
+                + net.minecraft.client.resources.I18n.format("tooltip.lisbam_pastoral_economy.backpack.open"));
     }
 
     private static Slot findAndAlignShoulderSlot(GuiContainer gui) {

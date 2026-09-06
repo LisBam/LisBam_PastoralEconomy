@@ -4,7 +4,7 @@ import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.nbt.NBTTagList;
 import net.minecraft.nbt.NBTTagString;
 import net.minecraft.item.ItemStack;
-import net.minecraft.init.Items;
+import lisbam.pastoraleconomy.equipment.ShoulderEquipmentService;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -62,7 +62,7 @@ final class PlayerData implements IPlayerData {
 
     @Override
     public void setShoulderStack(ItemStack stack) {
-        if (stack == null || stack.isEmpty() || stack.getItem() != Items.ELYTRA) {
+        if (!ShoulderEquipmentService.isValidShoulderStack(stack)) {
             shoulderStack = ItemStack.EMPTY;
             return;
         }

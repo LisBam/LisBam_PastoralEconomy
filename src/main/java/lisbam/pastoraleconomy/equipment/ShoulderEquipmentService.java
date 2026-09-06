@@ -2,6 +2,7 @@ package lisbam.pastoraleconomy.equipment;
 
 import lisbam.pastoraleconomy.data.player.IPlayerData;
 import lisbam.pastoraleconomy.data.player.PlayerDataCapability;
+import lisbam.pastoraleconomy.item.ItemBackpack;
 import lisbam.pastoraleconomy.network.ModNetwork;
 import lisbam.pastoraleconomy.network.message.SyncShoulderEquipmentMessage;
 import net.minecraft.entity.player.EntityPlayer;
@@ -40,6 +41,11 @@ public final class ShoulderEquipmentService {
         }
     }
 
+    public static boolean isValidShoulderStack(ItemStack stack) {
+        return stack != null && !stack.isEmpty()
+                && (stack.getItem() == Items.ELYTRA || ItemBackpack.isBackpack(stack));
+    }
+
     /** Sends equipment changes to the wearer and every client tracking that player. */
     public static void syncIfChanged(EntityPlayerMP player) {
         if (player == null || player.world.isRemote) {
@@ -60,9 +66,11 @@ public final class ShoulderEquipmentService {
         }
         ItemStack current = normalizedCopy(getShoulderStack(player));
         LAST_SYNCED_STACKS.put(player.getUniqueID(), current.copy());
-        SyncShoulderEquipmentMessage message = new SyncShoulderEquipmentMessage(player.getEntityId(), current);
-        ModNetwork.CHANNEL.sendTo(message, player);
-        ModNetwork.CHANNEL.sendToAllTracking(message, player);
+        ModNetwork.CHANNEL.sendTo(new SyncShoulderEquipmentMessage(player.getEntityId(), current), player);
+        // Backpacks intentionally have no worn model. Do not disclose or resend
+        // their complete storage NBT to unrelated tracking clients.
+        ModNetwork.CHANNEL.sendToAllTracking(new SyncShoulderEquipmentMessage(
+                player.getEntityId(), renderingCopy(current)), player);
     }
 
     /** Initial snapshot for a newly tracking client; this does not alter the global change cache. */
@@ -70,8 +78,9 @@ public final class ShoulderEquipmentService {
         if (receiver == null || target == null || receiver.world.isRemote) {
             return;
         }
+        ItemStack current = normalizedCopy(getShoulderStack(target));
         ModNetwork.CHANNEL.sendTo(new SyncShoulderEquipmentMessage(
-                target.getEntityId(), normalizedCopy(getShoulderStack(target))), receiver);
+                target.getEntityId(), receiver == target ? current : renderingCopy(current)), receiver);
     }
 
     public static void forgetSyncedState(EntityPlayer player) {
@@ -118,11 +127,15 @@ public final class ShoulderEquipmentService {
     }
 
     private static ItemStack normalizedCopy(ItemStack stack) {
-        if (stack == null || stack.isEmpty() || stack.getItem() != Items.ELYTRA) {
+        if (!isValidShoulderStack(stack)) {
             return ItemStack.EMPTY;
         }
         ItemStack normalized = stack.copy();
         normalized.setCount(1);
         return normalized;
+    }
+
+    private static ItemStack renderingCopy(ItemStack stack) {
+        return stack.getItem() == Items.ELYTRA ? stack : ItemStack.EMPTY;
     }
 }

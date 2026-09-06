@@ -481,6 +481,16 @@ Reforged 对有右输入的修理、合并和附魔书操作通过 `AnvilUpdateE
 
 兼容性与影响：追加一个 registry ID 和物品栈私有 NBT，不增加数据版本；不修改 Player Capability、`PastoralWorldData`、TileEntity NBT、商品 key、Packet discriminator 或 Packet 字段顺序。旧世界无需迁移。未加载区块中的箱子暂不可用，加载后自动参与；玩家改名后旧凭证继续授权同一 UUID，但显示仍为绑定时名字。
 
+## DEC-058 肩部背包的物品所有权、分页容器与交易边界（2026-09-06）
+
+决定：追加三个稳定 Item ID `backpack`、`advanced_backpack`、`super_backpack`，容量固定为 27/54/108，统一最大堆叠 1，并复用现有 Player Capability 的 `shoulder` 栈作为装备位置。每个背包的内容属于其 ItemStack 私有 `LisBamBackpack/Items` NBT，而不是新增玩家全局库存；最多接受该档容量范围内唯一槽记录，背包物品不能写入任一背包槽。普通背包采用请求的 JSON 有序配方；高级背包以同形状 `ShapedRecipes` 注册，并额外要求两个普通背包均为空，防止合成删除内部物品。超级背包没有配方，以新 market/catalog key 加入珍宝池，基础价 200000、珍宝波动 8%、日库存 1。
+
+穿戴与 Shift-click 继续走既有真实肩部 Slot；背包不进入 Elytra 飞行/渲染 hook，因此暂时没有玩家模型。客户端只在原版玩家背包中、鼠标为空且右键命中已装备背包时发送追加 Packet 10；服务端主线程验证当前 `openContainer` 仍为窗口 0 的玩家背包且肩部仍是背包后，才打开 GUI ID 4 的 `ContainerBackpack`。容器每页暴露 27 个槽，2/4 页切换复用原版 Container button 包并在服务端校验页边界；GUI 使用完整的原版三行箱子/玩家背包纹理、原版按钮和字体。Packet 9 仍负责肩部同步，但完整背包 NBT 只发给所有者，其他追踪者收到空渲染栈，避免泄露内容和无意义带宽。
+
+原因：把内容放在玩家独立 Capability 数组会让换下后的背包失去自身内容身份，也容易在换装、死亡 Clone 和交易发货中复制；ItemStack NBT 能让内容自然随物品移动，并复用既有肩部持久化。108 格直接铺开无法适配 1.12.2 常见 GUI 尺寸，固定 27 格页同时保留原版槽纹理与服务端 Container 点击语义。高级配方若直接使用 JSON，会无条件消费带 NBT 的普通背包并永久删除内容，因此必须在配方匹配阶段拒绝非空材料。
+
+兼容性与影响：三个 registry ID、GUI ID 4、Packet discriminator 10 和两个 market/catalog key 都是追加式变化；Packet 0～9、`PlayerData.dataVersion=3`、`shoulder` key、WorldSavedData 名称/版本和既有商品 key 不变。旧存档无需迁移，原肩部鞘翅继续工作；新背包的内容随 `shoulder` ItemStack 保存及 Clone。新客户端与服务端必须使用同一构建。
+
 # 2026-09-05 维护决定：挤奶与调价
 
 - 成年牛的挤奶冷却归属于牛实体，而非玩家；最近一次成功挤奶 tick 写入 `Entity#getEntityData()`，因此区块卸载、重启和多人共享同一头牛时仍保持 6000 tick 冷却。`disableMilkingCooldown=false` 时，事件在客户端和服务端都取消原版桶交互：客户端只返回 `SUCCESS`、不触碰物品栏；服务端对合法成年牛执行一次完整的原版等价结算（播放挤奶音效、扣除一只空桶、手中耗尽则替换牛奶桶，否则入包，满包则掉落），结算成功后才写入实体 tick。冷却命中直接返回 `FAIL`，不扣桶、不产奶、不更新时间。开启配置后不接管交互，恢复原版 `EntityCow` 路径。这样交互包仍可正常到达服务端，但不存在客户端假牛奶桶覆盖服务端库存的窗口。

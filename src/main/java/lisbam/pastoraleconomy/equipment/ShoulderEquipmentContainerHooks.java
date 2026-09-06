@@ -29,10 +29,10 @@ public final class ShoulderEquipmentContainerHooks {
         container.inventoryItemStacks.add(ItemStack.EMPTY);
     }
 
-    /** Preserves vanilla shift-click ergonomics for the one item that belongs in the shoulder slot. */
+    /** Preserves shift-click ergonomics for every supported shoulder item. */
     public static boolean tryMoveElytraToShoulder(Object containerObject, Object stackObject, int sourceIndex) {
         if (!(containerObject instanceof Container) || !(stackObject instanceof ItemStack)
-                || ((ItemStack) stackObject).getItem() != net.minecraft.init.Items.ELYTRA) {
+                || !ShoulderEquipmentService.isValidShoulderStack((ItemStack) stackObject)) {
             return false;
         }
         Container container = (Container) containerObject;

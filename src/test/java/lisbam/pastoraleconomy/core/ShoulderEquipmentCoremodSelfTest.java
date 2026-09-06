@@ -5,7 +5,9 @@ import io.netty.buffer.Unpooled;
 import lisbam.pastoraleconomy.network.message.SyncShoulderEquipmentMessage;
 import net.minecraft.init.Bootstrap;
 import net.minecraft.init.Items;
+import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
+import net.minecraftforge.registries.GameData;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.tree.AbstractInsnNode;
@@ -37,6 +39,7 @@ public final class ShoulderEquipmentCoremodSelfTest {
         verifyContainer(transformer);
         verifyObfuscatedReleaseNames(transformer);
         verifyShoulderSyncPacket();
+        verifyBackpackShoulderSyncPacket();
     }
 
     private static void verifyElytraLookup(ShoulderEquipmentTransformer transformer, String className)
@@ -165,6 +168,41 @@ public final class ShoulderEquipmentCoremodSelfTest {
         } finally {
             buffer.release();
         }
+    }
+
+    private static void verifyBackpackShoulderSyncPacket() {
+        registerBackpacksForPacketTest();
+        ItemStack expected = new ItemStack(lisbam.pastoraleconomy.item.ModItems.SUPER_BACKPACK);
+        net.minecraft.util.NonNullList<ItemStack> contents =
+                lisbam.pastoraleconomy.equipment.BackpackStorage.read(expected);
+        contents.set(107, new ItemStack(Items.DIAMOND, 5));
+        lisbam.pastoraleconomy.equipment.BackpackStorage.write(expected, contents);
+        SyncShoulderEquipmentMessage outgoing = new SyncShoulderEquipmentMessage(7, expected);
+        ByteBuf buffer = Unpooled.buffer();
+        try {
+            outgoing.toBytes(buffer);
+            SyncShoulderEquipmentMessage incoming = new SyncShoulderEquipmentMessage();
+            incoming.fromBytes(buffer);
+            require(incoming.isValid() && ItemStack.areItemStacksEqual(expected, incoming.getStack()),
+                    "owning-client shoulder packet must preserve backpack contents");
+        } finally {
+            buffer.release();
+        }
+    }
+
+    /**
+     * This standalone test invokes vanilla Bootstrap directly, unlike a Forge
+     * runtime where RegistrationHandler has already assigned numeric item IDs.
+     * PacketBuffer writes that ID, so register the local test items before the
+     * custom ItemStack crosses the real wire codec.
+     */
+    private static void registerBackpacksForPacketTest() {
+        if (Item.getIdFromItem(lisbam.pastoraleconomy.item.ModItems.SUPER_BACKPACK) >= 0) {
+            return;
+        }
+        GameData.register_impl(lisbam.pastoraleconomy.item.ModItems.BACKPACK);
+        GameData.register_impl(lisbam.pastoraleconomy.item.ModItems.ADVANCED_BACKPACK);
+        GameData.register_impl(lisbam.pastoraleconomy.item.ModItems.SUPER_BACKPACK);
     }
 
     private static byte[] readClass(String className) throws IOException {

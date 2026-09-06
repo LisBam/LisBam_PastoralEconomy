@@ -4,7 +4,6 @@ import lisbam.pastoraleconomy.LisBamPastoralEconomy;
 import lisbam.pastoraleconomy.equipment.ShoulderEquipmentService;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
-import net.minecraft.init.Items;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.EnumActionResult;
 import net.minecraftforge.event.entity.player.PlayerInteractEvent;
@@ -12,7 +11,7 @@ import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.common.eventhandler.EventPriority;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 
-/** Gives the vanilla Elytra right-click gesture a server-owned shoulder-slot destination. */
+/** Gives supported shoulder items a server-owned right-click equip gesture. */
 @Mod.EventBusSubscriber(modid = LisBamPastoralEconomy.MODID)
 public final class ShoulderEquipmentEventHandler {
     private ShoulderEquipmentEventHandler() {
@@ -22,7 +21,7 @@ public final class ShoulderEquipmentEventHandler {
     public static void equipShoulderItem(PlayerInteractEvent.RightClickItem event) {
         EntityPlayer player = event.getEntityPlayer();
         ItemStack held = event.getItemStack();
-        if (held.getItem() != Items.ELYTRA) {
+        if (!ShoulderEquipmentService.isValidShoulderStack(held)) {
             return;
         }
 
@@ -41,7 +40,7 @@ public final class ShoulderEquipmentEventHandler {
         ItemStack equipped = held.copy();
         equipped.setCount(1);
         ShoulderEquipmentService.setShoulderStack(player, equipped);
-        if (ShoulderEquipmentService.getShoulderStack(player).getItem() != Items.ELYTRA) {
+        if (ShoulderEquipmentService.getShoulderStack(player).getItem() != equipped.getItem()) {
             event.setCancellationResult(EnumActionResult.FAIL);
             return;
         }

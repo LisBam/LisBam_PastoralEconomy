@@ -1,0 +1,17 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "LLL",
+    "LCL",
+    "S S"
+  ],
+  "key": {
+    "L": { "item": "minecraft:leather" },
+    "C": { "item": "minecraft:chest" },
+    "S": { "item": "minecraft:string" }
+  },
+  "result": {
+    "item": "lisbam_pastoral_economy:backpack",
+    "count": 1
+  }
+}

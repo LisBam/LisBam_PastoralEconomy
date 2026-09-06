@@ -1,5 +1,16 @@
 # 测试清单
 
+## 新内容：三档肩部背包（2026-09-06）
+
+- [x] `backpackSelfTest`：普通/高级/超级容量为 27/54/108，页数为 1/2/4，最大堆叠均为 1；第 0/53/107 槽 NBT 往返，背包套娃不写入，带物品普通背包不能用于高级配方。PASS（Temurin Java 8 `1.8.0_504`）。
+- [x] `shoulderEquipmentSelfTest`、`playerDataSelfTest`：肩部 Coremod 保持原有 MCP/SRG/发行混淆注入；Packet 9 往返保存超级背包第 107 槽内容；PlayerData 接受背包并仍拒绝普通胸甲。PASS（Temurin Java 8 `1.8.0_504`）。
+- [x] `merchantCatalogSelfTest`：珍宝池由 37 增至 38 项，超级背包实际 Item、200000 基础价、8% 波动和库存 1 均通过。PASS（Temurin Java 8 `1.8.0_504`）。
+- [x] `compileJava`、`compileTestJava`、`processResources`：PASS；三张物品 PNG 均为 16×16、8-bit RGBA 且透明边角，普通 JSON 配方与高级代码配方均进入资源/类输出。
+- [x] Forge 1.12.2 static audit：0 ERROR、7 条既有 `packet-thread` 保守 WARNING；新增打开背包 C2S Handler 可见地调度服务端主线程，客户端类只位于 client 包。PASS。
+- [ ] 游戏内：普通/高级/超级的手持右键与 Shift-click 穿戴、肩部互斥、无玩家模型、肩部右键开包、1/2/4 页、拖放/Shift-click、Tooltip、Esc/E 关窗、换装/重登/死亡/换维度持久化和禁止套娃。NOT RUN：当前环境没有可操作 Forge 客户端。
+- [ ] Dedicated Server 引导：Temurin Java 8 下 `timeout 180s ./gradlew runServer` 已进入 Forge/FML Server 并到达 `eula=false` 的 Mojang EULA 提示；没有接受 EULA，配置值仍为 `false`（服务器刷新了其中的时间戳）。模组生命周期、世界、恶意 Packet 10、开包后服务端替换背包、越界翻页及多人 NBT 可见性仍为 NOT RUN：需要可进入世界的 Dedicated Server 与客户端。
+- [x] 最终 `./gradlew build`：PASS（Temurin Java 8 `1.8.0_504`，含 `reobfJar`、`exportReleaseJar`）。`release/LisBam_PastoralEconomy-1.5.jar` 已实际覆盖导出为 502,564 bytes，SHA-256 `7be4f580e2088e6f60078550b31832edddcfed5d8ff3a767d9886c516a2acf7e`；`unzip -t` PASS，`ItemBackpack.class` major version 52，并确认含新增类、模型、普通配方与三张贴图。覆盖前 454,587-byte 旧 JAR 已备份为 `release/backup/backup_20260906-185437.jar`。
+
 ## 交易凭证与箱子出售（2026-09-06）
 
 - [x] `tradeVoucherSelfTest`：空白凭证只绑定一次，UUID 为授权依据、名字/NBT 可复制保存、他人凭证不授权；玩家主物品栏与箱子库存合并计数、玩家优先扣货、多来源回滚和空桶返还通过；两张贴图均为可读 16×16 RGBA 且边角透明。PASS（Temurin Java 8 `1.8.0_504`）。

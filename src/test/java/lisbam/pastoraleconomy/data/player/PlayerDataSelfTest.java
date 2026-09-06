@@ -51,7 +51,10 @@ public final class PlayerDataSelfTest {
         require(clone.getCoins() == Long.MAX_VALUE && clone.getShoulderStack().getItem() == Items.ELYTRA,
                 "clone data must preserve the balance and shoulder Elytra");
         restored.setShoulderStack(new ItemStack(Items.DIAMOND_CHESTPLATE));
-        require(restored.getShoulderStack().isEmpty(), "shoulder slot rejects non-Elytra stacks");
+        require(restored.getShoulderStack().isEmpty(), "shoulder slot rejects unsupported stacks");
+        restored.setShoulderStack(new ItemStack(lisbam.pastoraleconomy.item.ModItems.SUPER_BACKPACK));
+        require(restored.getShoulderStack().getItem() == lisbam.pastoraleconomy.item.ModItems.SUPER_BACKPACK,
+                "shoulder slot accepts backpacks");
 
         NBTTagCompound corrupt = new NBTTagCompound();
         corrupt.setLong("coins", -1L);
