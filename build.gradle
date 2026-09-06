@@ -168,6 +168,13 @@ task enchantmentSelfTest(type: JavaExec) {
     main = 'lisbam.pastoraleconomy.enchantment.EnchantmentSelfTest'
 }
 
+task toolDurabilitySelfTest(type: JavaExec) {
+    group = 'verification'
+    description = 'Runs felling durability-reserve and hoe crop-wear regression checks.'
+    classpath = sourceSets.test.runtimeClasspath
+    main = 'lisbam.pastoraleconomy.event.ToolDurabilitySelfTest'
+}
+
 task animalBoneDropSelfTest(type: JavaExec) {
     group = 'verification'
     description = 'Runs deterministic animal-bone drop probability checks.'

@@ -84,6 +84,12 @@ public final class AgricultureRules {
         return null;
     }
 
+    /** Existing crop scope whose zero-hardness harvests need the hoe's missing vanilla wear restored. */
+    public static boolean shouldConsumeHoeCropDurability(IBlockState state, float blockHardness) {
+        return state != null && blockHardness == 0.0F
+                && (getPlacedCrop(state) != null || getMatureHarvestCrop(state) != null);
+    }
+
     public static boolean supportsFineCultivation(Crop crop) {
         return crop == Crop.WHEAT || crop == Crop.CARROT || crop == Crop.POTATO || crop == Crop.BEETROOT;
     }

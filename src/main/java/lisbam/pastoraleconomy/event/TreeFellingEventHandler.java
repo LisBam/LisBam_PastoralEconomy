@@ -59,7 +59,8 @@ public final class TreeFellingEventHandler {
         }
         ItemStack tool = player.getHeldItemMainhand();
         if (!ModEnchantments.isAxe(tool)
-                || EnchantmentHelper.getEnchantmentLevel(ModEnchantments.FELLING, tool) <= 0) {
+                || EnchantmentHelper.getEnchantmentLevel(ModEnchantments.FELLING, tool) <= 0
+                || !FellingDurabilityRules.canStartFelling(tool)) {
             return;
         }
 
@@ -74,13 +75,32 @@ public final class TreeFellingEventHandler {
                 if (player.getHeldItemMainhand().isEmpty()) {
                     break;
                 }
-                // This is the native server harvest path: it posts BreakEvent for
-                // every secondary block, honors protection cancellations, creates
-                // normal drops, and consumes vanilla durability one block at a time.
-                player.interactionManager.tryHarvestBlock(target);
+                if (plan.isSecondaryLog(target)) {
+                    // The primary log has not reached vanilla's durability call
+                    // yet. Reserve one point for it and never consume the final
+                    // point through this felling chain.
+                    if (FellingDurabilityRules.canHarvestSecondaryLog(player.getHeldItemMainhand())) {
+                        player.interactionManager.tryHarvestBlock(target);
+                    }
+                } else {
+                    harvestLeafWithoutDurability(player, target);
+                }
             }
         } finally {
             ACTIVE_FELLING.remove(playerId);
+        }
+    }
+
+    /** Keeps native block drops and protection hooks while excluding leaf wear. */
+    private static void harvestLeafWithoutDurability(EntityPlayerMP player, BlockPos target) {
+        ItemStack before = player.getHeldItemMainhand();
+        int damageBefore = before.getItemDamage();
+        if (!player.interactionManager.tryHarvestBlock(target)) {
+            return;
+        }
+        ItemStack after = player.getHeldItemMainhand();
+        if (!after.isEmpty() && after.getItem() == before.getItem() && after.getItemDamage() > damageBefore) {
+            after.setItemDamage(damageBefore);
         }
     }
 
@@ -122,6 +142,10 @@ public final class TreeFellingEventHandler {
             }
             targets.addAll(leaves);
             return targets;
+        }
+
+        private boolean isSecondaryLog(BlockPos target) {
+            return logs.contains(target);
         }
 
         private static Set<BlockPos> collectConnectedLogs(World world, BlockPos origin, BlockPlanks.EnumType woodType) {
