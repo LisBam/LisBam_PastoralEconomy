@@ -242,7 +242,7 @@ public final class GuiMarketBook extends GuiContainer {
 
     @Override
     protected void keyTyped(char typedChar, int keyCode) throws java.io.IOException {
-        if (ModGuiInput.closeWithExitKey(mc, keyCode)) {
+        if (ModGuiInput.closeWithExitKey(mc, keyCode, searchField != null && searchField.isFocused())) {
             return;
         }
         if (searchField != null && searchField.isFocused()) {

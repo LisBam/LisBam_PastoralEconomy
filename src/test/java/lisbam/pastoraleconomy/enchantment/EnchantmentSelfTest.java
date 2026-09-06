@@ -91,8 +91,11 @@ public final class EnchantmentSelfTest {
         require(ModEnchantments.BLUNTNESS_CURSE.getMaxLevel() == 1, "Bluntness Curse maximum level");
         require(ModEnchantments.HARVEST.canApplyAtEnchantingTable(new ItemStack(Items.DIAMOND_HOE)),
                 "Harvest must apply to a vanilla hoe");
-        require(!ModEnchantments.HARVEST.canApplyAtEnchantingTable(new ItemStack(Items.DIAMOND_AXE)),
-                "Harvest must reject a non-hoe");
+        require(ModEnchantments.HARVEST.canApply(new ItemStack(Items.DIAMOND_AXE))
+                        && !ModEnchantments.HARVEST.canApplyAtEnchantingTable(new ItemStack(Items.DIAMOND_AXE)),
+                "Harvest must support axes through books/anvils but stay out of axe table rolls");
+        require(ModEnchantments.isAxe(new ItemStack(Items.DIAMOND_AXE)),
+                "Harvest crop effect must recognize an axe enchanted through a book or anvil");
         require(ModEnchantments.HARVEST.canApplyAtEnchantingTable(new ItemStack(Items.SHEARS)),
                 "Harvest must apply to shears");
         require(Enchantments.MENDING.canApply(new ItemStack(Items.SHEARS))
@@ -377,8 +380,13 @@ public final class EnchantmentSelfTest {
         require(AgricultureRules.rollFineCultivation(1, new FixedRandom(24)), "Fine Cultivation I succeeds below 25");
         require(!AgricultureRules.rollFineCultivation(1, new FixedRandom(25)), "Fine Cultivation I fails at 25");
         require(AgricultureRules.rollFineCultivation(4, new FixedRandom(99)), "Fine Cultivation IV is 100 percent");
-        require(AgricultureRules.rollPastoralFavor(4, new FixedRandom(39)), "Pastoral Favor IV succeeds below 40");
-        require(!AgricultureRules.rollPastoralFavor(4, new FixedRandom(40)), "Pastoral Favor IV fails at 40");
+        require(AgricultureRules.getPastoralFavorChancePercent(1) == 10
+                        && AgricultureRules.getPastoralFavorChancePercent(2) == 20
+                        && AgricultureRules.getPastoralFavorChancePercent(3) == 40
+                        && AgricultureRules.getPastoralFavorChancePercent(4) == 80,
+                "Pastoral Favor chance must double at every level");
+        require(AgricultureRules.rollPastoralFavor(4, new FixedRandom(79)), "Pastoral Favor IV succeeds below 80");
+        require(!AgricultureRules.rollPastoralFavor(4, new FixedRandom(80)), "Pastoral Favor IV fails at 80");
     }
 
     private static void require(boolean condition, String message) {

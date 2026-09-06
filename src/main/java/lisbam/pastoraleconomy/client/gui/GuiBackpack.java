@@ -69,7 +69,7 @@ public final class GuiBackpack extends GuiContainer {
 
     @Override
     protected void keyTyped(char typedChar, int keyCode) throws IOException {
-        if (!ModGuiInput.closeWithExitKey(mc, keyCode)) {
+        if (!ModGuiInput.closeWithExitKey(mc, keyCode, false)) {
             super.keyTyped(typedChar, keyCode);
         }
     }

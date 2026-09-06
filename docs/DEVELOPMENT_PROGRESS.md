@@ -2,6 +2,16 @@
 
 当前发行版本：`1.5`；既有第 15 批功能完成，1.5 为维护更新。
 
+## 维护：输入框、丰收斧头、田园眷顾与凭证箱加载（2026-09-06）
+
+实现：行情书搜索、商人数量和交通节点取名框获得焦点时，打开背包键（默认 E，含改键）不再关闭界面，Esc 仍走既有服务端 Container 关闭路径。Harvest 现在允许五种原版斧头通过附魔书/铁砧获得并在成熟作物收获时使用原有增产公式，但斧头在附魔台不生成 Harvest 候选；田园眷顾经验概率改为 I--IV `10%/20%/40%/80%`。
+
+交易凭证箱不再依赖交易瞬间玩家附近的已加载 TileEntity：玩家关闭含绑定凭证的原版单箱/大箱，或交易扫描到它时，会记录每个物理箱子半块的位置。`PastoralWorldData` schema 升为 v8 后持久保存该有界位置索引，Forge 1.12.2 的单独 NORMAL ticket 持续加载每个登记半块，重启回调按 ticket 坐标恢复。每秒只校验登记箱；凭证移除、箱子失效、上锁或未展开战利品状态会释放票据和索引。旧存档中先前未登记的远方箱子需重新打开/关闭一次才能获知位置。
+
+兼容性与影响：不改变 Harvest、Pastoral Favor、交易凭证的 registry ID、现有物品 NBT、Packet 编码、交易原子回滚或 UUID 授权。WorldSavedData 从 v7 安全读取为空凭证箱索引再写为 v8；Forge 票据上限由服主配置约束，无法立即获票的位置会保持索引并后续重试。
+
+验证：Temurin Java 8 `1.8.0_504` 下 `compileJava`、`compileTestJava`、`processResources`、`modGuiInputSelfTest`、`enchantmentSelfTest`、`tradeVoucherSelfTest`、`pastoralWorldDataSelfTest` 与最终 `./gradlew build --no-daemon --console=plain` 均 PASS。严格 Forge 1.12.2 audit 为 0 ERROR、7 条既有 `packet-thread` 保守 WARNING（严格模式因 warning 返回非零，已保留并审查）；60 秒 `runServer` 实测进入 Forge/FML/coremod 引导，但未到本模组生命周期/世界且没有接受 EULA，完整 Dedicated Server 验收为 NOT RUN。重混淆 `release/LisBam_PastoralEconomy-1.5.jar` 为 482,145 bytes，SHA-256 `17249a71b23a4ee63064273221756b99922bea8fe87273a9265b2bdefff21841`，`unzip -t` PASS，新增生产 class major version 为 52；覆盖前的 472,033-byte 成品已备份为 `release/backup/backup_20260906-195947.jar`。
+
 ## 维护：凭证配方、死亡金币、价格回归与旧物品移除（2026-09-06）
 
 实现：空交易凭证新增金粒环绕中央纸张的有序配方。额外动物骨头判定的各档成功概率改为原来的 2/3：大体型为 40/300 出 2、100/300 出 1，小体型为 50/300 出 1。真实玩家死亡在逻辑服务端按随机 10%--30%、且不低于随机 1000--2000 金币扣款（最多当前余额），并收到红色“本次死亡失去xxx金币！”通知；能力数据在 Clone 前已扣款，重生与 HUD 同步继续复用现有路径。

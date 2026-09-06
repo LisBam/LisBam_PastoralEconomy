@@ -9,9 +9,12 @@ public final class ModGuiInputSelfTest {
     }
 
     public static void main(String[] args) {
-        check(ModGuiInput.isExitKey(Keyboard.KEY_ESCAPE, false), "Escape closes the server Container");
-        check(ModGuiInput.isExitKey(42, true), "remapped inventory key closes the server Container");
-        check(!ModGuiInput.isExitKey(42, false), "unrelated key keeps the GUI open");
+        check(ModGuiInput.isExitKey(Keyboard.KEY_ESCAPE, false, true),
+                "Escape closes the server Container even while typing");
+        check(ModGuiInput.isExitKey(42, true, false), "remapped inventory key closes the server Container");
+        check(!ModGuiInput.isExitKey(42, true, true),
+                "a focused text field receives the remapped inventory key");
+        check(!ModGuiInput.isExitKey(42, false, false), "unrelated key keeps the GUI open");
         check(GuiContainer.class.isAssignableFrom(GuiMarketBook.class),
                 "market book installs a dedicated client Container");
         check(GuiContainer.class.isAssignableFrom(GuiMerchantTrade.class),

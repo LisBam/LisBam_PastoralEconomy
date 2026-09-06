@@ -6,6 +6,12 @@
 
 ## 已实现
 
+### 2026-09-06 维护：输入焦点、附魔边界与凭证箱持续加载
+
+- `ModGuiInput` 将“打开背包”改键视为文本输入框失焦时的关闭键：行情书搜索、商人数量和交通节点取名框获得焦点后，默认 E（及改键）交给 `GuiTextField`，Esc 仍调用 `EntityPlayerSP#closeScreen` 以同步关闭服务端 Container。
+- `HARVEST` 的稳定附魔 ID、等级和时运互斥规则不变；白名单追加五把原版斧头，`AgricultureEnchantmentEventHandler` 因而会在斧头通过书本/铁砧获得丰收后按既有作物流水线结算。`EnchantmentPastoral` 新增逐物品的附魔台排除表，斧头不会得到丰收附魔台候选。`AgricultureRules` 的田园眷顾概率成为 `10% → 20% → 40% → 80%` 的逐级翻倍函数。
+- `PastoralWorldData` 升至 schema `v8`，新增有界 `voucherChests` 段，只保存原版凭证箱每个物理半块的维度和 `BlockPos`。`TradeVoucherStorageService` 在关闭原版箱子和交易扫描时登记含已绑定凭证的箱子；每个登记半块持有一个带坐标 modData 的 Forge 1.12.2 NORMAL ticket，重启回调按原坐标重新 `forceChunk`。每秒只复核已登记、已强制加载的箱子；凭证移除、方块失效、上锁或未展开战利品箱会撤销记录和票据。库存计数、原子回滚、Packet 字段和 UUID 授权规则不变。
+
 ### 2026-09-06 维护：凭证配方、死亡金币与市场调价
 
 - 空交易凭证新增有序 JSON 配方：纸置中、八个金粒环绕，产出 1 张空凭证；绑定、箱子授权和服务端原子出售流程不变。

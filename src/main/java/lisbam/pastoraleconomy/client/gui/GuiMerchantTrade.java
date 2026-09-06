@@ -186,7 +186,7 @@ public final class GuiMerchantTrade extends GuiContainer implements GuiSlider.IS
 
     @Override
     protected void keyTyped(char typedChar, int keyCode) throws java.io.IOException {
-        if (ModGuiInput.closeWithExitKey(mc, keyCode)) {
+        if (ModGuiInput.closeWithExitKey(mc, keyCode, hasFocusedQuantityField())) {
             return;
         }
         for (int index = 0; index < quantityFields.length; index++) {
@@ -203,6 +203,15 @@ public final class GuiMerchantTrade extends GuiContainer implements GuiSlider.IS
             return;
         }
         super.keyTyped(typedChar, keyCode);
+    }
+
+    private boolean hasFocusedQuantityField() {
+        for (GuiTextField field : quantityFields) {
+            if (field.isFocused()) {
+                return true;
+            }
+        }
+        return false;
     }
 
     @Override
