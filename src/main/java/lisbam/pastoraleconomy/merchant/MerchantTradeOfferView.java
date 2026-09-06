@@ -8,6 +8,7 @@ public final class MerchantTradeOfferView {
     private final long currentPrice;
     private final long previousPrice;
     private final boolean hasPreviousPrice;
+    /** Buy offer stock, or voucher-linked chest stock for a sell offer. */
     private final int remainingItems;
     private final int enchantmentLevel;
 

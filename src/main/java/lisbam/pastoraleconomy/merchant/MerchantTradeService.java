@@ -144,39 +144,26 @@ public final class MerchantTradeService {
         if (!canCredit(player, total)) {
             return false;
         }
-        List<ItemStack> before = snapshotInventory(player.inventory);
-        int held = countHeld(player.inventory, entry);
-        if (held < quantity) {
+        TradeVoucherStorageService.SaleInventory saleInventory =
+                TradeVoucherStorageService.findSaleInventory(player);
+        if (saleInventory.count(entry) < quantity) {
             return false;
         }
-        if (entry.getMarketKey().endsWith("sell/livestock/milk_bucket")) {
-            // Milk buckets are non-stackable: removing the sold buckets first
-            // creates the exact slots that must receive the returned buckets.
-            List<ItemStack> simulated = snapshotInventory(player.inventory);
-            if (removeHeld(player.inventory, entry, quantity) != quantity) {
-                restoreInventory(player.inventory, before);
-                return false;
-            }
-            boolean bucketCapacity = canFit(player.inventory, new ItemStack(Items.BUCKET, quantity, 0));
-            restoreInventory(player.inventory, simulated);
-            if (!bucketCapacity) {
-                return false;
-            }
-        }
-        if (removeHeld(player.inventory, entry, quantity) != quantity) {
-            restoreInventory(player.inventory, before);
+        TradeVoucherStorageService.Snapshot before = saleInventory.snapshot();
+        if (saleInventory.remove(entry, quantity) != quantity) {
+            saleInventory.restore(before);
             return false;
         }
         if (entry.getMarketKey().endsWith("sell/livestock/milk_bucket")
-                && !insert(player.inventory, new ItemStack(Items.BUCKET, quantity, 0))) {
-            restoreInventory(player.inventory, before);
+                && !saleInventory.insert(new ItemStack(Items.BUCKET, quantity, 0))) {
+            saleInventory.restore(before);
             return false;
         }
         if (!CoinService.addCoins(player, total)) {
-            restoreInventory(player.inventory, before);
+            saleInventory.restore(before);
             return false;
         }
-        player.inventory.markDirty();
+        saleInventory.markDirty();
         return true;
     }
 
@@ -260,36 +247,6 @@ public final class MerchantTradeService {
             inventory.setInventorySlotContents(index, snapshot.get(index).copy());
         }
         inventory.markDirty();
-    }
-
-    private static int countHeld(InventoryPlayer inventory, TradeCatalogEntry entry) {
-        int total = 0;
-        for (ItemStack stack : inventory.mainInventory) {
-            if (entry.matches(stack)) {
-                if (total > Integer.MAX_VALUE - stack.getCount()) {
-                    return Integer.MAX_VALUE;
-                }
-                total += stack.getCount();
-            }
-        }
-        return total;
-    }
-
-    private static int removeHeld(InventoryPlayer inventory, TradeCatalogEntry entry, int quantity) {
-        int remaining = quantity;
-        for (int index = 0; index < inventory.mainInventory.size() && remaining > 0; index++) {
-            ItemStack stack = inventory.mainInventory.get(index);
-            if (!entry.matches(stack)) {
-                continue;
-            }
-            int removed = Math.min(remaining, stack.getCount());
-            stack.shrink(removed);
-            remaining -= removed;
-            if (stack.isEmpty()) {
-                inventory.setInventorySlotContents(index, ItemStack.EMPTY);
-            }
-        }
-        return quantity - remaining;
     }
 
     private static boolean canFit(InventoryPlayer inventory, ItemStack output) {
@@ -396,12 +353,15 @@ public final class MerchantTradeService {
             return null;
         }
         MarketPriceSnapshot prices = MarketService.getPriceSnapshot(player.world);
+        TradeVoucherStorageService.SaleInventory saleInventory =
+                TradeVoucherStorageService.findSaleInventory(player);
         return new MerchantTradeSnapshot(record.getMerchantId(), container.windowId, state.getWorldDay(),
-                CoinService.getBalance(player), createViews(state.getSellOffers(), prices),
-                createViews(state.getBuyOffers(), prices));
+                CoinService.getBalance(player), createViews(state.getSellOffers(), prices, saleInventory),
+                createViews(state.getBuyOffers(), prices, null));
     }
 
-    private static List<MerchantTradeOfferView> createViews(List<DailyOffer> offers, MarketPriceSnapshot prices) {
+    private static List<MerchantTradeOfferView> createViews(List<DailyOffer> offers, MarketPriceSnapshot prices,
+                                                            TradeVoucherStorageService.SaleInventory saleInventory) {
         List<MerchantTradeOfferView> result = new ArrayList<MerchantTradeOfferView>(offers.size());
         for (DailyOffer offer : offers) {
             TradeCatalogEntry entry = offer.isEnabled() ? TradeCatalog.get(offer.getCatalogKey()) : null;
@@ -427,8 +387,9 @@ public final class MerchantTradeService {
                 result.add(new MerchantTradeOfferView(false, "", 0, 0L, null, TradeCatalogEntry.UNLIMITED_STOCK));
                 continue;
             }
+            int remaining = saleInventory == null ? offer.getRemainingItems() : saleInventory.countLinkedChests(entry);
             result.add(new MerchantTradeOfferView(true, entry.getCatalogKey(), entry.getItemStackLimit(), price, previous,
-                    offer.getRemainingItems(), offer.getEnchantmentLevel()));
+                    remaining, offer.getEnchantmentLevel()));
         }
         return result;
     }

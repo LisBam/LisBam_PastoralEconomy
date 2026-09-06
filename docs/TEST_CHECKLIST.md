@@ -1,5 +1,14 @@
 # 测试清单
 
+## 交易凭证与箱子出售（2026-09-06）
+
+- [x] `tradeVoucherSelfTest`：空白凭证只绑定一次，UUID 为授权依据、名字/NBT 可复制保存、他人凭证不授权；玩家主物品栏与箱子库存合并计数、玩家优先扣货、多来源回滚和空桶返还通过；两张贴图均为可读 16×16 RGBA 且边角透明。PASS（Temurin Java 8 `1.8.0_504`）。
+- [x] `merchantCatalogSelfTest`：既有 6+8 商人快照协议往返保持，并验证出售项的既有 `remainingItems` 字段可携带授权箱数量。PASS（Temurin Java 8 `1.8.0_504`）。
+- [x] `compileJava`、`compileTestJava`、`processResources`、`marketPacketSelfTest` 与最终 `build`：PASS（Temurin Java 8 `1.8.0_504`；正式构建含 `test`、`reobfJar`、`exportReleaseJar`）。严格 Forge 1.12.2 audit 为 0 ERROR、7 条既有 `packet-thread` WARNING；本次无新 Handler。release JAR 为 479,868 bytes，SHA-256 `4405eeb39dc73afe9306d9e60eaf577f72903663ad53e9ce61f345cbd87879bd`，`unzip -t` PASS、class major version 52，并包含新增生产类、模型、两张贴图及双语资源；旧 463,258-byte JAR 已备份为 `backup_20260906-141853.jar`。
+- [ ] Dedicated Server 完整加载：180 秒实测已由 Java 8 启动 Forge、发现/注入/运行本模组 Coremod并到达 Minecraft 校验，无新增 common/client 类加载异常；但未到模组生命周期或世界，故完整验收 NOT RUN。`run/eula.txt` 未修改。
+- [ ] 游戏内单人/多人：空凭证主/副手右键改名且只绑定一次；放入单箱/大箱后本人可出售“随身+箱内”数量，其他玩家不可用；多个已加载维度、区块卸载/重载、上锁箱、未开奖战利品箱、箱子被破坏和玩家改名行为符合内容书。NOT RUN：当前环境没有可操作 Forge 客户端/测试世界。
+- [ ] 游戏内事务：随身货物先消耗、多个箱子稳定扣除；牛奶桶出售能返还全部空桶，空间不足或金币上溢时玩家/所有箱子都原样回滚。NOT RUN：需要可操作客户端与服务器世界。
+
 ## 肩部槽 UI、右键穿戴与模型显示（2026-09-06）
 
 - [x] 静态/自检：肩部 Coremod 对实际映射 `LayerElytra` 及模拟发行混淆名均注入肩部读取；Packet 9 的实体 ID、鞘翅物品、损伤值往返一致。PASS（Temurin Java 8 `1.8.0_504`，`shoulderEquipmentSelfTest`）。

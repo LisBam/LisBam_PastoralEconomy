@@ -284,7 +284,7 @@ public final class GuiMerchantTrade extends GuiContainer implements GuiSlider.IS
                     view.getRemainingItems() < 0
                             ? I18n.format("gui.lisbam_pastoral_economy.merchant.unlimited")
                             : Long.toString(view.getRemainingItems()))
-                    : I18n.format("gui.lisbam_pastoral_economy.merchant.holding",
+                    : I18n.format("gui.lisbam_pastoral_economy.merchant.available",
                     Integer.toString(getSellHeldCount(index, entry)));
             drawContainerText(fontRenderer.trimStringToWidth(amount, layout.cardWidth - 28), textX, y + 33);
         }
@@ -462,7 +462,8 @@ public final class GuiMerchantTrade extends GuiContainer implements GuiSlider.IS
             MerchantTradeOfferView view = snapshot == null || index >= snapshot.getSellOffers().size()
                     ? null : snapshot.getSellOffers().get(index);
             TradeCatalogEntry entry = view == null || !view.isEnabled() ? null : TradeCatalog.get(view.getCatalogKey());
-            sellHeldCounts[index] = entry == null ? 0 : countHeld(entry);
+            sellHeldCounts[index] = entry == null ? 0
+                    : addAvailableCounts(countHeld(entry), Math.max(0, view.getRemainingItems()));
         }
     }
 
@@ -481,6 +482,11 @@ public final class GuiMerchantTrade extends GuiContainer implements GuiSlider.IS
             }
         }
         return total;
+    }
+
+    private static int addAvailableCounts(int playerCount, int linkedChestCount) {
+        return playerCount > Integer.MAX_VALUE - linkedChestCount
+                ? Integer.MAX_VALUE : playerCount + linkedChestCount;
     }
 
     private static long multiplyForDisplay(long price, int quantity) {
