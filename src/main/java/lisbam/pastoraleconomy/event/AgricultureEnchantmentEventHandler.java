@@ -46,23 +46,27 @@ public final class AgricultureEnchantmentEventHandler {
         }
 
         PENDING_ACTIONS.remove(player.getUniqueID());
+        ItemStack tool = player.getHeldItemMainhand();
         AgricultureRules.Crop crop = AgricultureRules.getMatureHarvestCrop(event.getState());
-        if (crop == null) {
+        boolean consumeHoeDurability = ModEnchantments.isHoe(tool) && !player.capabilities.isCreativeMode
+                && AgricultureRules.shouldConsumeHoeCropDurability(event.getState(),
+                event.getState().getBlockHardness(event.getWorld(), event.getPos()));
+        if (crop == null && !consumeHoeDurability) {
             return;
         }
 
-        ItemStack tool = player.getHeldItemMainhand();
-        int harvestLevel = (ModEnchantments.isHoe(tool) || ModEnchantments.isAxe(tool))
+        int harvestLevel = crop != null && (ModEnchantments.isHoe(tool) || ModEnchantments.isAxe(tool))
                 ? EnchantmentHelper.getEnchantmentLevel(ModEnchantments.HARVEST, tool) : 0;
-        int fineCultivationLevel = ModEnchantments.isHoe(tool)
+        int fineCultivationLevel = crop != null && ModEnchantments.isHoe(tool)
                 ? EnchantmentHelper.getEnchantmentLevel(ModEnchantments.FINE_CULTIVATION, tool) : 0;
         ItemStack helmet = player.getItemStackFromSlot(net.minecraft.inventory.EntityEquipmentSlot.HEAD);
-        int pastoralFavorLevel = ModEnchantments.isHelmet(helmet)
+        int pastoralFavorLevel = crop != null && ModEnchantments.isHelmet(helmet)
                 ? EnchantmentHelper.getEnchantmentLevel(ModEnchantments.PASTORAL_FAVOR, helmet) : 0;
-        if (harvestLevel > 0 || fineCultivationLevel > 0 || pastoralFavorLevel > 0) {
+        if (harvestLevel > 0 || fineCultivationLevel > 0 || pastoralFavorLevel > 0 || consumeHoeDurability) {
             PENDING_ACTIONS.put(player.getUniqueID(), new HarvestAction(
                     event.getWorld(), event.getPos(), event.getState(), crop,
-                    harvestLevel, fineCultivationLevel, pastoralFavorLevel
+                    harvestLevel, fineCultivationLevel, pastoralFavorLevel,
+                    consumeHoeDurability ? tool.getItem() : null
             ));
         }
     }
@@ -81,6 +85,7 @@ public final class AgricultureEnchantmentEventHandler {
             return;
         }
 
+        consumeHoeCropDurability(action, player);
         Random random = event.getWorld().rand;
         if (action.harvestLevel > 0) {
             ItemStack bonus = AgricultureRules.createHarvestBonus(action.crop, action.harvestLevel, random);
@@ -148,6 +153,18 @@ public final class AgricultureEnchantmentEventHandler {
         return false;
     }
 
+    private static void consumeHoeCropDurability(HarvestAction action, EntityPlayer player) {
+        if (action.hoeItem == null || player.capabilities.isCreativeMode) {
+            return;
+        }
+        ItemStack currentTool = player.getHeldItemMainhand();
+        if (currentTool.getItem() == action.hoeItem) {
+            // ItemHoe skips zero-hardness crops in 1.12.2; damageItem keeps
+            // vanilla Unbreaking and break handling for the missing one point.
+            currentTool.damageItem(1, player);
+        }
+    }
+
     private static void replantIfStillValid(net.minecraft.world.World world, BlockPos pos, IBlockState harvestedState) {
         if (world.getBlockState(pos).getBlock() == Blocks.AIR
                 && world.getBlockState(pos.down()).getBlock() == Blocks.FARMLAND) {
@@ -163,10 +180,11 @@ public final class AgricultureEnchantmentEventHandler {
         private final int harvestLevel;
         private final int fineCultivationLevel;
         private final int pastoralFavorLevel;
+        private final Item hoeItem;
 
         private HarvestAction(net.minecraft.world.World world, BlockPos pos, IBlockState originalState,
                               AgricultureRules.Crop crop, int harvestLevel, int fineCultivationLevel,
-                              int pastoralFavorLevel) {
+                              int pastoralFavorLevel, Item hoeItem) {
             this.world = world;
             this.pos = pos.toImmutable();
             this.originalState = originalState;
@@ -174,6 +192,7 @@ public final class AgricultureEnchantmentEventHandler {
             this.harvestLevel = harvestLevel;
             this.fineCultivationLevel = fineCultivationLevel;
             this.pastoralFavorLevel = pastoralFavorLevel;
+            this.hoeItem = hoeItem;
         }
 
         private boolean matches(BlockEvent.HarvestDropsEvent event) {

@@ -1,5 +1,16 @@
 # 测试清单
 
+## 伐木耐久下限与锄头作物耐久（2026-09-06）
+
+- [x] `toolDurabilitySelfTest`：剩余 1 点时伐木不启动；剩余 2 点只预留触发原木和最终 1 点；剩余 3 点才允许一个二级原木；零硬度小麦/下界疣补扣锄头耐久，非零硬度西瓜与非作物草方块不重复扣除。PASS（Temurin Java 8 `1.8.0_504`）。
+- [x] `enchantmentSelfTest`、`compileJava`、`compileTestJava`：既有附魔与农业编译回归通过。PASS（Temurin Java 8 `1.8.0_504`）。
+- [x] `goldenBoneMealSelfTest`：既有作物分类与 5×5 农业规则回归通过。PASS（Temurin Java 8 `1.8.0_504`）。
+- [x] `check_toolchain.py`：Forge `14.23.5.2859`、Gradle 4.9、snapshot `20171003-1.12`、Java `1.8.0_504`，0 error/0 warning。PASS。
+- [x] Forge 1.12.2 常规 audit：0 ERROR、7 条既有 `packet-thread` 保守 WARNING。PASS（常规模式）。
+- [ ] Forge 1.12.2 `--strict-warnings` audit：NOT PASS；7 条既有 `packet-thread` warning 使该命令以非零退出，未掩盖结果。
+- [x] 最终 `./gradlew build --console=plain`：PASS（含 `reobfJar`、`exportReleaseJar`）。release JAR 为 497,424 bytes，SHA-256 `7a772a6d1d1db9446f65cf4be6a5e1d9d52ee85ea21cd4fe35e07a64e37af554`，`unzip -t` PASS，`FellingDurabilityRules.class` 为 Java 8 major version 52；覆盖前 JAR 已备份为 `release/backup/backup_20260906-222214.jar`。
+- [ ] 游戏内：分别以剩余 1/2/3 点的伐木斧砍正常树，确认 1 点不触发、每次完成后至少保留 1 点，树叶掉落正常且不耗耐久；以带/不带耐久附魔的锄头收获零硬度小麦、胡萝卜、马铃薯、甜菜、下界疣和可可，确认成功收获各按原版耐久附魔规则消耗一次，南瓜/西瓜不双扣。NOT RUN：当前环境没有可操作 Forge 客户端或可进入的 Dedicated Server 世界。
+
 ## 肩部羽毛翅膀与田园眷顾调值（2026-09-06）
 
 - [x] `enchantmentSelfTest`：田园眷顾 I--IV 概率为 20/40/60/80，80 的阈值边界不重复成功。PASS（Temurin Java 8 `1.8.0_504`）。

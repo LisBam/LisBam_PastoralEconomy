@@ -1,5 +1,11 @@
 # 实施决策
 
+## DEC-062 伐木保留耐久与锄头零硬度作物损耗（2026-09-06）
+
+决定：`FellingDurabilityRules` 以栈的最大耐久和损伤值计算剩余耐久。剩余 1 时完全不触发伐木；二级原木只在剩余大于 2 时破坏，预留触发原木随后必经的一次原版扣耐久和最终 1 点。二级树叶仍以 `tryHarvestBlock` 结算保护/掉落，成功后仅恢复该次斧头损伤。锄头作物补扣保留在既有 `AgricultureEnchantmentEventHandler`：BreakEvent 只登记手持锄头、非创造、现有农业范围且硬度为 0 的玩家操作，匹配的 HarvestDropsEvent 确认成功后才调用一次 `damageItem`；硬度非零作物继续交给原版 `ItemHoe`。
+
+原因与影响：直接跳过树叶会绕开保护事件和原版树苗/苹果掉落；先执行原版 harvest 再恢复损伤同时保留这些语义。触发原木的原版耐久在 BreakEvent 之后才执行，故必须在处理二级原木前额外预留，不能只在栈损坏时停止。1.12.2 `ItemHoe#onBlockDestroyed` 明确在 `getBlockHardness(...) != 0` 时才损伤工具，成功收获后补扣可避免保护取消、失败操作和已有耐久路径的误扣/双扣。所有状态均是本次服务端事件的瞬态局部数据，无存档迁移。
+
 ## DEC-061 羽毛翅膀复用肩部栈与原版飞行能力包（2026-09-06）
 
 决定：羽毛翅膀追加为稳定 Item ID `feather_wings`，复用 `PlayerData.shoulder`、Packet 9 和现有肩部 Slot，不另设第二装备栏、Capability 字段、持久 tick 计数或 C2S 飞行包。物品继承 1.12.2 `ItemElytra`，使原版 BREAKABLE/WEARABLE 规则允许耐久、经验修补、绑定/消失诅咒；核心飞行不依赖原版鞘翅滑翔 hook。逻辑服务端 END Player Tick 在实际肩部栈存在时授权 `allowFlying`，移除/损坏时撤销并发送原版玩家能力包；每 40 tick 的耐久和按移动距离的双倍步行 exhaustion 都只在服务端结算。

@@ -2,6 +2,14 @@
 
 当前发行版本：`1.5`；既有第 15 批功能完成，1.5 为维护更新。
 
+## 维护：伐木耐久下限与锄头作物耐久（2026-09-06）
+
+根因与修复：伐木的二级树叶此前与原木一样走 `tryHarvestBlock`，因此 1.12.2 原版 `ItemTool#onBlockDestroyed` 也扣除了斧头耐久；同时伐木在触发原木执行原版耐久前就处理二级方块，无法保证本次结束仍留下 1 点。现在树叶继续走原版掉落/保护路径，但成功后恢复该次工具损耗；伐木只在剩余耐久大于 1 时启动，每个二级原木前预留触发原木的一次扣耐久与最后 1 点。原版 `ItemHoe` 仅在方块硬度非零时消耗耐久，故零硬度既有作物用锄头成功破坏时过去不会受损；收获成功后由逻辑服务端补调用一次 `damageItem`，保留耐久附魔并避免对非零硬度作物重复扣除。
+
+兼容性与影响：不新增注册项、NBT、Capability、WorldSavedData 或 Packet；旧存档无需迁移。创造模式和自动化不进入锄头补扣路径。
+
+验证：Temurin Java 8 `1.8.0_504` 下 `check_toolchain.py` 为 0 error/0 warning；`compileJava`、`compileTestJava`、`toolDurabilitySelfTest`、`enchantmentSelfTest`、`goldenBoneMealSelfTest` 均 PASS。常规 Forge 1.12.2 audit 为 0 ERROR、7 条既有 `packet-thread` 保守 WARNING；`--strict-warnings` 因这 7 条历史 warning 返回非零，故不标记 PASS。最终 `./gradlew build --console=plain` PASS，包含 `reobfJar` 和 `exportReleaseJar`；新 release JAR 为 497,424 bytes，SHA-256 `7a772a6d1d1db9446f65cf4be6a5e1d9d52ee85ea21cd4fe35e07a64e37af554`，`unzip -t` PASS，`FellingDurabilityRules.class` 为 Java 8 major version 52。覆盖前 495,524-byte JAR 已备份为 `release/backup/backup_20260906-222214.jar`。游戏内及 Dedicated Server 世界验收为 NOT RUN：当前环境没有可操作 Forge 客户端或可进入的服务器世界。
+
 ## 新内容：肩部羽毛翅膀与田园眷顾调值（2026-09-06）
 
 实现：田园眷顾 I--IV 的单次经验概率固定为 `20%/40%/60%/80%`。新增稳定物品 `feather_wings`，仅可装备于既有肩部槽；非创造且非旁观模式穿戴后可使用原版自由飞行能力，飞行每连续 40 tick 尝试耗 1 耐久，最大耐久 500，伤害事件不会消耗耐久。飞行移动的饥饿消耗按距离为原版步行的两倍。它可附魔耐久、经验修补、绑定诅咒和消失诅咒；经验修补因肩部栈不属于原版装备扫描而在服务端经验球事件中补齐，绑定/消失诅咒分别在肩部取下/死亡 Clone 路径生效。铁砧每根羽毛修复 5 耐久，两个羽毛翅膀的合并仍用原版耐久装备逻辑。
