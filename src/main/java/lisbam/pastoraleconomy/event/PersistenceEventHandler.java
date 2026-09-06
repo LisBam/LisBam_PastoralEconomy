@@ -11,6 +11,7 @@ import lisbam.pastoraleconomy.merchant.VillageService;
 import lisbam.pastoraleconomy.merchant.TradeVoucherStorageService;
 import lisbam.pastoraleconomy.transport.TransportService;
 import net.minecraft.entity.Entity;
+import net.minecraft.enchantment.EnchantmentHelper;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.inventory.ContainerChest;
@@ -42,6 +43,9 @@ public final class PersistenceEventHandler {
         IPlayerData replacement = PlayerDataCapability.get(event.getEntityPlayer());
         if (original != null && replacement != null) {
             replacement.copyFrom(original);
+            if (event.isWasDeath() && EnchantmentHelper.hasVanishingCurse(replacement.getShoulderStack())) {
+                replacement.setShoulderStack(net.minecraft.item.ItemStack.EMPTY);
+            }
         }
     }
 

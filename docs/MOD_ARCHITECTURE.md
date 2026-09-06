@@ -6,10 +6,17 @@
 
 ## 已实现
 
+### 2026-09-06 新内容：肩部羽毛翅膀与田园眷顾调值
+
+- 新增稳定 Item ID `feather_wings`。它继承 Java 1.12.2 `ItemElytra` 以进入原版 BREAKABLE/WEARABLE 附魔边界，但不进入原版鞘翅飞行 hook；胸甲槽和既有肩部 Slot 都显式将其限定为肩部物品。`ItemFeatherWings` 的固定最大耐久为 500，附魔台只允许耐久；经验修补、绑定诅咒和消失诅咒按原版书本/铁砧入口生效。羽毛是唯一材料修复物，`AnvilEnchantmentEventHandler` 以 `FeatherWingsRules` 的 5 点/根公式替换原版每材料 25% 修复，同时不拦截两件同类翅膀的原版合并修复。
+- `FeatherWingsFlightEventHandler` 只在逻辑服务端的 END Player Tick 授予/撤销 `allowFlying` 并调用原版能力同步；只有非创造、非旁观的实际飞行会累计 40 tick 后对肩部栈调用 `damageItem(1, player)`。它按每 tick 位移向服务器 FoodStats 加入两倍原版步行 exhaustion，跳过超过 10 格的瞬移差值；肩部栈不在原版 Mending 的装备扫描中，因此 `PlayerPickupXpEvent` 仅在已损坏且带经验修补的羽毛翅膀上接管经验球修复并返还剩余经验。无新增 Capability、WorldSavedData、NBT key 或 Packet discriminator。
+- `SlotShoulderEquipment` 使用原版绑定诅咒检查阻止非创造取下；`PersistenceEventHandler` 的玩家死亡 Clone 对消失诅咒肩部栈清空。Packet 9 的追踪者渲染快照现在含羽毛翅膀（背包仍为空快照）；`FeatherWingsRenderHandler` 是物理客户端的 `RenderPlayer` layer，使用 `ModelElytra` 与 `textures/entity/feather_wings.png`，从而与胸甲和原版肩部鞘翅模型隔离。
+- `MarketCatalog`/`TradeCatalog` 以追加 `buy/treasure/feather_wings` / `merchant/feather_wings` 条目接入既有服务端商人闭环：基础价 1200000、珍宝 8% 波动、库存 1。`AgricultureRules` 的田园眷顾固定概率改为 I--IV `20/40/60/80`；收获和种植仍各只在服务端判定一次并奖励 1 点经验。
+
 ### 2026-09-06 维护：输入焦点、附魔边界与凭证箱持续加载
 
 - `ModGuiInput` 将“打开背包”改键视为文本输入框失焦时的关闭键：行情书搜索、商人数量和交通节点取名框获得焦点后，默认 E（及改键）交给 `GuiTextField`，Esc 仍调用 `EntityPlayerSP#closeScreen` 以同步关闭服务端 Container。
-- `HARVEST` 的稳定附魔 ID、等级和时运互斥规则不变；白名单追加五把原版斧头，`AgricultureEnchantmentEventHandler` 因而会在斧头通过书本/铁砧获得丰收后按既有作物流水线结算。`EnchantmentPastoral` 新增逐物品的附魔台排除表，斧头不会得到丰收附魔台候选。`AgricultureRules` 的田园眷顾概率成为 `10% → 20% → 40% → 80%` 的逐级翻倍函数。
+- `HARVEST` 的稳定附魔 ID、等级和时运互斥规则不变；白名单追加五把原版斧头，`AgricultureEnchantmentEventHandler` 因而会在斧头通过书本/铁砧获得丰收后按既有作物流水线结算。`EnchantmentPastoral` 新增逐物品的附魔台排除表，斧头不会得到丰收附魔台候选。`AgricultureRules` 的田园眷顾概率固定为 I--IV `20%/40%/60%/80%`。
 - `PastoralWorldData` 升至 schema `v8`，新增有界 `voucherChests` 段，只保存原版凭证箱每个物理半块的维度和 `BlockPos`。`TradeVoucherStorageService` 在关闭原版箱子和交易扫描时登记含已绑定凭证的箱子；每个登记半块持有一个带坐标 modData 的 Forge 1.12.2 NORMAL ticket，重启回调按原坐标重新 `forceChunk`。每秒只复核已登记、已强制加载的箱子；凭证移除、方块失效、上锁或未展开战利品箱会撤销记录和票据。库存计数、原子回滚、Packet 字段和 UUID 授权规则不变。
 
 ### 2026-09-06 维护：凭证配方、死亡金币与市场调价

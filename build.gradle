@@ -252,6 +252,13 @@ task backpackSelfTest(type: JavaExec) {
     main = 'lisbam.pastoraleconomy.equipment.BackpackSelfTest'
 }
 
+task featherWingsSelfTest(type: JavaExec) {
+    group = 'verification'
+    description = 'Runs Feather Wings item, repair, enchantment and hunger-balance regression checks.'
+    classpath = sourceSets.test.runtimeClasspath
+    main = 'lisbam.pastoraleconomy.equipment.FeatherWingsSelfTest'
+}
+
 publishing {
     publications {
         mavenJava(MavenPublication) {

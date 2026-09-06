@@ -41,7 +41,7 @@ public final class MerchantCatalogSelfTest {
         check(TradeCatalog.getPool(TradePool.BUY_COMMON).size() == 56, "common buy pool");
         check(TradeCatalog.getPool(TradePool.BUY_UNCOMMON).size() == 42, "uncommon buy pool");
         check(TradeCatalog.getPool(TradePool.BUY_RARE).size() == 28, "rare buy pool");
-        check(TradeCatalog.getPool(TradePool.BUY_TREASURE).size() == 38, "treasure buy pool");
+        check(TradeCatalog.getPool(TradePool.BUY_TREASURE).size() == 39, "treasure buy pool");
         check(DailyOfferState.BUY_OFFER_COUNT == 8, "eight daily purchase slots");
         check(MerchantOfferService.selectPurchasePool(new FixedRandom(0)) == TradePool.BUY_COMMON,
                 "common purchase quality lower boundary");
@@ -95,6 +95,11 @@ public final class MerchantCatalogSelfTest {
         check(superBackpack.getBasePrice() == 200000L
                         && superBackpack.createStack(1, 0).getItem() == lisbam.pastoraleconomy.item.ModItems.SUPER_BACKPACK,
                 "super backpack treasure offer");
+        TradeCatalogEntry featherWings = find(TradePool.BUY_TREASURE, "feather_wings");
+        check(featherWings.getBasePrice() == 1200000L
+                        && featherWings.createStack(1, 0).getItem()
+                        == lisbam.pastoraleconomy.item.ModItems.FEATHER_WINGS,
+                "feather wings treasure offer");
 
         TradeCatalogEntry gold = find(TradePool.BUY_UNCOMMON, "gold_ingot");
         TradeCatalogEntry lava = find(TradePool.BUY_UNCOMMON, "lava_bucket");

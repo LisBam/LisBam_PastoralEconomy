@@ -3,6 +3,7 @@ package lisbam.pastoraleconomy.equipment;
 import lisbam.pastoraleconomy.data.player.IPlayerData;
 import lisbam.pastoraleconomy.data.player.PlayerDataCapability;
 import lisbam.pastoraleconomy.item.ItemBackpack;
+import lisbam.pastoraleconomy.item.ItemFeatherWings;
 import lisbam.pastoraleconomy.network.ModNetwork;
 import lisbam.pastoraleconomy.network.message.SyncShoulderEquipmentMessage;
 import net.minecraft.entity.player.EntityPlayer;
@@ -43,7 +44,8 @@ public final class ShoulderEquipmentService {
 
     public static boolean isValidShoulderStack(ItemStack stack) {
         return stack != null && !stack.isEmpty()
-                && (stack.getItem() == Items.ELYTRA || ItemBackpack.isBackpack(stack));
+                && (stack.getItem() == Items.ELYTRA || ItemBackpack.isBackpack(stack)
+                || ItemFeatherWings.isFeatherWings(stack));
     }
 
     /** Sends equipment changes to the wearer and every client tracking that player. */
@@ -67,8 +69,8 @@ public final class ShoulderEquipmentService {
         ItemStack current = normalizedCopy(getShoulderStack(player));
         LAST_SYNCED_STACKS.put(player.getUniqueID(), current.copy());
         ModNetwork.CHANNEL.sendTo(new SyncShoulderEquipmentMessage(player.getEntityId(), current), player);
-        // Backpacks intentionally have no worn model. Do not disclose or resend
-        // their complete storage NBT to unrelated tracking clients.
+        // Backpacks intentionally have no worn model. Feather Wings have only
+        // ordinary item NBT, so tracking clients need their snapshot to render.
         ModNetwork.CHANNEL.sendToAllTracking(new SyncShoulderEquipmentMessage(
                 player.getEntityId(), renderingCopy(current)), player);
     }
@@ -136,6 +138,7 @@ public final class ShoulderEquipmentService {
     }
 
     private static ItemStack renderingCopy(ItemStack stack) {
-        return stack.getItem() == Items.ELYTRA ? stack : ItemStack.EMPTY;
+        return stack.getItem() == Items.ELYTRA || ItemFeatherWings.isFeatherWings(stack)
+                ? stack : ItemStack.EMPTY;
     }
 }

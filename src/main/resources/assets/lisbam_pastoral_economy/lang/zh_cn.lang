@@ -13,6 +13,7 @@ item.lisbam_pastoral_economy.merchant_spawn_egg.name=商人刷怪蛋
 item.lisbam_pastoral_economy.backpack.name=普通背包
 item.lisbam_pastoral_economy.advanced_backpack.name=高级背包
 item.lisbam_pastoral_economy.super_backpack.name=超级背包
+item.lisbam_pastoral_economy.feather_wings.name=羽毛翅膀
 tooltip.lisbam_pastoral_economy.backpack.capacity=容量：%s 格
 tooltip.lisbam_pastoral_economy.backpack.open=装备至肩部后，在背包界面右键点击以打开
 config.lisbam_pastoral_economy.gameplay=玩法

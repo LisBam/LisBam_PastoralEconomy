@@ -1,10 +1,11 @@
 package lisbam.pastoraleconomy.equipment;
 
 import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.enchantment.EnchantmentHelper;
 import net.minecraft.inventory.Slot;
 import net.minecraft.item.ItemStack;
 
-/** Visible shoulder slot for Elytra and this mod's three backpack tiers. */
+/** Visible shoulder slot for Elytra, Feather Wings and this mod's backpack tiers. */
 public final class SlotShoulderEquipment extends Slot {
     /** Vanilla survival offhand is at 77,62; this cell sits directly above it. */
     public static final int SURVIVAL_X = 77;
@@ -31,5 +32,10 @@ public final class SlotShoulderEquipment extends Slot {
     @Override
     public int getSlotStackLimit() {
         return 1;
+    }
+
+    @Override
+    public boolean canTakeStack(EntityPlayer player) {
+        return player.capabilities.isCreativeMode || !EnchantmentHelper.hasBindingCurse(getStack());
     }
 }

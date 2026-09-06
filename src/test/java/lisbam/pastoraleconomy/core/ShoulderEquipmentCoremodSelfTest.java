@@ -40,6 +40,7 @@ public final class ShoulderEquipmentCoremodSelfTest {
         verifyObfuscatedReleaseNames(transformer);
         verifyShoulderSyncPacket();
         verifyBackpackShoulderSyncPacket();
+        verifyFeatherWingsShoulderSyncPacket();
     }
 
     private static void verifyElytraLookup(ShoulderEquipmentTransformer transformer, String className)
@@ -171,7 +172,7 @@ public final class ShoulderEquipmentCoremodSelfTest {
     }
 
     private static void verifyBackpackShoulderSyncPacket() {
-        registerBackpacksForPacketTest();
+        registerShoulderItemsForPacketTest();
         ItemStack expected = new ItemStack(lisbam.pastoraleconomy.item.ModItems.SUPER_BACKPACK);
         net.minecraft.util.NonNullList<ItemStack> contents =
                 lisbam.pastoraleconomy.equipment.BackpackStorage.read(expected);
@@ -190,19 +191,37 @@ public final class ShoulderEquipmentCoremodSelfTest {
         }
     }
 
+    private static void verifyFeatherWingsShoulderSyncPacket() {
+        registerShoulderItemsForPacketTest();
+        ItemStack expected = new ItemStack(lisbam.pastoraleconomy.item.ModItems.FEATHER_WINGS);
+        expected.setItemDamage(25);
+        SyncShoulderEquipmentMessage outgoing = new SyncShoulderEquipmentMessage(8, expected);
+        ByteBuf buffer = Unpooled.buffer();
+        try {
+            outgoing.toBytes(buffer);
+            SyncShoulderEquipmentMessage incoming = new SyncShoulderEquipmentMessage();
+            incoming.fromBytes(buffer);
+            require(incoming.isValid() && ItemStack.areItemStacksEqual(expected, incoming.getStack()),
+                    "tracking-client shoulder packet must preserve Feather Wings");
+        } finally {
+            buffer.release();
+        }
+    }
+
     /**
      * This standalone test invokes vanilla Bootstrap directly, unlike a Forge
      * runtime where RegistrationHandler has already assigned numeric item IDs.
      * PacketBuffer writes that ID, so register the local test items before the
      * custom ItemStack crosses the real wire codec.
      */
-    private static void registerBackpacksForPacketTest() {
+    private static void registerShoulderItemsForPacketTest() {
         if (Item.getIdFromItem(lisbam.pastoraleconomy.item.ModItems.SUPER_BACKPACK) >= 0) {
             return;
         }
         GameData.register_impl(lisbam.pastoraleconomy.item.ModItems.BACKPACK);
         GameData.register_impl(lisbam.pastoraleconomy.item.ModItems.ADVANCED_BACKPACK);
         GameData.register_impl(lisbam.pastoraleconomy.item.ModItems.SUPER_BACKPACK);
+        GameData.register_impl(lisbam.pastoraleconomy.item.ModItems.FEATHER_WINGS);
     }
 
     private static byte[] readClass(String className) throws IOException {
