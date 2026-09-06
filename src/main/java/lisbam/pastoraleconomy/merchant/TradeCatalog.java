@@ -215,7 +215,8 @@ public final class TradeCatalog {
                 {"record_13", "50000"}, {"record_cat", "50000"}, {"record_blocks", "50000"},
                 {"record_chirp", "50000"}, {"record_far", "50000"}, {"record_mall", "50000"},
                 {"record_mellohi", "50000"}, {"record_stal", "50000"}, {"record_strad", "50000"},
-                {"record_ward", "50000"}, {"record_11", "50000"}, {"record_wait", "50000"}
+                {"record_ward", "50000"}, {"record_11", "50000"}, {"record_wait", "50000"},
+                {"super_backpack", "200000"}
         };
         for (String[] row : rows) {
             addChecked(definitions, row[0], "buy/treasure/" + row[0], TradePool.BUY_TREASURE,

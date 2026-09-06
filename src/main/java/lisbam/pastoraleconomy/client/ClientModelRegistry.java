@@ -19,6 +19,9 @@ public final class ClientModelRegistry {
 
     @SubscribeEvent
     public static void registerModels(ModelRegistryEvent event) {
+        registerItemModel(ModItems.BACKPACK, "backpack");
+        registerItemModel(ModItems.ADVANCED_BACKPACK, "advanced_backpack");
+        registerItemModel(ModItems.SUPER_BACKPACK, "super_backpack");
         ModelLoader.setCustomModelResourceLocation(
                 ModItems.MARKET_BOOK,
                 0,
@@ -56,5 +59,10 @@ public final class ClientModelRegistry {
                 0,
                 new ModelResourceLocation(ModBlocks.TRANSPORT_STATION.getRegistryName(), "inventory")
         );
+    }
+
+    private static void registerItemModel(net.minecraft.item.Item item, String path) {
+        ModelLoader.setCustomModelResourceLocation(item, 0,
+                new ModelResourceLocation(new ResourceLocation(LisBamPastoralEconomy.MODID, path), "inventory"));
     }
 }

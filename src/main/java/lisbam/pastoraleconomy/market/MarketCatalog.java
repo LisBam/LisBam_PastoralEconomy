@@ -1,6 +1,7 @@
 package lisbam.pastoraleconomy.market;
 
 import lisbam.pastoraleconomy.LisBamPastoralEconomy;
+import lisbam.pastoraleconomy.item.ModItems;
 import net.minecraft.block.Block;
 import net.minecraft.init.Blocks;
 import net.minecraft.init.Items;
@@ -268,7 +269,8 @@ public final class MarketCatalog {
                 {"elytra", Items.ELYTRA, 0, 1200000}, {"dragon_head", Items.SKULL, 5, 500000},
                 {"dragon_egg", block(Blocks.DRAGON_EGG), 0, 2500000}, {"diamond_horse_armor", Items.DIAMOND_HORSE_ARMOR, 0, 60000},
                 {"diamond_ore", block(Blocks.DIAMOND_ORE), 0, 16667}, {"emerald_ore", block(Blocks.EMERALD_ORE), 0, 7334},
-                {"totem_of_undying", Items.TOTEM_OF_UNDYING, 0, 100000}, {"record_13", Items.RECORD_13, 0, 50000},
+                {"totem_of_undying", Items.TOTEM_OF_UNDYING, 0, 100000}, {"super_backpack", ModItems.SUPER_BACKPACK, 0, 200000},
+                {"record_13", Items.RECORD_13, 0, 50000},
                 {"record_cat", Items.RECORD_CAT, 0, 50000}, {"record_blocks", Items.RECORD_BLOCKS, 0, 50000},
                 {"record_chirp", Items.RECORD_CHIRP, 0, 50000}, {"record_far", Items.RECORD_FAR, 0, 50000},
                 {"record_mall", Items.RECORD_MALL, 0, 50000}, {"record_mellohi", Items.RECORD_MELLOHI, 0, 50000},

@@ -8,6 +8,7 @@ import net.minecraft.block.Block;
 import net.minecraft.enchantment.Enchantment;
 import net.minecraft.init.Enchantments;
 import net.minecraft.item.Item;
+import net.minecraft.item.crafting.IRecipe;
 import net.minecraft.util.ResourceLocation;
 import net.minecraftforge.event.RegistryEvent;
 import net.minecraftforge.fml.common.Mod;
@@ -28,7 +29,8 @@ public final class RegistrationHandler {
 
     @SubscribeEvent
     public static void registerItems(RegistryEvent.Register<Item> event) {
-        event.getRegistry().registerAll(ModItems.MARKET_BOOK, ModItems.VILLAGE_TRANSPORT_COMPASS,
+        event.getRegistry().registerAll(ModItems.BACKPACK, ModItems.ADVANCED_BACKPACK, ModItems.SUPER_BACKPACK,
+                ModItems.MARKET_BOOK, ModItems.VILLAGE_TRANSPORT_COMPASS,
                 ModItems.TRADE_VOUCHER,
                 ModItems.GOLDEN_BONE_MEAL, ModItems.MERCHANT_SPAWN_EGG,
                 ModItems.CRAB_TRAP_ITEM, ModItems.TRANSPORT_STATION_ITEM);
@@ -37,6 +39,11 @@ public final class RegistrationHandler {
     @SubscribeEvent
     public static void registerEnchantments(RegistryEvent.Register<Enchantment> event) {
         event.getRegistry().registerAll(ModEnchantments.getAll());
+    }
+
+    @SubscribeEvent
+    public static void registerRecipes(RegistryEvent.Register<IRecipe> event) {
+        event.getRegistry().register(new lisbam.pastoraleconomy.item.RecipeAdvancedBackpack());
     }
 
     /**

@@ -6,6 +6,9 @@ import net.minecraft.item.ItemBlock;
 /** Stable item allocation point; registration remains in RegistrationHandler. */
 public final class ModItems {
     public static final PastoralCreativeTab CREATIVE_TAB = PastoralCreativeTab.INSTANCE;
+    public static final ItemBackpack BACKPACK = new ItemBackpack("backpack", 27);
+    public static final ItemBackpack ADVANCED_BACKPACK = new ItemBackpack("advanced_backpack", 27 * 2);
+    public static final ItemBackpack SUPER_BACKPACK = new ItemBackpack("super_backpack", 27 * 4);
     public static final ItemMarketBook MARKET_BOOK = new ItemMarketBook();
     public static final ItemVillageTransportCompass VILLAGE_TRANSPORT_COMPASS = new ItemVillageTransportCompass();
     public static final ItemTradeVoucher TRADE_VOUCHER = new ItemTradeVoucher();

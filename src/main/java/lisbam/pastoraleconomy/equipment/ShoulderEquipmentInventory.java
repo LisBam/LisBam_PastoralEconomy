@@ -85,7 +85,7 @@ final class ShoulderEquipmentInventory implements IInventory {
 
     @Override
     public boolean isItemValidForSlot(int index, ItemStack stack) {
-        return index == 0 && stack.getItem() == net.minecraft.init.Items.ELYTRA;
+        return index == 0 && ShoulderEquipmentService.isValidShoulderStack(stack);
     }
 
     @Override

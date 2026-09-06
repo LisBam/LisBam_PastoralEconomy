@@ -14,6 +14,7 @@ import lisbam.pastoraleconomy.merchant.MerchantTradeSnapshot;
 import lisbam.pastoraleconomy.client.ClientMerchantTradeSyncExecutor;
 import lisbam.pastoraleconomy.client.RenderMerchant;
 import lisbam.pastoraleconomy.client.gui.GuiMerchantTrade;
+import lisbam.pastoraleconomy.client.gui.GuiBackpack;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.ItemStack;
 import net.minecraft.world.World;
@@ -42,6 +43,11 @@ public final class ClientProxy extends CommonProxy {
 
     @Override
     public Object getClientGuiElement(int guiId, EntityPlayer player, World world, int x, int y, int z) {
+        if (guiId == GuiIds.BACKPACK) {
+            return lisbam.pastoraleconomy.item.ItemBackpack.isBackpack(
+                    lisbam.pastoraleconomy.equipment.ShoulderEquipmentService.getShoulderStack(player))
+                    ? new GuiBackpack(player.inventory) : null;
+        }
         if (guiId == GuiIds.MARKET_BOOK) {
             return new GuiMarketBook();
         }

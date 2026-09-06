@@ -18,6 +18,11 @@ public final class ModGuiHandler implements IGuiHandler {
     @Override
     public Object getServerGuiElement(int guiId, EntityPlayer player, World world, int x, int y, int z) {
         GuiIds.validate(guiId);
+        if (guiId == GuiIds.BACKPACK) {
+            return lisbam.pastoraleconomy.item.ItemBackpack.isBackpack(
+                    lisbam.pastoraleconomy.equipment.ShoulderEquipmentService.getShoulderStack(player))
+                    ? new ContainerBackpack(player.inventory) : null;
+        }
         if (guiId == GuiIds.MERCHANT_TRADE) {
             if (world.getEntityByID(x) instanceof EntityMerchant) {
                 return new ContainerMerchantTrade((EntityMerchant) world.getEntityByID(x));
@@ -41,7 +46,7 @@ public final class ModGuiHandler implements IGuiHandler {
             }
             return null;
         }
-        return player instanceof EntityPlayerMP
+        return guiId == GuiIds.MARKET_BOOK && player instanceof EntityPlayerMP
                 ? new ContainerMarketBook((EntityPlayerMP) player)
                 : null;
     }

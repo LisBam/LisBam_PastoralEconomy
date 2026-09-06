@@ -238,6 +238,13 @@ task tradeVoucherSelfTest(type: JavaExec) {
     main = 'lisbam.pastoraleconomy.merchant.TradeVoucherSelfTest'
 }
 
+task backpackSelfTest(type: JavaExec) {
+    group = 'verification'
+    description = 'Runs backpack capacity, NBT and recipe-safety regression checks.'
+    classpath = sourceSets.test.runtimeClasspath
+    main = 'lisbam.pastoraleconomy.equipment.BackpackSelfTest'
+}
+
 publishing {
     publications {
         mavenJava(MavenPublication) {
