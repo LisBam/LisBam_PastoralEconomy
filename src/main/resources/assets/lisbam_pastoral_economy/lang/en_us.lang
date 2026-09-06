@@ -5,7 +5,6 @@ config.lisbam_pastoral_economy.title=Pastoral Economy Settings
 config.lisbam_pastoral_economy.market=Market
 config.lisbam_pastoral_economy.market.more_stable_market_volatility=More stable market volatility
 item.lisbam_pastoral_economy.market_book.name=Market Book
-item.lisbam_pastoral_economy.village_transport_compass.name=Village Transport Compass
 item.lisbam_pastoral_economy.trade_voucher.name=Blank Trade Voucher
 item.lisbam_pastoral_economy.trade_voucher.bound.name=Trade Voucher - %s
 itemGroup.lisbam_pastoral_economy=LisBam Pastoral Economy

@@ -2,6 +2,16 @@
 
 当前发行版本：`1.5`；既有第 15 批功能完成，1.5 为维护更新。
 
+## 维护：凭证配方、死亡金币、价格回归与旧物品移除（2026-09-06）
+
+实现：空交易凭证新增金粒环绕中央纸张的有序配方。额外动物骨头判定的各档成功概率改为原来的 2/3：大体型为 40/300 出 2、100/300 出 1，小体型为 50/300 出 1。真实玩家死亡在逻辑服务端按随机 10%--30%、且不低于随机 1000--2000 金币扣款（最多当前余额），并收到红色“本次死亡失去xxx金币！”通知；能力数据在 Clone 前已扣款，重生与 HUD 同步继续复用现有路径。
+
+调价表本次把青金石、荧石粉、下界石英购买基础价改为 800、200、1600。现存 NBT 快照不重写；下一市场日从旧价按既有回归波动走向新价格带，进入后再按正常上/下限约束。旧交通定位物品的注册、行为、配方、模型、贴图和语言全部删除，旧存档通过 `MissingMappings<Item>` 忽略该 Item ID，故不会因已删除物品中断加载。
+
+兼容性与影响：不增加 Packet 或持久化字段、不改 PlayerData/WorldSavedData 的名称和 schema。仅旧存档中的已删除物品会消失；已保存市场价在调价当天保持不变，后续逐日自然回归。
+
+验证：Temurin Java 8 `1.8.0_504` 下 `compileJava`、`compileTestJava`、`processResources`、`deathCoinLossSelfTest`、`animalBoneDropSelfTest`、`marketCoreSelfTest`、`tradeVoucherSelfTest`、`transportCoreSelfTest`、`shoulderEquipmentSelfTest` 及最终 `./gradlew build --no-daemon --console=plain` 均 PASS。严格 Forge 1.12.2 audit 为 0 ERROR、7 条既有保守 `packet-thread` WARNING；`unzip -t` PASS，生产 class major version 52。重混淆 release JAR 为 472,033 bytes，SHA-256 `03eda8154b6c84e014271ed6f529cb2875def0b23e34ada022cea0238d4e260e`；覆盖前 502,564-byte 成品已备份为 `release/backup/backup_20260906-192806.jar`。游戏内和 Dedicated Server 世界验收仍为 NOT RUN：当前环境没有可操作 Forge 客户端或可进入测试世界。
+
 ## 新内容：三档肩部背包（2026-09-06）
 
 实现：新增普通/高级/超级背包三个稳定物品，分别提供 27、54、108 格并装备在既有肩部槽；手持右键或 Shift-click 可穿戴，三者与鞘翅互斥且暂不绘制玩家模型。在原版背包肩部槽对已装备背包右键后打开三行仓储页，高级/超级使用原版按钮切换 2/4 页；容器支持普通拖放与 Shift-click，并拒绝任意背包套娃。内容写入该背包物品自身的有界 NBT，随换装、保存和玩家 Clone 保留。普通配方严格使用皮革/箱子/线；高级配方使用皮革/两个普通背包/拴绳，且非空普通背包不会匹配，避免吞物；超级背包无配方，以 200000 基础价、8% 珍宝波动和库存 1 加入商人珍宝池。三张物品图标均由独立 AI 像素源图处理为 16×16 RGBA，未添加穿戴模型。
@@ -12,7 +22,7 @@
 
 ## 新内容：交易凭证与箱子出售（2026-09-06）
 
-实现：新增最大堆叠为 1 的“空交易凭证”；右键后由逻辑服务端把使用者 UUID 与当时玩家名写入物品 NBT，物品显示为“交易凭证-玩家名”且不能再次绑定。空白/绑定状态共用稳定 registry ID，通过模型属性切换两张 AI 生成后处理为 16×16 RGBA 的原版风卷纸贴图。用户没有指定材料与配方，因此本次不自行扩展生存获取链，当前仅从模组创造栏或命令获得。
+实现：新增最大堆叠为 1 的“空交易凭证”；右键后由逻辑服务端把使用者 UUID 与当时玩家名写入物品 NBT，物品显示为“交易凭证-玩家名”且不能再次绑定。空白/绑定状态共用稳定 registry ID，通过模型属性切换两张 AI 生成后处理为 16×16 RGBA 的原版风卷纸贴图。空白凭证的有序配方为八个金粒环绕中央纸张。
 
 把已绑定凭证放入当前已加载的原版单箱或大箱后，凭证对应玩家在既有商人界面出售时可同时使用自己主物品栏和这些授权箱子的货物。服务端扫描所有已加载维度但绝不加载新区块；跳过上锁箱与未展开的战利品箱，授权按 UUID 而非可能重名/改名的显示文字判断。多库存事务优先扣随身物品，再按维度/坐标稳定扣箱中物品；牛奶桶的空桶也可返回这些来源，扣货、返还或加金币任一步失败都会恢复全部库存。GUI 将服务端箱子数与客户端本地主背包数相加显示“可出售”，交易请求格式不变。
 
@@ -22,23 +32,13 @@
 
 ## 维护：肩部槽 UI、右键穿戴与模型显示（2026-09-06）
 
-实现：生存背包肩部槽改到原版副手槽正上方 `77,44`，创造模式“生存物品栏”页按其副手槽位置改到 `35,2`；两处分别裁取原版 `inventory.png` / `tab_inventory.png` 的 18×18 槽格，并保留原版物品渲染、悬停遮罩与 Tooltip。创造页会重建一层 `CreativeSlot`，客户端因此在每帧绘制前按其共享的肩部 `IInventory` 重新识别和定位包装槽，避免新增槽被原版索引公式叠到快捷栏。
+实现：生存背包肩部槽改到原版副手槽正上方 `77,44`，创造模式“生存物品栏”页按其副手槽位置改到 `35,2`；两处统一裁取原版 `inventory.png` 的同一 18×18 盔甲槽画面，因此会跟随资源包，并保留原版物品渲染、悬停遮罩与 Tooltip。创造页会重建一层 `CreativeSlot`，客户端因此在每帧绘制前按其共享的肩部 `IInventory` 重新识别和定位包装槽，避免新增槽被原版索引公式叠到快捷栏。
 
 手持鞘翅右键现由 `RightClickItem` 双端拦截：客户端只返回成功，逻辑服务端独立确认肩部为空并修改既有玩家 Capability；生存模式消耗手持鞘翅，创造模式保持原版护甲右键的复制语义。原版 `LayerElytra` 的胸甲读取也由既有 Coremod 改读肩部，胸甲与鞘翅模型能够同时渲染。新增的 Packet 9 只负责 S2C 展示同步，在玩家本人、追踪者以及飞行耐久/损坏变化时更新客户端肩部副本，不改变服务端权威库存。
 
 兼容性与影响：PlayerData 的 `shoulder` NBT、dataVersion、registry ID、WorldSavedData 名称和既有 Packet 0～8 均不变，仅在末尾追加 Packet 9；旧存档不需要迁移。新旧 1.5 客户端/服务端应使用同一构建，避免缺少新 S2C discriminator。根因是原实现只为 `GuiInventory` 固定绘制一个坐标，创造页按新增索引把肩部包装槽叠到快捷栏；原版 `ItemElytra#onItemRightClick` 与 `LayerElytra#doRenderLayer` 仍直接读写胸甲槽，且远端玩家没有肩部 Capability 同步。
 
 验证：Temurin Java 8 `1.8.0_504` 下 `compileJava`、`compileTestJava`、`processResources`、`shoulderEquipmentSelfTest`、`playerDataSelfTest`、`enchantmentSelfTest` 与最终 `build` 全部 PASS；最终构建包含 `test`、`reobfJar` 和 `exportReleaseJar`，生产 class major version 为 52。Forge 1.12.2 toolchain 检查确认 Forge `14.23.5.2859`、Gradle 4.9 和 snapshot `20171003-1.12`；严格静态审计为 0 ERROR、7 条 `packet-thread` 保守 WARNING，其中新增肩部 S2C Handler 仅委托 Proxy，实际实体更新由客户端执行器调度到主线程。`release/LisBam_PastoralEconomy-1.5.jar` 已重新导出为 463,258 bytes，SHA-256 `5796b3dc4a9b6f47a1f09f6008824ada318ff30e3d14249039a630f519e557fe`，`unzip -t` PASS；覆盖前的 454,587-byte 旧成品备份为 `release/backup/backup_20260906-125014.jar`，最终坐标修正前的中间成品备份为 `release/backup/backup_20260906-130234.jar`。Dedicated Server 两次实际进入 Forge/FML 引导；第二次显式加载并运行本模组 Coremod 后到达 Minecraft 校验阶段，但 180 秒内未完成模组生命周期，故完整 Server 验收仍为 NOT RUN，`run/eula.txt` 保持 `eula=false`。生存/创造 GUI、右键穿戴和本人/远端模型仍需可操作客户端做游戏内验收。
-
-## 维护：村庄交通方块指南针与肩部鞘翅栏（2026-09-06）
-
-实现：新增“村庄交通方块指南针”，其 `angle` 模型和指针摆动逐字沿用 Java 1.12.2 原版罗盘路径；逻辑服务端从同维度村庄站持久位置和当前加载的物理村庄交通方块中按水平距离选择最近目标，**不再依赖交通节点登记**。自建交通方块不参与目标选择。配方为指南针、铁锭、红石粉、绿宝石各一的无序合成。32 帧贴图现在全部基于对应原版指南针帧，仅将红针的两种颜色改为统一绿/青色。
-
-玩家 Capability 升为 v3 并持久保存一个肩部鞘翅槽。Coremod 为原版玩家背包追加真实同步 Slot、从原版库存贴图裁取槽背景，并让 Shift-click 的鞘翅进入肩部。胸甲槽拒绝鞘翅；客户端起飞、服务端动作包验证和飞行中耐久消耗三个原版胸甲读取都改读肩部，因此胸甲可保留且鞘翅仍是原版飞行/耐久行为。修正后匹配 MCP、SRG 与发行混淆成员名，正式 JAR 不会再因 Shift-click 目标名差异而回退整个容器补丁。旧存档胸甲鞘翅在下一次登录、重生或换维度时自动迁移，肩部已占用时进入背包或满包掉落。
-
-兼容性与影响：新增一个 Item ID、配方、语言/模型/贴图和 PlayerData 的 `shoulder` NBT；既有 registry ID、Packet discriminator、WorldSavedData 名称与交通节点 NBT 均不变。旧 `dataVersion<=2` 的玩家数据按空肩部读取，无物品损失迁移。游戏内和 Dedicated Server 端到端验收仍待可操作 Forge 世界。
-
-根因与修正：上一版目标搜索错误读取交通节点登记，故村庄方块尚未镜像到该表时没有目标；并把原版 `angle` 的括号关系改错。肩部实现虽在开发环境可命中 MCP 名称，但正式混淆的 `ContainerPlayer` Shift-click 名称不匹配，变换器因此回退整个容器补丁，造成肩部槽未出现且胸甲仍接收鞘翅。现在以物理村庄方块/村庄站状态选目标，恢复原版公式，并对 release 字节码按签名与实际混淆成员名匹配。验证：Temurin Java 8 `1.8.0_504` 下 `compileJava`、`compileTestJava`、`playerDataSelfTest`、`transportCoreSelfTest` 和 `shoulderEquipmentSelfTest` 通过；最后一项额外模拟正式混淆成员名。严格 Forge audit 为 0 ERROR、6 条既有 `packet-thread` 保守 WARNING。最终 `./gradlew build --no-daemon --console=plain`（含 `test`、`reobfJar`、`exportReleaseJar`）PASS；`release/LisBam_PastoralEconomy-1.5.jar` 已实际覆盖导出，454,587 bytes，`unzip -t` PASS。
 
 ## 紧急修复：客户端窗口号污染与界面暂停（2026-09-06）
 

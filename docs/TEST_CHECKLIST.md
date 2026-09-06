@@ -1,5 +1,16 @@
 # 测试清单
 
+## 维护：凭证配方、死亡金币、价格回归与旧物品移除（2026-09-06）
+
+- [x] `deathCoinLossSelfTest`：10%/30% 边界、随机 1000--2000 最低扣款、余额不足时全额封顶和零余额不取随机数均通过。PASS（Temurin Java 8 `1.8.0_504`）。
+- [x] `animalBoneDropSelfTest`：大体型 `40/300` 出 2、`100/300` 出 1，小体型 `50/300` 出 1，及既有抢夺加成边界均通过。PASS（Temurin Java 8 `1.8.0_504`）。
+- [x] `marketCoreSelfTest`：青金石/荧石粉/下界石英基础价为 800/200/1600；预调价旧快照当日保持 1600、下一日逐步回归；默认链式和可选稳定模式均不跳到新价格带边缘。PASS（Temurin Java 8 `1.8.0_504`）。
+- [x] `tradeVoucherSelfTest`、`transportCoreSelfTest`、`shoulderEquipmentSelfTest`：凭证既有授权交易、移除后交通核心，以及肩部 Coremod 回归均通过。`processResources` 已处理新的凭证 JSON 配方；release 内容确认含该配方、不含已删除物品资源。PASS（Temurin Java 8 `1.8.0_504`）。
+- [x] `compileJava`、`compileTestJava`、`processResources` 与最终 `./gradlew build --no-daemon --console=plain`：PASS（Temurin Java 8 `1.8.0_504`；含 `test`、`reobfJar`、`exportReleaseJar`）。
+- [x] Forge 1.12.2 strict audit：0 ERROR、7 条既有保守 `packet-thread` WARNING；新增死亡事件只使用逻辑服务端 `CoinService`，无 common 客户端类引用。PASS。
+- [x] 发行产物：`unzip -t` PASS；`DeathCoinLossEventHandler.class` 为 Java 8 major version 52；`release/LisBam_PastoralEconomy-1.5.jar` 为 472,033 bytes、SHA-256 `03eda8154b6c84e014271ed6f529cb2875def0b23e34ada022cea0238d4e260e`。覆盖前的 502,564-byte 成品已备份为 `release/backup/backup_20260906-192806.jar`。
+- [ ] 游戏内/多人：验证凭证八金粒配方、两种背包模式的肩部槽都随当前资源包使用一致原版盔甲槽外观、死亡聊天红字/10%--30%和 1000--2000 最低扣款、动物骨头概率以及旧世界加载后已删除物品消失。NOT RUN：当前环境没有可操作 Forge 客户端或可进入世界的 Dedicated Server。
+
 ## 新内容：三档肩部背包（2026-09-06）
 
 - [x] `backpackSelfTest`：普通/高级/超级容量为 27/54/108，页数为 1/2/4，最大堆叠均为 1；第 0/53/107 槽 NBT 往返，背包套娃不写入，带物品普通背包不能用于高级配方。PASS（Temurin Java 8 `1.8.0_504`）。
@@ -33,16 +44,6 @@
 - [x] `./gradlew processResources`、`build` — PASS（2026-09-06，Temurin Java 8 `1.8.0_504`；含 `test`、`reobfJar`、`exportReleaseJar`；release JAR 为 463,258 bytes，`unzip -t` PASS，SHA-256 `5796b3dc4a9b6f47a1f09f6008824ada318ff30e3d14249039a630f519e557fe`）
 - [x] Forge 1.12.2 static audit — 0 ERROR；7 条 `packet-thread` WARNING 已审查（通用注册不处理消息；六个 S2C Proxy 桥没有直接修改状态，客户端实际写入均调度至主线程；交通与市场 Tooltip C2S handler 调度至服务端主线程）。
 - [x] 本次 FOV/Tooltip 修复后的 `./gradlew compileJava processResources build` — PASS（Temurin Java 8 `1.8.0_504`；release JAR 已覆盖导出并通过 `unzip -t`）。
-
-## 维护：村庄交通方块指南针与肩部鞘翅栏（2026-09-06）
-
-- [x] `compileJava`、`processResources`、`playerDataSelfTest`、`transportCoreSelfTest`、`shoulderEquipmentSelfTest`：PASS（Temurin Java 8 `1.8.0_504`）。PlayerData 覆盖肩部鞘翅 NBT、非鞘翅拒绝和 Clone；交通自检覆盖同维度、仅村庄节点、忽略 Y 的最近目标；Coremod 自检对实际 Forge 映射类验证玩家背包肩部槽/Shift-click、客户端起飞、服务端动作验证和飞行耐久查找。
-- [x] Forge 1.12.2 strict audit：0 ERROR；6 条 `packet-thread` WARNING 均为既有网络注册/Proxy 主线程桥接，非本次引入。PNG 为 32 张非空 16×16 RGBA 帧、模型含 31 条 angle 覆盖、无序 JSON 配方解析通过 `processResources`。
-- [x] 最终 `./gradlew build --no-daemon --console=plain`：PASS（Temurin Java 8 `1.8.0_504`；含 `test`、`reobfJar`、`exportReleaseJar`）。`release/LisBam_PastoralEconomy-1.5.jar` 已由本次构建覆盖导出、非空，`unzip -t` PASS。
-- [x] 回归修正：`compileJava`、`compileTestJava`、`playerDataSelfTest`、`transportCoreSelfTest`、`shoulderEquipmentSelfTest`：PASS（Temurin Java 8 `1.8.0_504`）。交通自检覆盖未登记交通节点的已加载村庄方块优先、同维度与忽略 Y；肩部自检额外把目标方法/字段模拟为 Forge 1.12.2 release 混淆名，确认容器槽、Shift-click、客户端起飞、服务端验证和耐久读取都继续注入。32 张 PNG 全部为原版基底且为 16×16。
-- [x] 回归修正后的最终 `./gradlew build --no-daemon --console=plain`：PASS（含 `test`、`reobfJar`、`exportReleaseJar`）。`release/LisBam_PastoralEconomy-1.5.jar` 已实际覆盖导出，454,587 bytes，`unzip -t` PASS。
-- [ ] 游戏内：创造栏/配方获得指南针，主手与副手分别指向最近的同维度村庄交通方块（不要求交通节点登记）；越过最近站分界后刷新目标，在无同维度村庄站的下界/末地沿用原版随机针行为，并确认全部 32 个方向只有绿/青针颜色变化。NOT RUN：当前环境无法创建可操作 Forge 客户端。
-- [ ] 游戏内/多人：肩部槽仅收鞘翅、Shift-click 自动装备、胸甲位拒绝鞘翅，胸甲与肩部鞘翅可同时存在；双击跳跃起飞、每 20 tick 耐久、死亡/重生/重进/换维度持久化，以及旧胸甲鞘翅迁移均正确。Dedicated Server NOT RUN：未进入可接受 EULA 的测试世界。
 
 ## 紧急修复：客户端容器窗口号与不暂停界面（2026-09-06）
 

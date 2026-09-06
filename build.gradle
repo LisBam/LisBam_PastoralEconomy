@@ -175,6 +175,13 @@ task animalBoneDropSelfTest(type: JavaExec) {
     main = 'lisbam.pastoraleconomy.event.AnimalBoneDropSelfTest'
 }
 
+task deathCoinLossSelfTest(type: JavaExec) {
+    group = 'verification'
+    description = 'Runs deterministic death coin-loss boundary checks.'
+    classpath = sourceSets.test.runtimeClasspath
+    main = 'lisbam.pastoraleconomy.event.DeathCoinLossSelfTest'
+}
+
 task merchantCatalogSelfTest(type: JavaExec) {
     group = 'verification'
     description = 'Runs deterministic village and merchant catalog regression checks.'

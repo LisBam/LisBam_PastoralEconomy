@@ -18,6 +18,8 @@ import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 public final class RegistrationHandler {
     private static final ResourceLocation LEGACY_SHEARS_EFFICIENCY =
             new ResourceLocation(LisBamPastoralEconomy.MODID, "shears_efficiency");
+    private static final ResourceLocation REMOVED_VILLAGE_TRANSPORT_COMPASS =
+            new ResourceLocation(LisBamPastoralEconomy.MODID, "village_transport_compass");
 
     private RegistrationHandler() {
     }
@@ -30,8 +32,7 @@ public final class RegistrationHandler {
     @SubscribeEvent
     public static void registerItems(RegistryEvent.Register<Item> event) {
         event.getRegistry().registerAll(ModItems.BACKPACK, ModItems.ADVANCED_BACKPACK, ModItems.SUPER_BACKPACK,
-                ModItems.MARKET_BOOK, ModItems.VILLAGE_TRANSPORT_COMPASS,
-                ModItems.TRADE_VOUCHER,
+                ModItems.MARKET_BOOK, ModItems.TRADE_VOUCHER,
                 ModItems.GOLDEN_BONE_MEAL, ModItems.MERCHANT_SPAWN_EGG,
                 ModItems.CRAB_TRAP_ITEM, ModItems.TRANSPORT_STATION_ITEM);
     }
@@ -56,6 +57,16 @@ public final class RegistrationHandler {
         for (RegistryEvent.MissingMappings.Mapping<Enchantment> mapping : event.getMappings()) {
             if (LEGACY_SHEARS_EFFICIENCY.equals(mapping.key)) {
                 mapping.remap(Enchantments.EFFICIENCY);
+            }
+        }
+    }
+
+    /** Existing stacks of the removed item are discarded cleanly when an old world is loaded. */
+    @SubscribeEvent
+    public static void ignoreRemovedVillageTransportCompass(RegistryEvent.MissingMappings<Item> event) {
+        for (RegistryEvent.MissingMappings.Mapping<Item> mapping : event.getMappings()) {
+            if (REMOVED_VILLAGE_TRANSPORT_COMPASS.equals(mapping.key)) {
+                mapping.ignore();
             }
         }
     }
