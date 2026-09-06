@@ -1,9 +1,12 @@
 package lisbam.pastoraleconomy.event;
 
 import lisbam.pastoraleconomy.LisBamPastoralEconomy;
+import lisbam.pastoraleconomy.equipment.FeatherWingsRules;
 import lisbam.pastoraleconomy.enchantment.AnvilFirstUseRules;
 import lisbam.pastoraleconomy.enchantment.ModEnchantments;
+import lisbam.pastoraleconomy.item.ItemFeatherWings;
 import net.minecraft.enchantment.EnchantmentHelper;
+import net.minecraft.init.Items;
 import net.minecraft.inventory.ContainerRepair;
 import net.minecraft.item.ItemStack;
 import net.minecraftforge.event.AnvilUpdateEvent;
@@ -30,6 +33,29 @@ public final class AnvilEnchantmentEventHandler {
         event.setOutput(result.getOutput());
         event.setCost(result.getCost());
         event.setMaterialCost(result.getMaterialCost());
+    }
+
+    /** Feathers repair exactly one percent (five of 500 durability) each. */
+    @SubscribeEvent
+    public static void repairFeatherWingsWithFeathers(AnvilUpdateEvent event) {
+        ItemStack left = event.getLeft();
+        ItemStack right = event.getRight();
+        if (!ItemFeatherWings.isFeatherWings(left) || right.isEmpty() || right.getItem() != Items.FEATHER) {
+            return;
+        }
+        int feathers = FeatherWingsRules.getFeathersRequired(left.getItemDamage(), right.getCount());
+        int repaired = FeatherWingsRules.getRepairedDamage(left.getItemDamage(), feathers);
+        if (feathers <= 0 || repaired <= 0) {
+            return;
+        }
+
+        ItemStack output = left.copy();
+        output.setItemDamage(left.getItemDamage() - repaired);
+        boolean renamed = applyRequestedName(output, event.getName());
+        output.setRepairCost(FeatherWingsRules.getNextRepairCost(left.getRepairCost()));
+        event.setOutput(output);
+        event.setMaterialCost(feathers);
+        event.setCost(FeatherWingsRules.getAnvilExperienceCost(left.getRepairCost(), renamed));
     }
 
     /**
@@ -62,5 +88,20 @@ public final class AnvilEnchantmentEventHandler {
         anvil.maximumCost = Math.max(1, firstUseCost);
         output.setRepairCost(0);
         anvil.getSlot(2).putStack(output);
+    }
+
+    private static boolean applyRequestedName(ItemStack output, String requestedName) {
+        if (requestedName == null || requestedName.trim().isEmpty()) {
+            if (output.hasDisplayName()) {
+                output.clearCustomName();
+                return true;
+            }
+            return false;
+        }
+        if (!requestedName.equals(output.getDisplayName())) {
+            output.setStackDisplayName(requestedName);
+            return true;
+        }
+        return false;
     }
 }

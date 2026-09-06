@@ -2,9 +2,17 @@
 
 当前发行版本：`1.5`；既有第 15 批功能完成，1.5 为维护更新。
 
+## 新内容：肩部羽毛翅膀与田园眷顾调值（2026-09-06）
+
+实现：田园眷顾 I--IV 的单次经验概率固定为 `20%/40%/60%/80%`。新增稳定物品 `feather_wings`，仅可装备于既有肩部槽；非创造且非旁观模式穿戴后可使用原版自由飞行能力，飞行每连续 40 tick 尝试耗 1 耐久，最大耐久 500，伤害事件不会消耗耐久。飞行移动的饥饿消耗按距离为原版步行的两倍。它可附魔耐久、经验修补、绑定诅咒和消失诅咒；经验修补因肩部栈不属于原版装备扫描而在服务端经验球事件中补齐，绑定/消失诅咒分别在肩部取下/死亡 Clone 路径生效。铁砧每根羽毛修复 5 耐久，两个羽毛翅膀的合并仍用原版耐久装备逻辑。
+
+经济与资源：不添加配方；羽毛翅膀以 1200000 基础价加入既有商人珍宝池，继续使用 8% 日波动和每日库存 1。图标由 AI 像素源图去绿幕后固定采样为 16×16 RGBA；物理客户端追加原版 `ModelElytra` 几何层并使用羽毛贴图。PlayerData、WorldSavedData、既有 NBT key 和 Packet discriminator 均不变，Packet 9 仅扩展既有追踪者渲染快照的合法物品范围。
+
+验证：Temurin Java 8 `1.8.0_504` 下 `check_toolchain.py` 为 0 error/0 warning；`compileJava`、`compileTestJava`、`processResources`、`enchantmentSelfTest`、`merchantCatalogSelfTest`、`shoulderEquipmentSelfTest`、`featherWingsSelfTest` 均 PASS。常规 Forge 1.12.2 audit 为 0 ERROR、7 条既有 `packet-thread` 保守 WARNING；`--strict-warnings` 因这 7 条历史 warning 返回非零，故不标记 PASS。最终 `./gradlew build --console=plain` PASS，包含 `reobfJar` 和 `exportReleaseJar`；新 release JAR 为 495,524 bytes，SHA-256 `4f394f45aeffa05fc90759ea7a5ca410af17750d1d5882f33caf40c03969241f`，`unzip -t` PASS，`ItemFeatherWings.class` 为 Java 8 major version 52。覆盖前的 482,145-byte JAR 已备份为 `release/backup/backup_20260906-210434.jar`。游戏内及 Dedicated Server 世界验收为 NOT RUN：当前环境没有可操作 Forge 客户端或可进入的服务器世界。
+
 ## 维护：输入框、丰收斧头、田园眷顾与凭证箱加载（2026-09-06）
 
-实现：行情书搜索、商人数量和交通节点取名框获得焦点时，打开背包键（默认 E，含改键）不再关闭界面，Esc 仍走既有服务端 Container 关闭路径。Harvest 现在允许五种原版斧头通过附魔书/铁砧获得并在成熟作物收获时使用原有增产公式，但斧头在附魔台不生成 Harvest 候选；田园眷顾经验概率改为 I--IV `10%/20%/40%/80%`。
+实现：行情书搜索、商人数量和交通节点取名框获得焦点时，打开背包键（默认 E，含改键）不再关闭界面，Esc 仍走既有服务端 Container 关闭路径。Harvest 现在允许五种原版斧头通过附魔书/铁砧获得并在成熟作物收获时使用原有增产公式，但斧头在附魔台不生成 Harvest 候选；田园眷顾经验概率随后维护为 I--IV `20%/40%/60%/80%`。
 
 交易凭证箱不再依赖交易瞬间玩家附近的已加载 TileEntity：玩家关闭含绑定凭证的原版单箱/大箱，或交易扫描到它时，会记录每个物理箱子半块的位置。`PastoralWorldData` schema 升为 v8 后持久保存该有界位置索引，Forge 1.12.2 的单独 NORMAL ticket 持续加载每个登记半块，重启回调按 ticket 坐标恢复。每秒只校验登记箱；凭证移除、箱子失效、上锁或未展开战利品状态会释放票据和索引。旧存档中先前未登记的远方箱子需重新打开/关闭一次才能获知位置。
 

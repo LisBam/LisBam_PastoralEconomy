@@ -22,6 +22,7 @@ public final class ClientModelRegistry {
         registerItemModel(ModItems.BACKPACK, "backpack");
         registerItemModel(ModItems.ADVANCED_BACKPACK, "advanced_backpack");
         registerItemModel(ModItems.SUPER_BACKPACK, "super_backpack");
+        registerItemModel(ModItems.FEATHER_WINGS, "feather_wings");
         ModelLoader.setCustomModelResourceLocation(
                 ModItems.MARKET_BOOK,
                 0,

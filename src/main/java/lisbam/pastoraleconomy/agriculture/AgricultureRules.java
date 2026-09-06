@@ -159,16 +159,18 @@ public final class AgricultureRules {
         return getPastoralFavorChancePercent(level) > random.nextInt(100);
     }
 
-    /** Each Pastoral Favor level doubles the preceding level's fixed chance. */
+    /** Frozen Pastoral Favor experience chances for levels I through IV. */
     public static int getPastoralFavorChancePercent(int level) {
-        if (level <= 0) {
-            return 0;
+        switch (level) {
+            case 1:
+                return 20;
+            case 2:
+                return 40;
+            case 3:
+                return 60;
+            default:
+                return level >= 4 ? 80 : 0;
         }
-        int chance = 10;
-        for (int currentLevel = 1; currentLevel < level && chance < 100; currentLevel++) {
-            chance *= 2;
-        }
-        return Math.min(100, chance);
     }
 
     /** Extra shearing output uses the same two 4/7 trials per Harvest level as root crops. */

@@ -32,6 +32,7 @@ public final class RegistrationHandler {
     @SubscribeEvent
     public static void registerItems(RegistryEvent.Register<Item> event) {
         event.getRegistry().registerAll(ModItems.BACKPACK, ModItems.ADVANCED_BACKPACK, ModItems.SUPER_BACKPACK,
+                ModItems.FEATHER_WINGS,
                 ModItems.MARKET_BOOK, ModItems.TRADE_VOUCHER,
                 ModItems.GOLDEN_BONE_MEAL, ModItems.MERCHANT_SPAWN_EGG,
                 ModItems.CRAB_TRAP_ITEM, ModItems.TRANSPORT_STATION_ITEM);

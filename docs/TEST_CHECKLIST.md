@@ -1,13 +1,25 @@
 # 测试清单
 
+## 肩部羽毛翅膀与田园眷顾调值（2026-09-06）
+
+- [x] `enchantmentSelfTest`：田园眷顾 I--IV 概率为 20/40/60/80，80 的阈值边界不重复成功。PASS（Temurin Java 8 `1.8.0_504`）。
+- [x] `featherWingsSelfTest`：最大耐久 500、40 tick/点、肩部白名单、羽毛材料、5 点/根修复、耐久/经验修补/两种诅咒入口、双倍步行 exhaustion 与瞬移保护均通过。PASS（Temurin Java 8 `1.8.0_504`）。
+- [x] `shoulderEquipmentSelfTest`：Packet 9 对羽毛翅膀保留 ItemStack 耐久，原有鞘翅 Coremod MCP/SRG/发行混淆注入仍通过。PASS（Temurin Java 8 `1.8.0_504`）。
+- [x] `merchantCatalogSelfTest`：珍宝池为 39 项，羽毛翅膀实际 Item、1200000 基础价、8% 波动及库存 1 通过。PASS（Temurin Java 8 `1.8.0_504`）。
+- [x] `check_toolchain.py`：Forge `14.23.5.2859`、Gradle 4.9、snapshot `20171003-1.12`、Java `1.8.0_504`，0 error/0 warning。PASS。
+- [x] Forge 1.12.2 常规 audit：0 ERROR、7 条既有 `packet-thread` 保守 WARNING。PASS（常规模式）。
+- [ ] Forge 1.12.2 `--strict-warnings` audit：NOT PASS；7 条既有 `packet-thread` warning 使该命令以非零退出，未掩盖结果。
+- [x] 最终 `./gradlew build --console=plain`：PASS（含 `reobfJar`、`exportReleaseJar`）。release JAR 为 495,524 bytes，SHA-256 `4f394f45aeffa05fc90759ea7a5ca410af17750d1d5882f33caf40c03969241f`，`unzip -t` PASS，`ItemFeatherWings.class` 为 Java 8 major version 52；覆盖前 JAR 已备份为 `release/backup/backup_20260906-210434.jar`。
+- [ ] 游戏内：生存/冒险双击跳跃起飞、卸下/耐久耗尽后立即失去飞行；连续 40 tick 耐久（含耐久附魔）、受伤不掉耐久、按飞行距离两倍饥饿、羽毛 1% 修复、两翅膀合并、四种附魔以及本人/追踪者羽翼模型。NOT RUN：当前环境没有可操作 Forge 客户端或可进入的 Dedicated Server 世界。
+
 ## 维护：输入框、丰收斧头、田园眷顾与凭证箱加载（2026-09-06）
 
 - [x] `modGuiInputSelfTest`：Esc 在输入焦点中仍关闭；改键背包键在无焦点时关闭、在焦点中不关闭。PASS（Temurin Java 8 `1.8.0_504`）。
-- [x] `enchantmentSelfTest`：斧头能应用 Harvest 但附魔台拒绝其候选；斧头被视为作物 Harvest 工具；田园眷顾 I--IV 精确为 10/20/40/80%，IV 的 79/80 边界正确。PASS（Temurin Java 8 `1.8.0_504`）。
+- [x] `enchantmentSelfTest`：斧头能应用 Harvest 但附魔台拒绝其候选；斧头被视为作物 Harvest 工具；田园眷顾 I--IV 随后维护为 20/40/60/80%，IV 的 79/80 边界正确。PASS（Temurin Java 8 `1.8.0_504`）。
 - [x] `tradeVoucherSelfTest`、`pastoralWorldDataSelfTest`：既有多库存事务回归通过；新增凭证箱位置的跨维度、精确 BlockPos、去重和 NBT 往返通过。PASS（Temurin Java 8 `1.8.0_504`）。
 - [x] `compileJava`、`compileTestJava`、`processResources`：PASS（Temurin Java 8 `1.8.0_504`）。Forge 1.12.2 strict audit 为 0 ERROR、7 条既有 `packet-thread` 保守 WARNING；严格模式因 Warning 返回非零，未掩盖该结果。
 - [x] 最终 `./gradlew build --no-daemon --console=plain`：PASS（Temurin Java 8 `1.8.0_504`；含 `test`、`reobfJar`、`exportReleaseJar`）。release JAR 为 482,145 bytes，SHA-256 `17249a71b23a4ee63064273221756b99922bea8fe87273a9265b2bdefff21841`，`unzip -t` PASS，`VoucherChestRegistry.class` 为 Java 8 major version 52；覆盖前 472,033-byte JAR 已备份为 `release/backup/backup_20260906-195947.jar`。
-- [ ] 游戏内 GUI/附魔：在行情书搜索、商人数量和交通取名框键入 E/改键；确认文字进入输入框而不关窗，Esc 仍关窗。用铁砧/书本把丰收施加到斧头后收获成熟作物；确认附魔台斧头候选没有丰收。各进行足量种植/收获，确认田园眷顾 I--IV 的概率序列为 10/20/40/80%。NOT RUN：当前环境没有可操作 Forge 客户端。
+- [ ] 游戏内 GUI/附魔：在行情书搜索、商人数量和交通取名框键入 E/改键；确认文字进入输入框而不关窗，Esc 仍关窗。用铁砧/书本把丰收施加到斧头后收获成熟作物；确认附魔台斧头候选没有丰收。各进行足量种植/收获，确认田园眷顾 I--IV 的概率序列为 20/40/60/80%。NOT RUN：当前环境没有可操作 Forge 客户端。
 - [ ] 游戏内凭证箱/重启：关闭含绑定凭证的单箱、跨区块大箱及不同维度箱子后离开其区块、退出并重启服务器；确认所有登记箱仍计入出售。移走凭证、破坏箱子、上锁箱和未展开战利品箱后确认不会继续加载或参与；旧存档先重新打开/关闭一次凭证箱后确认登记。NOT RUN：60 秒 JDK 8 `runServer` 已进入 Forge/FML/coremod 引导，但未到本模组生命周期/世界且未接受 EULA，无法进入 Dedicated Server 世界。
 
 ## 维护：凭证配方、死亡金币、价格回归与旧物品移除（2026-09-06）

@@ -1,6 +1,7 @@
 package lisbam.pastoraleconomy.equipment;
 
 import net.minecraft.entity.player.EntityPlayer;
+import lisbam.pastoraleconomy.item.ItemFeatherWings;
 import net.minecraft.entity.player.InventoryPlayer;
 import net.minecraft.init.Items;
 import net.minecraft.inventory.ContainerPlayer;
@@ -9,7 +10,7 @@ import net.minecraft.inventory.IInventory;
 import net.minecraft.inventory.Slot;
 import net.minecraft.item.ItemStack;
 
-/** Replacement for ContainerPlayer's anonymous armor slots; only chest Elytra is rejected. */
+/** Replacement for ContainerPlayer's anonymous armor slots; shoulder flight items are rejected from chest. */
 public final class SlotChestArmorWithoutElytra extends Slot {
     private final EntityEquipmentSlot equipmentSlot;
     private final EntityPlayer player;
@@ -27,7 +28,8 @@ public final class SlotChestArmorWithoutElytra extends Slot {
 
     @Override
     public boolean isItemValid(ItemStack stack) {
-        if (equipmentSlot == EntityEquipmentSlot.CHEST && stack.getItem() == Items.ELYTRA) {
+        if (equipmentSlot == EntityEquipmentSlot.CHEST
+                && (stack.getItem() == Items.ELYTRA || ItemFeatherWings.isFeatherWings(stack))) {
             return false;
         }
         return stack.getItem().isValidArmor(stack, equipmentSlot, player);

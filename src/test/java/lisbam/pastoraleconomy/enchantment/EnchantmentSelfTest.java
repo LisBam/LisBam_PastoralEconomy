@@ -380,11 +380,11 @@ public final class EnchantmentSelfTest {
         require(AgricultureRules.rollFineCultivation(1, new FixedRandom(24)), "Fine Cultivation I succeeds below 25");
         require(!AgricultureRules.rollFineCultivation(1, new FixedRandom(25)), "Fine Cultivation I fails at 25");
         require(AgricultureRules.rollFineCultivation(4, new FixedRandom(99)), "Fine Cultivation IV is 100 percent");
-        require(AgricultureRules.getPastoralFavorChancePercent(1) == 10
-                        && AgricultureRules.getPastoralFavorChancePercent(2) == 20
-                        && AgricultureRules.getPastoralFavorChancePercent(3) == 40
+        require(AgricultureRules.getPastoralFavorChancePercent(1) == 20
+                        && AgricultureRules.getPastoralFavorChancePercent(2) == 40
+                        && AgricultureRules.getPastoralFavorChancePercent(3) == 60
                         && AgricultureRules.getPastoralFavorChancePercent(4) == 80,
-                "Pastoral Favor chance must double at every level");
+                "Pastoral Favor must use the frozen 20/40/60/80 chances");
         require(AgricultureRules.rollPastoralFavor(4, new FixedRandom(79)), "Pastoral Favor IV succeeds below 80");
         require(!AgricultureRules.rollPastoralFavor(4, new FixedRandom(80)), "Pastoral Favor IV fails at 80");
     }
