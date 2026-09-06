@@ -12,11 +12,12 @@ public final class ModEnchantments {
     private static final Item[] HOES = new Item[]{
             Items.WOODEN_HOE, Items.STONE_HOE, Items.IRON_HOE, Items.GOLDEN_HOE, Items.DIAMOND_HOE
     };
-    private static final Item[] HOES_AND_SHEARS = new Item[]{
-            Items.WOODEN_HOE, Items.STONE_HOE, Items.IRON_HOE, Items.GOLDEN_HOE, Items.DIAMOND_HOE,
-            Items.SHEARS
-    };
     private static final Item[] AXES = new Item[]{
+            Items.WOODEN_AXE, Items.STONE_AXE, Items.IRON_AXE, Items.GOLDEN_AXE, Items.DIAMOND_AXE
+    };
+    private static final Item[] HOES_SHEARS_AND_AXES = new Item[]{
+            Items.WOODEN_HOE, Items.STONE_HOE, Items.IRON_HOE, Items.GOLDEN_HOE, Items.DIAMOND_HOE,
+            Items.SHEARS,
             Items.WOODEN_AXE, Items.STONE_AXE, Items.IRON_AXE, Items.GOLDEN_AXE, Items.DIAMOND_AXE
     };
     private static final Item[] SWORDS_AND_AXES = new Item[]{
@@ -50,8 +51,8 @@ public final class ModEnchantments {
     };
 
     public static final Enchantment HARVEST = new EnchantmentPastoral(
-            "harvest", 3, new EntityEquipmentSlot[]{EntityEquipmentSlot.MAINHAND}, HOES_AND_SHEARS,
-            new Enchantment[]{Enchantments.FORTUNE}
+            "harvest", 3, new EntityEquipmentSlot[]{EntityEquipmentSlot.MAINHAND}, HOES_SHEARS_AND_AXES,
+            new Enchantment[]{Enchantments.FORTUNE}, AXES
     );
     public static final Enchantment FARMLAND_WALKER = new EnchantmentPastoral(
             "farmland_walker", 3, new EntityEquipmentSlot[]{EntityEquipmentSlot.FEET}, BOOTS,

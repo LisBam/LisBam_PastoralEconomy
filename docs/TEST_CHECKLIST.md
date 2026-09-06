@@ -1,5 +1,15 @@
 # 测试清单
 
+## 维护：输入框、丰收斧头、田园眷顾与凭证箱加载（2026-09-06）
+
+- [x] `modGuiInputSelfTest`：Esc 在输入焦点中仍关闭；改键背包键在无焦点时关闭、在焦点中不关闭。PASS（Temurin Java 8 `1.8.0_504`）。
+- [x] `enchantmentSelfTest`：斧头能应用 Harvest 但附魔台拒绝其候选；斧头被视为作物 Harvest 工具；田园眷顾 I--IV 精确为 10/20/40/80%，IV 的 79/80 边界正确。PASS（Temurin Java 8 `1.8.0_504`）。
+- [x] `tradeVoucherSelfTest`、`pastoralWorldDataSelfTest`：既有多库存事务回归通过；新增凭证箱位置的跨维度、精确 BlockPos、去重和 NBT 往返通过。PASS（Temurin Java 8 `1.8.0_504`）。
+- [x] `compileJava`、`compileTestJava`、`processResources`：PASS（Temurin Java 8 `1.8.0_504`）。Forge 1.12.2 strict audit 为 0 ERROR、7 条既有 `packet-thread` 保守 WARNING；严格模式因 Warning 返回非零，未掩盖该结果。
+- [x] 最终 `./gradlew build --no-daemon --console=plain`：PASS（Temurin Java 8 `1.8.0_504`；含 `test`、`reobfJar`、`exportReleaseJar`）。release JAR 为 482,145 bytes，SHA-256 `17249a71b23a4ee63064273221756b99922bea8fe87273a9265b2bdefff21841`，`unzip -t` PASS，`VoucherChestRegistry.class` 为 Java 8 major version 52；覆盖前 472,033-byte JAR 已备份为 `release/backup/backup_20260906-195947.jar`。
+- [ ] 游戏内 GUI/附魔：在行情书搜索、商人数量和交通取名框键入 E/改键；确认文字进入输入框而不关窗，Esc 仍关窗。用铁砧/书本把丰收施加到斧头后收获成熟作物；确认附魔台斧头候选没有丰收。各进行足量种植/收获，确认田园眷顾 I--IV 的概率序列为 10/20/40/80%。NOT RUN：当前环境没有可操作 Forge 客户端。
+- [ ] 游戏内凭证箱/重启：关闭含绑定凭证的单箱、跨区块大箱及不同维度箱子后离开其区块、退出并重启服务器；确认所有登记箱仍计入出售。移走凭证、破坏箱子、上锁箱和未展开战利品箱后确认不会继续加载或参与；旧存档先重新打开/关闭一次凭证箱后确认登记。NOT RUN：60 秒 JDK 8 `runServer` 已进入 Forge/FML/coremod 引导，但未到本模组生命周期/世界且未接受 EULA，无法进入 Dedicated Server 世界。
+
 ## 维护：凭证配方、死亡金币、价格回归与旧物品移除（2026-09-06）
 
 - [x] `deathCoinLossSelfTest`：10%/30% 边界、随机 1000--2000 最低扣款、余额不足时全额封顶和零余额不取随机数均通过。PASS（Temurin Java 8 `1.8.0_504`）。

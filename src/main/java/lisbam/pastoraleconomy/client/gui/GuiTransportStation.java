@@ -179,7 +179,7 @@ public final class GuiTransportStation extends GuiContainer implements GuiYesNoC
 
     @Override
     protected void keyTyped(char typedChar, int keyCode) throws java.io.IOException {
-        if (ModGuiInput.closeWithExitKey(mc, keyCode)) {
+        if (ModGuiInput.closeWithExitKey(mc, keyCode, renameField.isFocused())) {
             return;
         }
         if (!renameField.textboxKeyTyped(typedChar, keyCode)) {
@@ -567,7 +567,7 @@ public final class GuiTransportStation extends GuiContainer implements GuiYesNoC
 
         @Override
         protected void keyTyped(char typedChar, int keyCode) throws java.io.IOException {
-            if (ModGuiInput.closeWithExitKey(mc, keyCode)) {
+            if (ModGuiInput.closeWithExitKey(mc, keyCode, false)) {
                 return;
             }
             super.keyTyped(typedChar, keyCode);

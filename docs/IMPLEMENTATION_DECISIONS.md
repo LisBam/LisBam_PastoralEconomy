@@ -1,5 +1,15 @@
 # 实施决策
 
+## DEC-060 输入框背包键、丰收斧头与凭证箱票据（2026-09-06）
+
+决定：所有自定义 GUI 继续用 Esc 和打开背包改键关闭其服务端 Container，但仅在没有 `GuiTextField` 焦点时处理后者；文本框聚焦后交由原版输入框处理。Harvest 的稳定 ID、最大 III、时运互斥和书本可得性不变，五把原版斧头加入其可应用范围，但作为逐物品附魔台排除项，斧头只能经附魔书/铁砧获得；农业服务端流水线同时把锄头或斧头视为作物 Harvest 工具。田园眷顾固定为 I--IV `10/20/40/80%`，只在原有单次种植/收获判定中直接奖励 1 点经验。
+
+交易凭证箱的位置属于跨维度、重启后仍有效的世界状态，故 `PastoralWorldData` 从 v7 升至 v8，并追加有界 `voucherChests` 位置段。每个检测到含绑定凭证的原版箱子半块申请一张 Forge 1.12.2 NORMAL ticket，ticket modData 只保存该半块的 `BlockPos`，其所在世界提供维度；强制加载回调恢复同一 chunk。登记来自原版箱子关闭和既有交易扫描，之后每秒只复核已登记箱子；无凭证、方块/Tile 失效、上锁或未展开战利品箱即释放票据并删除位置。旧存档没有可反推的远方箱子坐标，需首次重新打开并关闭后登记。
+
+原因：背包键默认就是可打印的 E，先处理关闭会使搜索/取名无法输入该字符。附魔台可得性与铁砧/书本兼容性是 1.12.2 `Enchantment` 的独立检查，逐物品排除能保持一个 Harvest ID 而不会为斧头生成附魔台候选。原实现在交易时只枚举 `loadedTileEntityList`，玩家离远后的凭证箱自然不再被枚举；将位置持久化并用 Forge 原生票据恢复加载可让交易仍只访问服务器真实 TileEntity/库存，而不依赖客户端或手工读区块文件。
+
+影响：没有新增注册 ID、Packet discriminator、Capability 字段、TileEntity NBT 或商品 key。旧 v7 世界读取为空凭证箱索引并保留其他数据；新索引和 Forge 的 `forcedchunks.dat` 都会在凭证箱持续有效时保存。受 Forge 票据上限配置限制而暂未获票的条目保持索引并在后续复核重试，不会伪造库存或绕过服务端权限。
+
 ## DEC-001 工程身份冻结
 
 决定：工程名与 artifact 使用 `LisBam_PastoralEconomy`；Mod ID 固定为 `lisbam_pastoral_economy`；Java 根包固定为 `lisbam.pastoraleconomy`。

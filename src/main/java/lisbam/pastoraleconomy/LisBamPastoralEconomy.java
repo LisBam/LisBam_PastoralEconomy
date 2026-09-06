@@ -1,6 +1,7 @@
 package lisbam.pastoraleconomy;
 
 import lisbam.pastoraleconomy.proxy.CommonProxy;
+import lisbam.pastoraleconomy.merchant.TradeVoucherStorageService;
 import net.minecraftforge.fml.common.FMLLog;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.common.SidedProxy;
@@ -31,6 +32,7 @@ public final class LisBamPastoralEconomy {
     @Mod.EventHandler
     public void preInit(FMLPreInitializationEvent event) {
         FMLLog.info("Loading %s %s for Minecraft 1.12.2.", NAME, VERSION);
+        TradeVoucherStorageService.registerChunkLoadingCallback();
         proxy.preInit(event);
     }
 

@@ -24,22 +24,41 @@ public class EnchantmentPastoral extends Enchantment {
     private final int maxLevel;
     private final Set<Item> allowedItems;
     private final Set<Enchantment> incompatibleEnchantments;
+    private final Set<Item> enchantingTableExcludedItems;
     private final boolean treasure;
     private final boolean curse;
     private final boolean availableAtEnchantingTable;
 
     protected EnchantmentPastoral(String path, int maxLevel, EntityEquipmentSlot[] slots,
                                   Item[] allowedItems, Enchantment[] incompatibleEnchantments) {
-        this(path, Rarity.RARE, maxLevel, slots, allowedItems, incompatibleEnchantments, false, false, true);
+        this(path, Rarity.RARE, maxLevel, slots, allowedItems, incompatibleEnchantments,
+                false, false, true, new Item[0]);
+    }
+
+    /** Allows books/anvils without adding a specific allowed item to table rolls. */
+    protected EnchantmentPastoral(String path, int maxLevel, EntityEquipmentSlot[] slots,
+                                  Item[] allowedItems, Enchantment[] incompatibleEnchantments,
+                                  Item[] enchantingTableExcludedItems) {
+        this(path, Rarity.RARE, maxLevel, slots, allowedItems, incompatibleEnchantments,
+                false, false, true, enchantingTableExcludedItems);
     }
 
     protected EnchantmentPastoral(String path, Rarity rarity, int maxLevel, EntityEquipmentSlot[] slots,
                                   Item[] allowedItems, Enchantment[] incompatibleEnchantments,
                                   boolean treasure, boolean curse, boolean availableAtEnchantingTable) {
+        this(path, rarity, maxLevel, slots, allowedItems, incompatibleEnchantments,
+                treasure, curse, availableAtEnchantingTable, new Item[0]);
+    }
+
+    protected EnchantmentPastoral(String path, Rarity rarity, int maxLevel, EntityEquipmentSlot[] slots,
+                                  Item[] allowedItems, Enchantment[] incompatibleEnchantments,
+                                  boolean treasure, boolean curse, boolean availableAtEnchantingTable,
+                                  Item[] enchantingTableExcludedItems) {
         super(rarity, EnumEnchantmentType.ALL, slots);
         this.maxLevel = maxLevel;
         this.allowedItems = new HashSet<Item>(Arrays.asList(allowedItems));
         this.incompatibleEnchantments = new HashSet<Enchantment>(Arrays.asList(incompatibleEnchantments));
+        this.enchantingTableExcludedItems = new HashSet<Item>(Arrays.asList(enchantingTableExcludedItems));
         this.treasure = treasure;
         this.curse = curse;
         this.availableAtEnchantingTable = availableAtEnchantingTable;
@@ -69,7 +88,8 @@ public class EnchantmentPastoral extends Enchantment {
 
     @Override
     public boolean canApplyAtEnchantingTable(ItemStack stack) {
-        return availableAtEnchantingTable && canApply(stack);
+        return availableAtEnchantingTable && canApply(stack)
+                && !enchantingTableExcludedItems.contains(stack.getItem());
     }
 
     @Override

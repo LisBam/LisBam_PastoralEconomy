@@ -8,10 +8,12 @@ import lisbam.pastoraleconomy.data.player.PlayerDataProvider;
 import lisbam.pastoraleconomy.data.world.PastoralWorldData;
 import lisbam.pastoraleconomy.equipment.ShoulderEquipmentService;
 import lisbam.pastoraleconomy.merchant.VillageService;
+import lisbam.pastoraleconomy.merchant.TradeVoucherStorageService;
 import lisbam.pastoraleconomy.transport.TransportService;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
+import net.minecraft.inventory.ContainerChest;
 import net.minecraft.world.World;
 import net.minecraft.world.WorldServer;
 import net.minecraftforge.event.AttachCapabilitiesEvent;
@@ -51,12 +53,33 @@ public final class PersistenceEventHandler {
         }
     }
 
+    @SubscribeEvent
+    public static void forgetVoucherChestTickets(WorldEvent.Unload event) {
+        if (!event.getWorld().isRemote) {
+            TradeVoucherStorageService.forgetWorld(event.getWorld());
+        }
+    }
+
+    /** Closing a vanilla chest is the reliable server-side point after a voucher move has committed. */
+    @SubscribeEvent
+    public static void observeVoucherChestContents(
+            net.minecraftforge.event.entity.player.PlayerContainerEvent.Close event
+    ) {
+        if (event.getEntityPlayer() instanceof EntityPlayerMP && !event.getEntityPlayer().world.isRemote
+                && event.getContainer() instanceof ContainerChest) {
+            TradeVoucherStorageService.observeLoadedVoucherChests((WorldServer) event.getEntityPlayer().world);
+        }
+    }
+
     /** Merchant reconciliation is global and runs on the logical-server overworld only. */
     @SubscribeEvent
     public static void updateMarket(TickEvent.WorldTickEvent event) {
         if (event.phase == TickEvent.Phase.END && !event.world.isRemote && event.world instanceof WorldServer
                 && event.world.provider.getDimension() == 0) {
             VillageService.tick((WorldServer) event.world);
+            if (event.world.getTotalWorldTime() % 20L == 0L) {
+                TradeVoucherStorageService.reconcile((WorldServer) event.world);
+            }
         }
     }
 

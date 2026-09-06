@@ -52,7 +52,7 @@ public final class AgricultureEnchantmentEventHandler {
         }
 
         ItemStack tool = player.getHeldItemMainhand();
-        int harvestLevel = ModEnchantments.isHoe(tool)
+        int harvestLevel = (ModEnchantments.isHoe(tool) || ModEnchantments.isAxe(tool))
                 ? EnchantmentHelper.getEnchantmentLevel(ModEnchantments.HARVEST, tool) : 0;
         int fineCultivationLevel = ModEnchantments.isHoe(tool)
                 ? EnchantmentHelper.getEnchantmentLevel(ModEnchantments.FINE_CULTIVATION, tool) : 0;

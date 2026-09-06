@@ -7,6 +7,8 @@ import net.minecraft.init.Items;
 import net.minecraft.inventory.IInventory;
 import net.minecraft.inventory.InventoryBasic;
 import net.minecraft.item.ItemStack;
+import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.util.math.BlockPos;
 
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
@@ -64,9 +66,33 @@ public final class TradeVoucherSelfTest {
         require(countItem(player, Items.BUCKET) + countItem(chest, Items.BUCKET) == 20,
                 "returned bucket count is exact");
 
+        verifyVoucherChestRegistry();
+
         verifyTexture("trade_voucher_empty.png");
         verifyTexture("trade_voucher_bound.png");
         System.out.println("tradeVoucherSelfTest PASS");
+    }
+
+    private static void verifyVoucherChestRegistry() {
+        VoucherChestRegistry registry = new VoucherChestRegistry();
+        BlockPos overworldChest = new BlockPos(32, 70, -48);
+        BlockPos netherChest = new BlockPos(-17, 64, 49);
+        require(registry.add(0, overworldChest) && registry.add(-1, netherChest),
+                "bound voucher chest positions enter the world registry");
+        require(!registry.add(0, overworldChest), "the same physical chest is not indexed twice");
+
+        NBTTagCompound saved = registry.writeToNBT();
+        VoucherChestRegistry restored = new VoucherChestRegistry();
+        restored.readFromNBT(saved);
+        require(restored.getLocations().size() == 2, "voucher chest registry survives WorldSavedData NBT");
+        boolean foundOverworld = false;
+        boolean foundNether = false;
+        for (VoucherChestRegistry.Location location : restored.getLocations()) {
+            foundOverworld |= location.getDimension() == 0 && overworldChest.equals(location.getPosition());
+            foundNether |= location.getDimension() == -1 && netherChest.equals(location.getPosition());
+        }
+        require(foundOverworld && foundNether,
+                "voucher chest registry keeps exact dimension and block position for ticket recovery");
     }
 
     private static int countItem(IInventory inventory, net.minecraft.item.Item item) {
