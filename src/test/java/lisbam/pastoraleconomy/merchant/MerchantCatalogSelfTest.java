@@ -254,6 +254,9 @@ public final class MerchantCatalogSelfTest {
     private static void verifyMerchantSnapshotRoundTrip() {
         List<MerchantTradeOfferView> sells = disabledViews(MerchantTradeSnapshot.SELL_COUNT);
         List<MerchantTradeOfferView> buys = disabledViews(MerchantTradeSnapshot.BUY_COUNT);
+        TradeCatalogEntry wheat = find(TradePool.SELL_CORE, "wheat");
+        sells.set(0, new MerchantTradeOfferView(true, wheat.getCatalogKey(), wheat.getItemStackLimit(),
+                wheat.getBasePrice(), null, 37, 0));
         MerchantTradeSnapshot snapshot = new MerchantTradeSnapshot(java.util.UUID.randomUUID(), 3, 0L, 0L, sells, buys);
         ByteBuf buffer = Unpooled.buffer();
         new SyncMerchantTradeMessage(snapshot).toBytes(buffer);
@@ -263,6 +266,8 @@ public final class MerchantCatalogSelfTest {
         check(decoded != null && decoded.getSellOffers().size() == MerchantTradeSnapshot.SELL_COUNT
                         && decoded.getBuyOffers().size() == MerchantTradeSnapshot.BUY_COUNT,
                 "merchant snapshot uses the current 6 + 8 protocol counts");
+        check(decoded.getSellOffers().get(0).getRemainingItems() == 37,
+                "sell snapshot carries voucher-linked chest stock in the existing field");
     }
 
     private static List<MerchantTradeOfferView> disabledViews(int count) {

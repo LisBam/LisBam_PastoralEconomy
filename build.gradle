@@ -231,6 +231,13 @@ task shoulderEquipmentSelfTest(type: JavaExec) {
     main = 'lisbam.pastoraleconomy.core.ShoulderEquipmentCoremodSelfTest'
 }
 
+task tradeVoucherSelfTest(type: JavaExec) {
+    group = 'verification'
+    description = 'Runs trade-voucher binding, linked storage and texture regression checks.'
+    classpath = sourceSets.test.runtimeClasspath
+    main = 'lisbam.pastoraleconomy.merchant.TradeVoucherSelfTest'
+}
+
 publishing {
     publications {
         mavenJava(MavenPublication) {

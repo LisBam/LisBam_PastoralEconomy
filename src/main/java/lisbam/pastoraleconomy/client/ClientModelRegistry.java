@@ -31,6 +31,12 @@ public final class ClientModelRegistry {
                         "village_transport_compass"), "inventory")
         );
         ModelLoader.setCustomModelResourceLocation(
+                ModItems.TRADE_VOUCHER,
+                0,
+                new ModelResourceLocation(new ResourceLocation(LisBamPastoralEconomy.MODID,
+                        "trade_voucher"), "inventory")
+        );
+        ModelLoader.setCustomModelResourceLocation(
                 ModItems.GOLDEN_BONE_MEAL,
                 0,
                 new ModelResourceLocation(new ResourceLocation(LisBamPastoralEconomy.MODID, "golden_bone_meal"), "inventory")

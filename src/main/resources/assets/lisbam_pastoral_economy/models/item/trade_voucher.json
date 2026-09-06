@@ -1,0 +1,14 @@
+{
+  "parent": "item/generated",
+  "textures": {
+    "layer0": "lisbam_pastoral_economy:items/trade_voucher_empty"
+  },
+  "overrides": [
+    {
+      "predicate": {
+        "bound": 1.0
+      },
+      "model": "lisbam_pastoral_economy:item/trade_voucher_bound"
+    }
+  ]
+}

@@ -2,6 +2,16 @@
 
 当前发行版本：`1.5`；既有第 15 批功能完成，1.5 为维护更新。
 
+## 新内容：交易凭证与箱子出售（2026-09-06）
+
+实现：新增最大堆叠为 1 的“空交易凭证”；右键后由逻辑服务端把使用者 UUID 与当时玩家名写入物品 NBT，物品显示为“交易凭证-玩家名”且不能再次绑定。空白/绑定状态共用稳定 registry ID，通过模型属性切换两张 AI 生成后处理为 16×16 RGBA 的原版风卷纸贴图。用户没有指定材料与配方，因此本次不自行扩展生存获取链，当前仅从模组创造栏或命令获得。
+
+把已绑定凭证放入当前已加载的原版单箱或大箱后，凭证对应玩家在既有商人界面出售时可同时使用自己主物品栏和这些授权箱子的货物。服务端扫描所有已加载维度但绝不加载新区块；跳过上锁箱与未展开的战利品箱，授权按 UUID 而非可能重名/改名的显示文字判断。多库存事务优先扣随身物品，再按维度/坐标稳定扣箱中物品；牛奶桶的空桶也可返回这些来源，扣货、返还或加金币任一步失败都会恢复全部库存。GUI 将服务端箱子数与客户端本地主背包数相加显示“可出售”，交易请求格式不变。
+
+兼容性与影响：只追加 Item ID `lisbam_pastoral_economy:trade_voucher` 及物品栈私有 NBT `VoucherOwner`/`VoucherOwnerName`，没有修改 Capability、WorldSavedData、TileEntity NBT、既有商品 key 或 Packet discriminator。玩家改名不会破坏授权，因为 UUID 始终是权限依据；物品名称保留绑定时的名字快照。旧存档无需迁移。
+
+验证：Temurin Java 8 `1.8.0_504` 下 `compileJava`、`compileTestJava`、`processResources`、`tradeVoucherSelfTest`、`merchantCatalogSelfTest`、`marketPacketSelfTest` 和最终 `build` 全部 PASS；新自检覆盖一次性 UUID 绑定、NBT 拷贝、他人拒绝、玩家/箱子合并计数、玩家优先扣货、全来源回滚、空桶返还及两张 16×16 RGBA 贴图。严格 Forge 1.12.2 audit 为 0 ERROR、7 条既有 `packet-thread` 保守 WARNING，本次未增加网络处理器；`check_toolchain.py` 为 0 ERROR，并因默认环境无 Java 报 1 条 warning，真实 Gradle 命令已显式使用上述 JDK 8。Dedicated Server 在 180 秒内成功发现、注入并运行本模组 Coremod，随后到达 Minecraft 校验，但未进入模组生命周期/世界，完整 Server 验收仍为 NOT RUN，`run/eula.txt` 未修改。正式重混淆 `release/LisBam_PastoralEconomy-1.5.jar` 为 479,868 bytes，SHA-256 `4405eeb39dc73afe9306d9e60eaf577f72903663ad53e9ce61f345cbd87879bd`，`unzip -t` PASS，生产 class major version 为 52；覆盖前 463,258-byte 成品已备份为 `release/backup/backup_20260906-141853.jar`。
+
 ## 维护：肩部槽 UI、右键穿戴与模型显示（2026-09-06）
 
 实现：生存背包肩部槽改到原版副手槽正上方 `77,44`，创造模式“生存物品栏”页按其副手槽位置改到 `35,2`；两处分别裁取原版 `inventory.png` / `tab_inventory.png` 的 18×18 槽格，并保留原版物品渲染、悬停遮罩与 Tooltip。创造页会重建一层 `CreativeSlot`，客户端因此在每帧绘制前按其共享的肩部 `IInventory` 重新识别和定位包装槽，避免新增槽被原版索引公式叠到快捷栏。
