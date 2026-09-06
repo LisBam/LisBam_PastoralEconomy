@@ -19,6 +19,8 @@ import java.util.Random;
 
 /** Exact animal whitelist and random rolls for the additional bone death drop. */
 final class AnimalBoneDropRules {
+    private static final int PROBABILITY_DENOMINATOR = 300;
+
     private AnimalBoneDropRules() {
     }
 
@@ -31,15 +33,15 @@ final class AnimalBoneDropRules {
     }
 
     static int rollLargeAnimalBaseCount(Random random) {
-        int roll = random.nextInt(100);
-        if (roll < 20) {
+        int roll = random.nextInt(PROBABILITY_DENOMINATOR);
+        if (roll < 40) {
             return 2;
         }
-        return roll < 70 ? 1 : 0;
+        return roll < 140 ? 1 : 0;
     }
 
     static int rollSmallAnimalBaseCount(Random random) {
-        return random.nextInt(100) < 25 ? 1 : 0;
+        return random.nextInt(PROBABILITY_DENOMINATOR) < 50 ? 1 : 0;
     }
 
     static int applyLootingBonus(int baseCount, int lootingLevel, Random random) {

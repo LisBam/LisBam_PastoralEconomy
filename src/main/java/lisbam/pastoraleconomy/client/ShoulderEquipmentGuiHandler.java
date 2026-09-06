@@ -22,13 +22,14 @@ import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import net.minecraftforge.fml.relauncher.Side;
 import org.lwjgl.input.Mouse;
 
-/** Aligns and draws the shoulder cell with the native survival and creative inventory artwork. */
+/** Aligns the shoulder cell and renders the same vanilla armor-cell artwork in both inventory modes. */
 @Mod.EventBusSubscriber(modid = LisBamPastoralEconomy.MODID, value = Side.CLIENT)
 public final class ShoulderEquipmentGuiHandler {
     private static final ResourceLocation INVENTORY_TEXTURE =
             new ResourceLocation("minecraft", "textures/gui/container/inventory.png");
-    private static final ResourceLocation CREATIVE_INVENTORY_TEXTURE =
-            new ResourceLocation("minecraft", "textures/gui/container/creative_inventory/tab_inventory.png");
+    /** The original inventory screen's armor-cell source pixels. Resource packs replace this exact texture. */
+    private static final int ARMOR_SLOT_TEXTURE_X = 97;
+    private static final int ARMOR_SLOT_TEXTURE_Y = 17;
 
     private ShoulderEquipmentGuiHandler() {
     }
@@ -53,14 +54,13 @@ public final class ShoulderEquipmentGuiHandler {
         int guiTop = ObfuscationReflectionHelper.getPrivateValue(GuiContainer.class, gui,
                 "guiTop", "field_147009_r");
 
-        boolean creative = gui instanceof GuiContainerCreative;
         Minecraft minecraft = Minecraft.getMinecraft();
-        minecraft.getTextureManager().bindTexture(creative ? CREATIVE_INVENTORY_TEXTURE : INVENTORY_TEXTURE);
-        // Source pixels are untouched vanilla slot cells. Slot x/y are the 16x16 item origin,
-        // while the surrounding native cell begins one pixel earlier on each axis.
+        minecraft.getTextureManager().bindTexture(INVENTORY_TEXTURE);
+        // Both screens take the same untouched armor cell from vanilla inventory.png. Slot x/y are
+        // the 16x16 item origin, while the surrounding native cell begins one pixel earlier.
         // DrawForeground runs while GuiContainer's matrix is already translated by guiLeft/guiTop.
         Gui.drawModalRectWithCustomSizedTexture(shoulder.xPos - 1, shoulder.yPos - 1,
-                creative ? 8 : 97, creative ? 53 : 17, 18, 18, 256, 256);
+                ARMOR_SLOT_TEXTURE_X, ARMOR_SLOT_TEXTURE_Y, 18, 18, 256, 256);
         if (shoulder.getHasStack()) {
             minecraft.getRenderItem().renderItemAndEffectIntoGUI(shoulder.getStack(),
                     shoulder.xPos, shoulder.yPos);

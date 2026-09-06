@@ -128,7 +128,8 @@ public final class PastoralWorldData extends WorldSavedData {
     /**
      * Server-side market transition. The default path advances every skipped
      * day because every price is deliberately chained to its saved predecessor.
-     * Existing-day snapshots are never regenerated when a setting changes.
+     * Existing-day snapshots are never regenerated when a setting or catalog
+     * base price changes; a new base applies only on a later daily step.
      */
     public synchronized void ensureMarketDay(long worldDay, long authoritativeWorldSeed) {
         if (!marketInitialized) {
@@ -492,9 +493,9 @@ public final class PastoralWorldData extends WorldSavedData {
             readSnapshot(market.getCompoundTag(KEY_PREVIOUS_SNAPSHOT), previousMarketPrices, false);
         }
         readCropHistories(market.getTagList(KEY_CROP_HISTORIES, 10));
-        // Preserve v3-v7 recorded prices exactly. In particular, loading an
-        // old world under the new chained mode must not reroll its current
-        // day or erase the book's retained legacy points.
+        // Preserve recorded prices exactly. In particular, a catalog base-price
+        // adjustment must not rewrite an existing save's current day; the next
+        // chained daily step gradually returns that value toward the new base.
     }
 
     private void readSnapshot(NBTTagCompound snapshot, Map<String, Long> target, boolean current) {

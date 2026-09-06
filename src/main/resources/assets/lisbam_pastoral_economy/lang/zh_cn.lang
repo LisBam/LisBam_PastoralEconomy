@@ -5,7 +5,6 @@ config.lisbam_pastoral_economy.title=聆竹の休闲田园经济设置
 config.lisbam_pastoral_economy.market=市场
 config.lisbam_pastoral_economy.market.more_stable_market_volatility=更稳定的市场波动
 item.lisbam_pastoral_economy.market_book.name=市场行情书
-item.lisbam_pastoral_economy.village_transport_compass.name=村庄交通方块指南针
 item.lisbam_pastoral_economy.trade_voucher.name=空交易凭证
 item.lisbam_pastoral_economy.trade_voucher.bound.name=交易凭证-%s
 itemGroup.lisbam_pastoral_economy=聆竹の休闲田园经济

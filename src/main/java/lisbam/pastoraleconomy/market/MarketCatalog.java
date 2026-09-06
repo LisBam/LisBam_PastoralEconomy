@@ -197,7 +197,7 @@ public final class MarketCatalog {
         Object[][] resources = {
                 {"coal", Items.COAL, 0, 1600}, {"charcoal", Items.COAL, 1, 1600},
                 {"iron_ingot", Items.IRON_INGOT, 0, 900}, {"redstone", Items.REDSTONE, 0, 1000},
-                {"lapis_lazuli", Items.DYE, 4, 1600}, {"flint", Items.FLINT, 0, 800},
+                {"lapis_lazuli", Items.DYE, 4, 800}, {"flint", Items.FLINT, 0, 800},
                 {"bone", Items.BONE, 0, 1000}, {"string", Items.STRING, 0, 400},
                 {"spider_eye", Items.SPIDER_EYE, 0, 3200}, {"rotten_flesh", Items.ROTTEN_FLESH, 0, 1600},
                 {"ink_sac", Items.DYE, 0, 1600}, {"netherrack", block(Blocks.NETHERRACK), 0, 400},
@@ -211,8 +211,8 @@ public final class MarketCatalog {
         Object[][] resources = {
                 {"gold_ingot", Items.GOLD_INGOT, 0, 3200}, {"lava_bucket", Items.LAVA_BUCKET, 0, 6000},
                 {"gunpowder", Items.GUNPOWDER, 0, 1600}, {"slime_ball", Items.SLIME_BALL, 0, 2000},
-                {"magma_cream", Items.MAGMA_CREAM, 0, 6400}, {"glowstone_dust", Items.GLOWSTONE_DUST, 0, 2000},
-                {"nether_quartz", Items.QUARTZ, 0, 1750}, {"end_stone", block(Blocks.END_STONE), 0, 3200},
+                {"magma_cream", Items.MAGMA_CREAM, 0, 6400}, {"glowstone_dust", Items.GLOWSTONE_DUST, 0, 200},
+                {"nether_quartz", Items.QUARTZ, 0, 1600}, {"end_stone", block(Blocks.END_STONE), 0, 3200},
                 {"prismarine_shard", Items.PRISMARINE_SHARD, 0, 2000}, {"prismarine_crystals", Items.PRISMARINE_CRYSTALS, 0, 2000},
                 {"leather", Items.LEATHER, 0, 2000}, {"rabbit_hide", Items.RABBIT_HIDE, 0, 1600},
                 {"rabbit_foot", Items.RABBIT_FOOT, 0, 4000}, {"milk_bucket", Items.MILK_BUCKET, 0, 1800},

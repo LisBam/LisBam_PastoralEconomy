@@ -35,10 +35,26 @@ public final class MarketPriceGenerator {
     /**
      * Advances exactly one market day. The default branch intentionally uses
      * yesterday's saved price and the category's explicit price band.
+     * A later catalog reprice leaves its saved predecessor untouched and lets
+     * this step walk it back toward the new band instead of rebasing it.
      */
     public static long calculateNextPrice(long marketSeed, long worldDay, MarketCommodity commodity,
                                           long previousPrice, boolean moreStableVolatility) {
+        long minimum = minimumPrice(commodity.getBasePrice(), commodity.getCategory());
+        long maximum = maximumPrice(commodity.getBasePrice(), commodity.getCategory());
         if (moreStableVolatility) {
+            // The legacy independent mode still honors a manual reprice
+            // migration. A saved value outside its new band must walk back
+            // rather than jumping straight to a newly sampled independent value.
+            if (previousPrice < minimum || previousPrice > maximum) {
+                long commodityHash = stableKeyHash(commodity.getVariantIdentity());
+                double direction = toUnit(mix64(marketSeed ^ mix64(worldDay) ^ commodityHash
+                        ^ DIRECTION_RANDOM_SALT));
+                double magnitude = toUnit(mix64(marketSeed ^ mix64(worldDay) ^ commodityHash
+                        ^ MAGNITUDE_RANDOM_SALT));
+                return calculateChainedPrice(commodity.getBasePrice(), commodity.getCategory(), previousPrice,
+                        direction, magnitude);
+            }
             return calculatePrice(marketSeed, worldDay, commodity);
         }
         long commodityHash = stableKeyHash(commodity.getVariantIdentity());
@@ -72,7 +88,8 @@ public final class MarketPriceGenerator {
 
         long minimum = minimumPrice(basePrice, category);
         long maximum = maximumPrice(basePrice, category);
-        long oldPrice = clamp(previousPrice, minimum, maximum);
+        boolean previousPriceWithinBand = previousPrice >= minimum && previousPrice <= maximum;
+        long oldPrice = previousPrice;
         double deviation = Math.abs((double) oldPrice - (double) basePrice) / (double) basePrice;
         double restoreProbability = restoreProbability(deviation);
 
@@ -101,7 +118,11 @@ public final class MarketPriceGenerator {
         } else if (!increases && rounded >= oldPrice) {
             rounded = oldPrice <= 1L ? 1L : oldPrice - 1L;
         }
-        return clamp(rounded, minimum, maximum);
+        // A current-band value retains the hard category guard. An old saved
+        // price outside a newly adjusted base's band moves by the same daily
+        // rule until it naturally re-enters that band; it is never rewritten
+        // on load or snapped to the new edge.
+        return previousPriceWithinBand ? clamp(rounded, minimum, maximum) : rounded;
     }
 
     static double restoreProbability(double deviation) {

@@ -31,6 +31,10 @@ public final class MarketCoreSelfTest {
         require(wheat != null && wheat.getBasePrice() == 50L, "wheat base sell price must be fifty after currency scaling");
         require(base("lisbam_pastoral_economy:buy/common/iron_ingot") == 900L,
                 "iron ingot base buy price must be 900 per item");
+        require(base("lisbam_pastoral_economy:buy/common/lapis_lazuli") == 800L
+                        && base("lisbam_pastoral_economy:buy/rare/glowstone_dust") == 200L
+                        && base("lisbam_pastoral_economy:buy/rare/nether_quartz") == 1600L,
+                "manual-price sheet adjustments must update the frozen catalog bases");
         require(base("lisbam_pastoral_economy:buy/common/cobblestone") == 240L
                         && base("lisbam_pastoral_economy:buy/common/sand") == 200L
                         && base("lisbam_pastoral_economy:buy/common/glass") == 400L
@@ -121,6 +125,19 @@ public final class MarketCoreSelfTest {
                 minimum, 0.99D, 0.0D) > minimum, "minimum boundary must rebound upward");
         require(MarketPriceGenerator.calculateChainedPrice(100L, CommodityCategory.CORE_CROPS,
                 maximum, 0.0D, 0.0D) < maximum, "maximum boundary must rebound downward");
+        long adjustedLapisStep = MarketPriceGenerator.calculateChainedPrice(800L,
+                CommodityCategory.MINERALS_REDSTONE_COMMON_DROPS, 1600L, 0.0D, 0.0D);
+        require(adjustedLapisStep < 1600L
+                        && adjustedLapisStep > MarketPriceGenerator.maximumPrice(800L,
+                        CommodityCategory.MINERALS_REDSTONE_COMMON_DROPS),
+                "an old saved price must walk toward a newly reduced base instead of snapping to its new ceiling");
+        MarketCommodity repricedLapis = MarketCatalog.get("lisbam_pastoral_economy:buy/common/lapis_lazuli");
+        long stableModeRepriceStep = MarketPriceGenerator.calculateNextPrice(71L, 13L, repricedLapis,
+                1600L, true);
+        require(stableModeRepriceStep < 1600L
+                        && stableModeRepriceStep > MarketPriceGenerator.maximumPrice(800L,
+                        CommodityCategory.MINERALS_REDSTONE_COMMON_DROPS),
+                "the optional stable mode must also gradually return a saved price after a manual reprice");
         require(MarketPriceGenerator.restoreProbability(0.0D) == 0.50D
                         && MarketPriceGenerator.restoreProbability(0.10D) == 0.55D
                         && MarketPriceGenerator.restoreProbability(0.20D) == 0.65D
@@ -185,6 +202,19 @@ public final class MarketCoreSelfTest {
         require(restored.getCropHistory(WHEAT, 12L, 100, null).size() == 5,
                 "returning to a day must deterministically rebuild without duplicate history");
 
+        NBTTagCompound preRepriceSave = data.writeToNBT(new NBTTagCompound());
+        replaceCurrentSnapshotPrice(preRepriceSave, "lisbam_pastoral_economy:buy/common/lapis_lazuli", 1600L);
+        PastoralWorldData preRepriceWorld = new PastoralWorldData();
+        preRepriceWorld.readFromNBT(preRepriceSave);
+        preRepriceWorld.ensureMarketDay(12L, 99L);
+        require(price(preRepriceWorld, "lisbam_pastoral_economy:buy/common/lapis_lazuli") == 1600L,
+                "loading a pre-reprice save must preserve its current stored market price exactly");
+        preRepriceWorld.ensureMarketDay(13L, 99L);
+        long returnedLapis = price(preRepriceWorld, "lisbam_pastoral_economy:buy/common/lapis_lazuli");
+        require(returnedLapis < 1600L && returnedLapis > MarketPriceGenerator.maximumPrice(800L,
+                        CommodityCategory.MINERALS_REDSTONE_COMMON_DROPS),
+                "the first new day must use the normal gradual return toward the new catalog base");
+
         NBTTagCompound missingCurrentHistories = data.writeToNBT(new NBTTagCompound());
         missingCurrentHistories.getCompoundTag("market").setTag("cropHistories", new net.minecraft.nbt.NBTTagList());
         PastoralWorldData repairedHistory = new PastoralWorldData();
@@ -239,6 +269,19 @@ public final class MarketCoreSelfTest {
         MarketCommodity commodity = MarketCatalog.get(key);
         require(commodity != null, "missing market commodity " + key);
         return commodity.getBasePrice();
+    }
+
+    private static void replaceCurrentSnapshotPrice(NBTTagCompound saved, String key, long replacement) {
+        net.minecraft.nbt.NBTTagList prices = saved.getCompoundTag("market")
+                .getCompoundTag("currentSnapshot").getTagList("prices", 10);
+        for (int index = 0; index < prices.tagCount(); index++) {
+            NBTTagCompound price = prices.getCompoundTagAt(index);
+            if (key.equals(price.getString("key"))) {
+                price.setLong("price", replacement);
+                return;
+            }
+        }
+        throw new AssertionError("missing saved market key " + key);
     }
 
     private static void require(boolean condition, String message) {
