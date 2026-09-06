@@ -77,9 +77,33 @@ public final class PersistenceEventHandler {
         syncPlayer(event.player);
     }
 
+    @SubscribeEvent
+    public static void syncTrackedShoulder(PlayerEvent.StartTracking event) {
+        if (event.getEntityPlayer() instanceof EntityPlayerMP && event.getTarget() instanceof EntityPlayer
+                && !event.getEntityPlayer().world.isRemote) {
+            ShoulderEquipmentService.syncToPlayer(
+                    (EntityPlayerMP) event.getEntityPlayer(), (EntityPlayer) event.getTarget());
+        }
+    }
+
+    /** Detects in-place Elytra damage/breakage, which does not replace the Capability stack reference. */
+    @SubscribeEvent
+    public static void syncChangedShoulder(TickEvent.PlayerTickEvent event) {
+        if (event.phase == TickEvent.Phase.END && event.player instanceof EntityPlayerMP
+                && !event.player.world.isRemote) {
+            ShoulderEquipmentService.syncIfChanged((EntityPlayerMP) event.player);
+        }
+    }
+
+    @SubscribeEvent
+    public static void forgetShoulderSync(net.minecraftforge.fml.common.gameevent.PlayerEvent.PlayerLoggedOutEvent event) {
+        ShoulderEquipmentService.forgetSyncedState(event.player);
+    }
+
     private static void syncPlayer(EntityPlayer player) {
         if (player instanceof EntityPlayerMP && !player.world.isRemote) {
             ShoulderEquipmentService.migrateLegacyChestElytra((EntityPlayerMP) player);
+            ShoulderEquipmentService.syncNow((EntityPlayerMP) player);
             TransportService.grantStarterTransportIfNeeded((EntityPlayerMP) player);
             CoinService.syncToClient((EntityPlayerMP) player);
         }

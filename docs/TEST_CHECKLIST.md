@@ -1,10 +1,17 @@
 # 测试清单
 
+## 肩部槽 UI、右键穿戴与模型显示（2026-09-06）
+
+- [x] 静态/自检：肩部 Coremod 对实际映射 `LayerElytra` 及模拟发行混淆名均注入肩部读取；Packet 9 的实体 ID、鞘翅物品、损伤值往返一致。PASS（Temurin Java 8 `1.8.0_504`，`shoulderEquipmentSelfTest`）。
+- [ ] 游戏内生存模式：肩部槽使用原版槽框并位于副手正上方；主手/副手持鞘翅右键均立即穿上并消耗手持物，肩部已有鞘翅时不改动胸甲或库存。NOT RUN：当前环境没有可操作 Forge 客户端窗口。
+- [ ] 游戏内创造模式：仅“生存物品栏”页显示肩部槽，位于该页副手正上方且不与快捷栏、盔甲或人物预览重叠；右键穿戴后手持鞘翅仍保留。NOT RUN：当前环境没有可操作 Forge 客户端窗口。
+- [ ] 游戏内渲染/多人：胸甲和肩部鞘翅同时装备时两者模型都显示；本人第三人称及另一名追踪玩家均可见鞘翅，飞行耐久变化与损坏后消失同步正确。NOT RUN：客户端不可操作，Dedicated Server 未完成模组生命周期。
+
 ## 构建
 
 - [x] `./gradlew compileJava`、`compileTestJava` — PASS（2026-09-06，Temurin Java 8 `1.8.0_504`）
-- [x] `./gradlew processResources`、`build` — PASS（2026-09-06，Temurin Java 8 `1.8.0_504`；含 `test`、`reobfJar`、`exportReleaseJar`；release JAR 为 406,463 bytes，`unzip -t` PASS，SHA-256 `fc2f462ea631113b77272b3edfa706550cb165d921026892402f60e96db4ad44`）
-- [x] Forge 1.12.2 static audit — 0 ERROR；6 条 `packet-thread` WARNING 已审查（通用注册不处理消息；五个 S2C Proxy 桥没有直接修改状态，客户端实际写入均调度至主线程；交通与市场 Tooltip C2S handler 调度至服务端主线程）。
+- [x] `./gradlew processResources`、`build` — PASS（2026-09-06，Temurin Java 8 `1.8.0_504`；含 `test`、`reobfJar`、`exportReleaseJar`；release JAR 为 463,258 bytes，`unzip -t` PASS，SHA-256 `5796b3dc4a9b6f47a1f09f6008824ada318ff30e3d14249039a630f519e557fe`）
+- [x] Forge 1.12.2 static audit — 0 ERROR；7 条 `packet-thread` WARNING 已审查（通用注册不处理消息；六个 S2C Proxy 桥没有直接修改状态，客户端实际写入均调度至主线程；交通与市场 Tooltip C2S handler 调度至服务端主线程）。
 - [x] 本次 FOV/Tooltip 修复后的 `./gradlew compileJava processResources build` — PASS（Temurin Java 8 `1.8.0_504`；release JAR 已覆盖导出并通过 `unzip -t`）。
 
 ## 维护：村庄交通方块指南针与肩部鞘翅栏（2026-09-06）

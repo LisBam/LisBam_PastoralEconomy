@@ -4,6 +4,7 @@ import lisbam.pastoraleconomy.client.ClientCoinSyncExecutor;
 import lisbam.pastoraleconomy.client.ClientMarketSyncExecutor;
 import lisbam.pastoraleconomy.client.ClientMarketTooltipSyncExecutor;
 import lisbam.pastoraleconomy.client.ClientTransportStateSyncExecutor;
+import lisbam.pastoraleconomy.client.ClientShoulderEquipmentSyncExecutor;
 import lisbam.pastoraleconomy.client.gui.GuiCrabTrap;
 import lisbam.pastoraleconomy.client.gui.GuiMarketBook;
 import lisbam.pastoraleconomy.client.gui.GuiTransportStation;
@@ -14,6 +15,7 @@ import lisbam.pastoraleconomy.client.ClientMerchantTradeSyncExecutor;
 import lisbam.pastoraleconomy.client.RenderMerchant;
 import lisbam.pastoraleconomy.client.gui.GuiMerchantTrade;
 import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.item.ItemStack;
 import net.minecraft.world.World;
 import net.minecraftforge.fml.client.registry.IRenderFactory;
 import net.minecraftforge.fml.client.registry.RenderingRegistry;
@@ -75,5 +77,10 @@ public final class ClientProxy extends CommonProxy {
     @Override
     public void handleTransportStateSync(TransportStateSnapshot snapshot) {
         ClientTransportStateSyncExecutor.acceptServerSnapshot(snapshot);
+    }
+
+    @Override
+    public void handleShoulderEquipmentSync(int entityId, ItemStack stack) {
+        ClientShoulderEquipmentSyncExecutor.acceptServerSnapshot(entityId, stack);
     }
 }

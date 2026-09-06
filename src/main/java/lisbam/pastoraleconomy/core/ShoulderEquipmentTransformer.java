@@ -18,8 +18,9 @@ import org.objectweb.asm.tree.VarInsnNode;
 
 /**
  * Keeps the shoulder feature within the exact vanilla paths which decide
- * whether an Elytra may start or continue gliding.  All injected hook
- * descriptors use Object so MCP and SRG class names never leak into the patch.
+ * whether an Elytra may start or continue gliding and whether its player layer
+ * renders. All injected hook descriptors use Object so MCP and SRG class names
+ * never leak into the patch.
  */
 public final class ShoulderEquipmentTransformer implements IClassTransformer, Opcodes {
     private static final String CONTAINER_HOOKS = "lisbam/pastoraleconomy/equipment/ShoulderEquipmentContainerHooks";
@@ -42,6 +43,9 @@ public final class ShoulderEquipmentTransformer implements IClassTransformer, Op
         }
         if ("net.minecraft.network.NetHandlerPlayServer".equals(transformedName)) {
             return transformElytraLookup(basicClass, transformedName, "processEntityAction", "func_147357_a", "a");
+        }
+        if ("net.minecraft.client.renderer.entity.layers.LayerElytra".equals(transformedName)) {
+            return transformElytraLookup(basicClass, transformedName, "doRenderLayer", "func_177141_a", "a");
         }
         return basicClass;
     }
@@ -253,17 +257,15 @@ public final class ShoulderEquipmentTransformer implements IClassTransformer, Op
     private static InsnList entityLoadBeforeChest(AbstractInsnNode chest) {
         AbstractInsnNode entitySource = previousRealInstruction(chest);
         InsnList result = new InsnList();
-        if (entitySource instanceof VarInsnNode && entitySource.getOpcode() == ALOAD
-                && ((VarInsnNode) entitySource).var == 0) {
-            result.add(new VarInsnNode(ALOAD, 0));
+        if (entitySource instanceof VarInsnNode && entitySource.getOpcode() == ALOAD) {
+            result.add(new VarInsnNode(ALOAD, ((VarInsnNode) entitySource).var));
             return result;
         }
         if (entitySource instanceof FieldInsnNode && entitySource.getOpcode() == GETFIELD) {
             AbstractInsnNode owner = previousRealInstruction(entitySource);
-            if (owner instanceof VarInsnNode && owner.getOpcode() == ALOAD
-                    && ((VarInsnNode) owner).var == 0) {
+            if (owner instanceof VarInsnNode && owner.getOpcode() == ALOAD) {
                 FieldInsnNode field = (FieldInsnNode) entitySource;
-                result.add(new VarInsnNode(ALOAD, 0));
+                result.add(new VarInsnNode(ALOAD, ((VarInsnNode) owner).var));
                 result.add(new FieldInsnNode(GETFIELD, field.owner, field.name, field.desc));
                 return result;
             }

@@ -11,6 +11,7 @@ import lisbam.pastoraleconomy.merchant.MerchantTradeSnapshot;
 import lisbam.pastoraleconomy.network.ModNetwork;
 import lisbam.pastoraleconomy.transport.TransportStateSnapshot;
 import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.item.ItemStack;
 import net.minecraft.world.World;
 import net.minecraftforge.fml.common.FMLLog;
 import net.minecraftforge.fml.common.network.NetworkRegistry;
@@ -63,6 +64,10 @@ public class CommonProxy {
     }
 
     public void handleTransportStateSync(TransportStateSnapshot snapshot) {
+        // Client-only work is isolated in ClientProxy.
+    }
+
+    public void handleShoulderEquipmentSync(int entityId, ItemStack stack) {
         // Client-only work is isolated in ClientProxy.
     }
 }
