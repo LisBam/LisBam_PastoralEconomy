@@ -5,7 +5,6 @@ import lisbam.pastoraleconomy.agriculture.AgricultureRules;
 import lisbam.pastoraleconomy.enchantment.ModEnchantments;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.enchantment.EnchantmentHelper;
-import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.init.Blocks;
 import net.minecraft.item.Item;
@@ -16,9 +15,12 @@ import net.minecraftforge.event.world.BlockEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.common.eventhandler.EventPriority;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
+import net.minecraftforge.fml.common.gameevent.TickEvent;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.UUID;
@@ -31,6 +33,8 @@ import java.util.UUID;
 @Mod.EventBusSubscriber(modid = LisBamPastoralEconomy.MODID)
 public final class AgricultureEnchantmentEventHandler {
     private static final Map<UUID, HarvestAction> PENDING_ACTIONS = new HashMap<UUID, HarvestAction>();
+    private static final List<PendingReplant> PENDING_REPLANTS = new ArrayList<PendingReplant>();
+    private static final List<PendingCropSync> PENDING_CROP_SYNCS = new ArrayList<PendingCropSync>();
 
     private AgricultureEnchantmentEventHandler() {
     }
@@ -46,27 +50,23 @@ public final class AgricultureEnchantmentEventHandler {
         }
 
         PENDING_ACTIONS.remove(player.getUniqueID());
-        ItemStack tool = player.getHeldItemMainhand();
         AgricultureRules.Crop crop = AgricultureRules.getMatureHarvestCrop(event.getState());
-        boolean consumeHoeDurability = ModEnchantments.isHoe(tool) && !player.capabilities.isCreativeMode
-                && AgricultureRules.shouldConsumeHoeCropDurability(event.getState(),
-                event.getState().getBlockHardness(event.getWorld(), event.getPos()));
-        if (crop == null && !consumeHoeDurability) {
+        if (crop == null) {
             return;
         }
 
-        int harvestLevel = crop != null && (ModEnchantments.isHoe(tool) || ModEnchantments.isAxe(tool))
+        ItemStack tool = player.getHeldItemMainhand();
+        int harvestLevel = (ModEnchantments.isHoe(tool) || ModEnchantments.isAxe(tool))
                 ? EnchantmentHelper.getEnchantmentLevel(ModEnchantments.HARVEST, tool) : 0;
-        int fineCultivationLevel = crop != null && ModEnchantments.isHoe(tool)
+        int fineCultivationLevel = ModEnchantments.isHoe(tool)
                 ? EnchantmentHelper.getEnchantmentLevel(ModEnchantments.FINE_CULTIVATION, tool) : 0;
         ItemStack helmet = player.getItemStackFromSlot(net.minecraft.inventory.EntityEquipmentSlot.HEAD);
-        int pastoralFavorLevel = crop != null && ModEnchantments.isHelmet(helmet)
+        int pastoralFavorLevel = ModEnchantments.isHelmet(helmet)
                 ? EnchantmentHelper.getEnchantmentLevel(ModEnchantments.PASTORAL_FAVOR, helmet) : 0;
-        if (harvestLevel > 0 || fineCultivationLevel > 0 || pastoralFavorLevel > 0 || consumeHoeDurability) {
+        if (harvestLevel > 0 || fineCultivationLevel > 0 || pastoralFavorLevel > 0) {
             PENDING_ACTIONS.put(player.getUniqueID(), new HarvestAction(
                     event.getWorld(), event.getPos(), event.getState(), crop,
-                    harvestLevel, fineCultivationLevel, pastoralFavorLevel,
-                    consumeHoeDurability ? tool.getItem() : null
+                    harvestLevel, fineCultivationLevel, pastoralFavorLevel
             ));
         }
     }
@@ -85,7 +85,6 @@ public final class AgricultureEnchantmentEventHandler {
             return;
         }
 
-        consumeHoeCropDurability(action, player);
         Random random = event.getWorld().rand;
         if (action.harvestLevel > 0) {
             ItemStack bonus = AgricultureRules.createHarvestBonus(action.crop, action.harvestLevel, random);
@@ -97,14 +96,36 @@ public final class AgricultureEnchantmentEventHandler {
         if (action.fineCultivationLevel > 0 && AgricultureRules.supportsFineCultivation(action.crop)
                 && AgricultureRules.rollFineCultivation(action.fineCultivationLevel, random)) {
             Item seed = AgricultureRules.getReplantSeed(action.crop);
-            if (seed != null && consumeSeed(event.getDrops(), player, seed)) {
-                replantIfStillValid(event.getWorld(), event.getPos(), action.originalState);
+            IBlockState replantState = AgricultureRules.getFineCultivationReplantState(action.crop);
+            if (seed != null && replantState != null && consumeSeed(event.getDrops(), player, seed)) {
+                PENDING_REPLANTS.add(new PendingReplant(event.getWorld(), event.getPos(), replantState));
             }
         }
 
         if (action.pastoralFavorLevel > 0
                 && AgricultureRules.rollPastoralFavor(action.pastoralFavorLevel, random)) {
             player.addExperience(1);
+        }
+    }
+
+    /** Apply and broadcast authoritative crop states after vanilla harvest/place processing has returned. */
+    @SubscribeEvent(priority = EventPriority.LOWEST)
+    public static void applyPendingCropChanges(TickEvent.ServerTickEvent event) {
+        if (event.phase != TickEvent.Phase.END
+                || (PENDING_REPLANTS.isEmpty() && PENDING_CROP_SYNCS.isEmpty())) {
+            return;
+        }
+        Iterator<PendingReplant> iterator = PENDING_REPLANTS.iterator();
+        while (iterator.hasNext()) {
+            PendingReplant replant = iterator.next();
+            iterator.remove();
+            replant.applyIfStillValid();
+        }
+        Iterator<PendingCropSync> syncIterator = PENDING_CROP_SYNCS.iterator();
+        while (syncIterator.hasNext()) {
+            PendingCropSync sync = syncIterator.next();
+            syncIterator.remove();
+            sync.broadcastFinalState();
         }
     }
 
@@ -118,6 +139,7 @@ public final class AgricultureEnchantmentEventHandler {
                 || AgricultureRules.getPlacedCrop(event.getPlacedBlock()) == null) {
             return;
         }
+        PENDING_CROP_SYNCS.add(new PendingCropSync(event.getWorld(), event.getPos()));
         ItemStack helmet = player.getItemStackFromSlot(net.minecraft.inventory.EntityEquipmentSlot.HEAD);
         int level = ModEnchantments.isHelmet(helmet)
                 ? EnchantmentHelper.getEnchantmentLevel(ModEnchantments.PASTORAL_FAVOR, helmet) : 0;
@@ -153,25 +175,6 @@ public final class AgricultureEnchantmentEventHandler {
         return false;
     }
 
-    private static void consumeHoeCropDurability(HarvestAction action, EntityPlayer player) {
-        if (action.hoeItem == null || player.capabilities.isCreativeMode) {
-            return;
-        }
-        ItemStack currentTool = player.getHeldItemMainhand();
-        if (currentTool.getItem() == action.hoeItem) {
-            // ItemHoe skips zero-hardness crops in 1.12.2; damageItem keeps
-            // vanilla Unbreaking and break handling for the missing one point.
-            currentTool.damageItem(1, player);
-        }
-    }
-
-    private static void replantIfStillValid(net.minecraft.world.World world, BlockPos pos, IBlockState harvestedState) {
-        if (world.getBlockState(pos).getBlock() == Blocks.AIR
-                && world.getBlockState(pos.down()).getBlock() == Blocks.FARMLAND) {
-            world.setBlockState(pos, harvestedState.getBlock().getDefaultState(), 3);
-        }
-    }
-
     private static final class HarvestAction {
         private final net.minecraft.world.World world;
         private final BlockPos pos;
@@ -180,11 +183,10 @@ public final class AgricultureEnchantmentEventHandler {
         private final int harvestLevel;
         private final int fineCultivationLevel;
         private final int pastoralFavorLevel;
-        private final Item hoeItem;
 
         private HarvestAction(net.minecraft.world.World world, BlockPos pos, IBlockState originalState,
                               AgricultureRules.Crop crop, int harvestLevel, int fineCultivationLevel,
-                              int pastoralFavorLevel, Item hoeItem) {
+                              int pastoralFavorLevel) {
             this.world = world;
             this.pos = pos.toImmutable();
             this.originalState = originalState;
@@ -192,11 +194,44 @@ public final class AgricultureEnchantmentEventHandler {
             this.harvestLevel = harvestLevel;
             this.fineCultivationLevel = fineCultivationLevel;
             this.pastoralFavorLevel = pastoralFavorLevel;
-            this.hoeItem = hoeItem;
         }
 
         private boolean matches(BlockEvent.HarvestDropsEvent event) {
             return world == event.getWorld() && pos.equals(event.getPos()) && originalState.equals(event.getState());
+        }
+    }
+
+    private static final class PendingReplant {
+        private final net.minecraft.world.World world;
+        private final BlockPos pos;
+        private final IBlockState replantState;
+
+        private PendingReplant(net.minecraft.world.World world, BlockPos pos, IBlockState replantState) {
+            this.world = world;
+            this.pos = pos.toImmutable();
+            this.replantState = replantState;
+        }
+
+        private void applyIfStillValid() {
+            if (world.getBlockState(pos).getBlock() == Blocks.AIR
+                    && world.getBlockState(pos.down()).getBlock() == Blocks.FARMLAND) {
+                world.setBlockState(pos, replantState, 3);
+            }
+        }
+    }
+
+    private static final class PendingCropSync {
+        private final net.minecraft.world.World world;
+        private final BlockPos pos;
+
+        private PendingCropSync(net.minecraft.world.World world, BlockPos pos) {
+            this.world = world;
+            this.pos = pos.toImmutable();
+        }
+
+        private void broadcastFinalState() {
+            IBlockState finalState = world.getBlockState(pos);
+            world.notifyBlockUpdate(pos, finalState, finalState, 3);
         }
     }
 }

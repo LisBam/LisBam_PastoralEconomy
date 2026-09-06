@@ -1,5 +1,17 @@
 # 测试清单
 
+## 作物收获时序、锄头耐久与多人同步回归（2026-09-06）
+
+- [x] Forge 1.12.2 字节码/源码核对：确认 `tryHarvestBlock` 在 BreakEvent 前发送破坏者 AIR 包，成功移除后才进入 `Block#harvestBlock` 与 `HarvestDropsEvent`；补种和工具损耗均已移出该原版掉落调用。PASS（Forge `14.23.5.2859` mapped JAR）。
+- [x] `toolDurabilitySelfTest`：零硬度小麦/下界疣且使用非创造原版锄头时登记补扣；创造、斧头、非作物和非零硬度西瓜排除；无耐久附魔的确认收获恰好损失 1 点。PASS（Temurin Java 8 `1.8.0_504`）。
+- [x] `compileJava`、`compileTestJava`、`enchantmentSelfTest`、`goldenBoneMealSelfTest`：事件签名、既有农业附魔和作物分类回归通过。PASS（Temurin Java 8 `1.8.0_504`）。
+- [x] Forge 1.12.2 常规 audit：0 ERROR、7 条既有 `packet-thread` 保守 WARNING。PASS（常规模式）。
+- [ ] Forge 1.12.2 `--strict-warnings` audit：NOT PASS；仅 7 条既有 `packet-thread` warning，命令返回 2，未掩盖结果。
+- [x] 最终 Java 8 `./gradlew build --no-daemon --console=plain`：PASS（含 `reobfJar`、`exportReleaseJar`）。release JAR 为 503,932 bytes，SHA-256 `860ae85ab4c3099b246d687b8bde7d597383d1a3c39f145994d92c1dce38ffea`，`unzip -t` PASS，`HoeCropDurabilityEventHandler.class` 为 Java 8 major version 52；旧 JAR 已备份为 `release/backup/backup_20260906-225134.jar`。
+- [ ] Dedicated Server：`runServer` 在 120 秒内以 Java 8 发现并入队本模组 Coremod，未报告本次 common class 加载错误；超时前未进入模组生命周期/世界，`eula=false`，完整验收 NOT RUN。
+- [ ] 游戏内单人：分别收获成熟/未成熟小麦、胡萝卜、马铃薯、甜菜、下界疣和可可，确认掉落正常；普通锄头每次成功零硬度收获损失 1 点，耐久附魔逐次判定，非零硬度目标不双扣；精耕补种固定为 age 0 且可继续正常收获。NOT RUN：当前环境没有可操作 Forge 客户端世界。
+- [ ] 游戏内多人：两名玩家同时观察同一耕地，确认成熟作物破坏、AIR、手动新苗和精耕 age 0 新苗最终状态一致；新苗对其他玩家立即可见，不出现瞬间成熟、无掉落或只能消失的幽灵作物。NOT RUN：当前环境没有可进入的双客户端 Dedicated Server 世界。
+
 ## 伐木耐久下限与锄头作物耐久（2026-09-06）
 
 - [x] `toolDurabilitySelfTest`：剩余 1 点时伐木不启动；剩余 2 点只预留触发原木和最终 1 点；剩余 3 点才允许一个二级原木；零硬度小麦/下界疣补扣锄头耐久，非零硬度西瓜与非作物草方块不重复扣除。PASS（Temurin Java 8 `1.8.0_504`）。

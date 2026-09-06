@@ -1,5 +1,13 @@
 # 实施决策
 
+## DEC-063 作物掉落、补种和锄头损耗分阶段提交（2026-09-06）
+
+决定：DEC-062 中“把锄头补扣并入 `AgricultureEnchantmentEventHandler.HarvestAction` 并在匹配的 `HarvestDropsEvent` 立即损伤栈”的部分作废。新的 `HoeCropDurabilityEventHandler` 直接以服务端 `HarvestDropsEvent` 作为成功凭证，只为真实非创造玩家、五种原版锄头和既有零硬度作物登记一次损耗；服务器 END tick 确认仍是捕获的快捷栏栈后才执行 `damageItem`、工具损坏事件和库存同步。它同时通过世界监听器重新广播该坐标当时的最终权威状态。Fine Cultivation 在掉落事件中仍先真实消耗掉落/库存种植物，但仅登记补种；END tick 再确认 AIR 与耕地并设置同作物默认 age 0。手动成功种植列表内作物后也登记一次 END tick 最终状态广播，该广播不接受客户端提供的方块状态。
+
+原因：Forge 14.23.5.2859 的 `PlayerInteractionManager#tryHarvestBlock` 经 `ForgeHooks#onBlockBreakEvent` 在 BreakEvent 前先向破坏者发送临时 AIR 包，随后才执行 `ItemStack#onBlockDestroyed`、`removedByPlayer` 和 `Block#harvestBlock`/`HarvestDropsEvent`。上一实现既让无附魔锄头污染附魔动作，又在原版掉落调用未返回时修改主手和补种，纯分类自测无法覆盖实机的耐久漏扣与成熟/AIR/新苗同步竞争。以成功掉落事件登记、tick 结束统一提交可保留保护取消语义，同时确保掉落先完成、补种为 age 0、所有追踪玩家最后收到服务器真实状态。
+
+影响：只增加同 tick 内存队列，不增加持久数据、注册项或网络协议；旧存档无需迁移。硬度非零方块仍由原版 `ItemHoe` 结算，耐久附魔仍由 `damageItem` 的原版算法逐次判定。
+
 ## DEC-062 伐木保留耐久与锄头零硬度作物损耗（2026-09-06）
 
 决定：`FellingDurabilityRules` 以栈的最大耐久和损伤值计算剩余耐久。剩余 1 时完全不触发伐木；二级原木只在剩余大于 2 时破坏，预留触发原木随后必经的一次原版扣耐久和最终 1 点。二级树叶仍以 `tryHarvestBlock` 结算保护/掉落，成功后仅恢复该次斧头损伤。锄头作物补扣保留在既有 `AgricultureEnchantmentEventHandler`：BreakEvent 只登记手持锄头、非创造、现有农业范围且硬度为 0 的玩家操作，匹配的 HarvestDropsEvent 确认成功后才调用一次 `damageItem`；硬度非零作物继续交给原版 `ItemHoe`。

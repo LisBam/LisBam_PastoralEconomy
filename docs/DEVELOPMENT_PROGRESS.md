@@ -2,6 +2,16 @@
 
 当前发行版本：`1.5`；既有第 15 批功能完成，1.5 为维护更新。
 
+## 紧急修复：锄头耐久、作物掉落与多人方块同步（2026-09-06）
+
+根因：上一轮把所有锄头作物破坏都塞入原本仅承载附魔成熟收获的玩家级 `HarvestAction`，并在 `HarvestDropsEvent` 回调仍执行原版掉落代码时直接损伤主手栈；精耕也在同一回调内立即把 AIR 改成新苗。Forge 1.12.2 的实际顺序会在 `BreakEvent` 前先给破坏者发送临时 AIR 包，再执行方块移除、掉落事件和区块批量同步。两项中途写入使工具补扣依赖附魔动作匹配，并让成熟作物、AIR、新苗的客户端更新发生在同一原版收获调用中，实机出现未扣耐久、无掉落假象、成熟幽灵作物及其他玩家看不到新苗。此前纯规则自检只覆盖“哪些作物需要补扣”，没有覆盖该事件时序。
+
+修复：`AgricultureEnchantmentEventHandler` 恢复为只登记真正具有农业附魔效果的成熟收获；精耕在掉落表内消耗种植物后只登记补种，服务器 END tick 才确认当前位置仍为空气、下方仍为耕地并写入 age 0；真实玩家成功种植的最终状态也在 END tick 重新广播。新的 `HoeCropDurabilityEventHandler` 仅在服务端 `HarvestDropsEvent` 已证明原版成功移除/收获后登记零硬度作物，等完整收获调用结束再对同一快捷栏锄头调用一次 `damageItem`，补发物品损坏事件、强制容器同步，并把该坐标的最终服务端方块状态重新广播给所有区块追踪玩家。硬度非零方块仍只走原版耐久，创造模式和自动化仍不补扣。
+
+兼容性与影响：不新增或修改 registry ID、NBT、Capability、WorldSavedData、Packet discriminator 或存档 schema；旧世界无需迁移。临时动作只存活到当前服务器 tick 结束。
+
+验证：Temurin Java 8 `1.8.0_504` 下 `compileJava`、`compileTestJava`、`processResources`、`toolDurabilitySelfTest`、`enchantmentSelfTest`、`goldenBoneMealSelfTest` 均 PASS；耐久自测新增无附魔锄头恰好损失 1 点、创造/非锄/非零硬度排除项与四种精耕作物 age 0。Forge 1.12.2 常规 audit 为 0 ERROR、7 条既有 `packet-thread` 保守 WARNING；`--strict-warnings` 因这 7 条历史 warning 返回 2，不标记 PASS。`./gradlew build --no-daemon --console=plain` PASS，包含 `reobfJar` 与 `exportReleaseJar`；release JAR 为 503,932 bytes，SHA-256 `860ae85ab4c3099b246d687b8bde7d597383d1a3c39f145994d92c1dce38ffea`，`unzip -t` PASS，新处理器 class 为 Java 8 major version 52。覆盖前 497,424-byte JAR 已备份为 `release/backup/backup_20260906-225134.jar`。受限 120 秒的 `runServer` 已以 Java 8 发现并入队本模组 Coremod，但超时前未进入模组生命周期/世界，且 `eula=false`；完整 Dedicated Server 及单人/双客户端到端验收为 NOT RUN。
+
 ## 维护：伐木耐久下限与锄头作物耐久（2026-09-06）
 
 根因与修复：伐木的二级树叶此前与原木一样走 `tryHarvestBlock`，因此 1.12.2 原版 `ItemTool#onBlockDestroyed` 也扣除了斧头耐久；同时伐木在触发原木执行原版耐久前就处理二级方块，无法保证本次结束仍留下 1 点。现在树叶继续走原版掉落/保护路径，但成功后恢复该次工具损耗；伐木只在剩余耐久大于 1 时启动，每个二级原木前预留触发原木的一次扣耐久与最后 1 点。原版 `ItemHoe` 仅在方块硬度非零时消耗耐久，故零硬度既有作物用锄头成功破坏时过去不会受损；收获成功后由逻辑服务端补调用一次 `damageItem`，保留耐久附魔并避免对非零硬度作物重复扣除。

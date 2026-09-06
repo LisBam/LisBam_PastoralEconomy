@@ -94,6 +94,23 @@ public final class AgricultureRules {
         return crop == Crop.WHEAT || crop == Crop.CARROT || crop == Crop.POTATO || crop == Crop.BEETROOT;
     }
 
+    /** Exact authoritative age-zero state written by a confirmed Fine Cultivation replant. */
+    public static IBlockState getFineCultivationReplantState(Crop crop) {
+        if (crop == Crop.WHEAT) {
+            return Blocks.WHEAT.getDefaultState();
+        }
+        if (crop == Crop.CARROT) {
+            return Blocks.CARROTS.getDefaultState();
+        }
+        if (crop == Crop.POTATO) {
+            return Blocks.POTATOES.getDefaultState();
+        }
+        if (crop == Crop.BEETROOT) {
+            return Blocks.BEETROOTS.getDefaultState();
+        }
+        return null;
+    }
+
     public static Item getPrimaryDrop(Crop crop) {
         switch (crop) {
             case WHEAT:
