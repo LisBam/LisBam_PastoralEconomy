@@ -463,6 +463,14 @@ Reforged 对有右输入的修理、合并和附魔书操作通过 `AnvilUpdateE
 
 兼容性与影响：新增 Item ID 和 `PlayerData.shoulder` NBT，dataVersion 2 及更早存档以空肩部读取。登录、重生和换维度时把旧胸甲鞘翅迁移到空肩部；若肩部已占用则不覆盖，改放背包，满包才掉落。没有 Packet、WorldSavedData schema、交通节点 ID 或费用变更。
 
+## DEC-056 肩部交互、创造背包与渲染同步边界（2026-09-06）
+
+决定：生存 `ContainerPlayer` 的真实肩部 Slot 固定在原版副手 `77,62` 正上方 `77,44`；创造模式只在“生存物品栏”页展示该槽，并按其重排后的副手 `35,20` 放到 `35,2`。槽框直接裁取两种对应原版 GUI 纹理。手持鞘翅右键使用双端 `RightClickItem` 拦截，客户端只返回结果，逻辑服务端检查并写入 Capability。`LayerElytra` 通过已有 Coremod 的同一 Object 描述符 hook 改读肩部；远端玩家展示由追加的 S2C Packet 9 同步，而不是让客户端猜测或把肩部伪装成胸甲装备。
+
+原因：创造背包不会直接使用 `ContainerPlayer` 的坐标，而会用新增槽索引套入九列背包公式，导致第 46 号肩部槽与快捷栏重叠；其包装类仍保留原肩部 `IInventory`，可以稳定识别而无需反射私有字段。原版鞘翅右键和 `LayerElytra` 都硬编码 `EntityEquipmentSlot.CHEST`，仅拒绝胸甲 GUI 放入和修改飞行判定不能覆盖这两条路径。其他客户端的玩家 Capability 默认不自动同步，因此模型读取还需要由服务端在追踪与变化时发送一件肩部鞘翅栈。
+
+兼容性与影响：不改变 `shoulder` NBT、PlayerData dataVersion、registry ID、WorldSavedData 或 Packet 0～8，仅追加 Packet 9。消息只影响客户端渲染副本，服务端库存仍由 Capability/Container/右键事件维护；旧存档无需迁移，新客户端与服务端需使用同一协议构建。
+
 # 2026-09-05 维护决定：挤奶与调价
 
 - 成年牛的挤奶冷却归属于牛实体，而非玩家；最近一次成功挤奶 tick 写入 `Entity#getEntityData()`，因此区块卸载、重启和多人共享同一头牛时仍保持 6000 tick 冷却。`disableMilkingCooldown=false` 时，事件在客户端和服务端都取消原版桶交互：客户端只返回 `SUCCESS`、不触碰物品栏；服务端对合法成年牛执行一次完整的原版等价结算（播放挤奶音效、扣除一只空桶、手中耗尽则替换牛奶桶，否则入包，满包则掉落），结算成功后才写入实体 tick。冷却命中直接返回 `FAIL`，不扣桶、不产奶、不更新时间。开启配置后不接管交互，恢复原版 `EntityCow` 路径。这样交互包仍可正常到达服务端，但不存在客户端假牛奶桶覆盖服务端库存的窗口。

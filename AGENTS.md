@@ -1,91 +1,76 @@
 # 聆竹の休闲田园经济 — 维护规范
 
-本模组的分批开发已经完成。后续工作只处理 Bug 修复、平衡调整、体验优化和明确指定的新内容；不得重新引入已删除的分批任务单或提前设计未经确认的玩法。
+本模组的分批开发已经完成。后续仅处理 Bug 修复、平衡调整、体验优化和用户明确指定的新内容；不得重新引入已删除的分批任务单，也不得自行扩展未经确认的玩法。
 
 ## 固定技术边界
 
-- Minecraft Java Edition / Forge：1.12.2 / `14.23.5.x`（当前 `14.23.5.2859`）
-- Java：源码和目标版本必须为 Java 8；不得使用 Java 9+ 语法或 API。
-- 禁止引入 NeoForge、Fabric、`mods.toml`、`DeferredRegister`、`RegistryObject`、`BlockEntity` 或现代网络/数据组件 API。
-- 涉及 Forge 代码、资源、构建或调试时，必须遵守已安装的 `minecraft-forge-1-12-2` Skill；不确定的 1.12.2 API 必须查项目源码、Forge 源码或 Gradle 缓存，不能凭现代经验猜测。
+- Minecraft Java Edition / Forge：`1.12.2` / `14.23.5.x`（当前 `14.23.5.2859`）。
+- Java 源码和目标版本均为 Java 8；禁止 Java 9+ 语法或 API。
+- 禁止 NeoForge、Fabric、`mods.toml`、`DeferredRegister`、`RegistryObject`、`BlockEntity` 及其他现代 Minecraft / Forge API。
+- Forge 代码、资源、构建和调试遵守 `minecraft-forge-1-12-2` Skill；不确定的 1.12.2 API 必须查项目源码、Forge 源码或 Gradle 缓存，禁止按现代版本经验猜测。
 
-## 每次修改前
-
-先执行并检查：
+## 修改前
 
 ```bash
 pwd
 git status --short
 ```
 
-阅读与任务有关的现行资料：
+按任务需要阅读 `docs/MOD_ARCHITECTURE.md`、`DEVELOPMENT_PROGRESS.md`、`IMPLEMENTATION_DECISIONS.md`、`TEST_CHECKLIST.md`。
 
-- `docs/MOD_ARCHITECTURE.md`
-- `docs/DEVELOPMENT_PROGRESS.md`
-- `docs/IMPLEMENTATION_DECISIONS.md`
-- `docs/TEST_CHECKLIST.md`
-
-磁盘上的代码是当前实现事实来源；设计内容书是玩法需求来源。保留用户已有修改，不执行未经明确要求的 `reset --hard`、强制覆盖、推送或其他破坏性 Git 操作。
+磁盘代码是当前实现事实来源，`聆竹の休闲田园经济_模组内容书.md` 是玩法需求与冻结数值来源。保留用户已有修改；未经明确要求，不得执行 `reset --hard`、强制覆盖、自动 `push`、`rebase`、改写历史或其他破坏性 Git 操作。
 
 ## 实现规则
 
-- 复用现有注册、网络、保存和服务层；不要为修复或新增内容建立重复框架。
-- 所有影响钱、交易、库存、掉落、传送、解锁、世界状态和玩家长期数据的结果由逻辑服务端验证并修改。客户端只负责输入和显示。
-- 新增状态必须明确其所有权：玩家状态使用既有 Capability，世界状态使用 `PastoralWorldData`，方块实例使用 TileEntity + NBT。
-- 保持已有 registry ID、NBT key、WorldSavedData 名称和 Packet discriminator 的兼容性；如必须变更，先评估旧存档影响并记录迁移策略。
-- Java 功能与对应 lang、模型、贴图、配方等资源一起完成。Common 代码不得加载客户端类。
-- Bug 修复应定位根因，不得以吞异常或仅隐藏症状代替修复。
-- UI 文字必须使用 Minecraft 1.12.2 原版 `FontRenderer`；可见物品槽与容器背景必须直接使用 Minecraft 原版 GUI 纹理或原版 `GuiButton`、`GuiTextField`、`GuiSlider` 控件。禁止用 `drawRect` 手绘或仿制原版槽框、字体和凸起边框。
+- 复用现有注册、网络、保存和服务层，不建立重复框架。
+- 钱、交易、库存、掉落、传送、解锁、世界状态和长期玩家数据由逻辑服务端验证并修改；客户端仅负责输入和显示。
+- 新增持久状态必须明确所有权：玩家使用既有 Capability，世界使用 `PastoralWorldData`，方块实例使用 TileEntity + NBT。
+- 保持 registry ID、NBT key、WorldSavedData 名称和 Packet discriminator 兼容；必须变更时先评估旧存档影响并记录迁移策略。
+- Java 功能与 lang、模型、贴图、配方等对应资源一并完成；Common 代码不得加载客户端专用类。
+- Bug 必须修复根因，不得以吞异常、静默失败或隐藏症状代替修复。
+- UI 文字使用原版 `FontRenderer`；物品槽、容器背景和常规控件优先使用原版 GUI 纹理或 `GuiButton`、`GuiTextField`、`GuiSlider`，禁止用 `drawRect` 仿制原版槽框、字体或凸起边框。
 
-## 验证与文档
+## 验证、构建与 Release
 
-修改 Java、Gradle 或资源后，运行 Forge 1.12.2 静态审计，并尽可能使用项目 Wrapper 执行：
+修改 Java、Gradle 或资源后，运行 Forge 1.12.2 静态审计和相关 self-test；涉及 common、网络、持久化、GUI、实体或世界逻辑时额外检查 Dedicated Server 安全性。只有实际成功执行的命令可标记为 `PASS`；无法运行时标记 `NOT RUN` 并说明原因。
 
-```bash
-./gradlew compileJava
-./gradlew processResources
-./gradlew build
-```
-
-按影响范围运行相关 self-test；涉及 common、网络、持久化、GUI、实体或世界逻辑时，额外检查 Dedicated Server 安全性。只有实际运行成功的命令可标为 `PASS`；不能运行时写明 `NOT RUN` 和原因。
-
-每次完成任何代码、资源、Gradle 或配置更新后，必须执行最终 `build` 并将可安装的重混淆 JAR 导出到：
+最终构建前，先确定本次将导出的目标：
 
 ```text
 release/LisBam_PastoralEconomy-<version>.jar
 ```
 
-`build.gradle` 的 `exportReleaseJar` 已作为 `build` 的 finalizer 自动执行；完成时仍须检查该文件真实存在、非空，并在最终报告中说明导出结果。不得把开发环境的未重混淆 JAR 当作 release 成品。
+若该文件已经存在，必须在 `build` 覆盖它之前备份到 `release/backup/`，命名为：
 
-即使 `release/LisBam_PastoralEconomy-<version>.jar` 已经存在，也不得跳过构建或导出。每次完成代码、资源、Gradle 或配置更新后，都必须实际执行最终 `build`，并由 `exportReleaseJar` 直接覆盖导出同名 release JAR；禁止沿用上一次构建留下的 JAR 作为本次成品。
-
-### Forge 1.12.2 JDK 8 构建关键词
-
-当用户说出 `FORGE1122_JDK8_BUILD_EXPORT`、"用 JDK 8 构建并导出 JAR"，或构建窗口报告缺少 JDK/JAVA_HOME 时，必须先按以下规则处理，不能只因默认 `java` 不在 PATH 就声称无法导出：
-
-1. 定位一个可执行的 **JDK 8**（不是仅有 JRE），优先检查工作区临时 Temurin 8 路径 `/tmp/lbpe-jdk8`；该路径不存在时，检查 `/tmp/lisbam-jdk8-UlgK66/jdk8u504-b01`，或搜索其他本机 JDK 8 安装。先以 `"$JDK8_HOME/bin/java" -version` 确认版本为 `1.8`。
-2. 显式使用该 JDK 调用项目 Wrapper，避免继承宿主默认 Java：
-
-```bash
-JDK8_HOME=/tmp/lbpe-jdk8
-env JAVA_HOME="$JDK8_HOME" PATH="$JDK8_HOME/bin:$PATH" ./gradlew compileJava processResources build
+```text
+backup_YYYYMMDD-HHmmss.jar
 ```
 
-3. `build` 成功后检查 `release/LisBam_PastoralEconomy-<version>.jar` 存在且非空。`build` 的 `exportReleaseJar` finalizer 会在 `reobfJar` 后复制可安装 JAR；不得直接拿 `build/libs` 中重混淆前的开发 JAR 交付。
+例如：`backup_20260906-023700.jar`。时间取备份时的本地时间并固定补零；同一秒重名时追加 `_01`、`_02`，禁止覆盖已有备份。
 
-若没有任何可用 JDK 8，报告实际检查过的路径和第一个 Gradle 错误；不要将 JDK 11+ 当作 Forge 1.12.2 的替代，也不要在未经用户允许时下载或安装 JDK。
+随后必须使用项目 Wrapper 完成一次真实构建：
 
-完成后仅更新真实变化对应的长期文档：
+```bash
+./gradlew build
+```
 
-- `MOD_ARCHITECTURE.md`：实际架构。
-- `DEVELOPMENT_PROGRESS.md`：维护记录、构建和遗留测试。
-- `IMPLEMENTATION_DECISIONS.md`：重要边界或兼容性决定。
-- `TEST_CHECKLIST.md`：新增系统的回归项与真实验证结果。
-- 每次完成任何更新后，都必须同步更新 `聆竹の休闲田园经济_模组内容书.md`，使其准确反映当前磁盘中实际可体验的玩法、配方、规则与冻结数值；已删除或已变更的内容必须同时修正，不得滞后于实现。
+`build.gradle` 的 `exportReleaseJar` 会导出可安装的重混淆 JAR。不得沿用旧 JAR，也不得把未重混淆的开发 JAR 当作 release 成品。构建后必须确认新 release JAR 存在且非空；发生覆盖时还要确认旧 JAR 已成功进入 `release/backup/`。
 
-## Git 工作区提交
+当用户说出 `FORGE1122_JDK8_BUILD_EXPORT`、要求“用 JDK 8 构建并导出 JAR”，或默认环境缺少可用 Java / `JAVA_HOME` 时：优先检查 `/tmp/lbpe-jdk8`，否则查找其他已有 JDK 8；以 `"$JDK8_HOME/bin/java" -version` 确认为 `1.8` 后执行：
 
-每次修改任意工作区文件后，必须先填写本次实际变化所需的项目文档、完成适用验证并导出 release JAR，然后自动提交 **工作区内所有内容**：
+```bash
+env JAVA_HOME="$JDK8_HOME" PATH="$JDK8_HOME/bin:$PATH" ./gradlew build
+```
+
+没有可用 JDK 8 时，报告检查过的路径和第一个实际构建错误；未经用户允许不得下载或安装 JDK，也不得用 JDK 11+ 代替。
+
+## 文档与 Git
+
+只更新与真实变化有关的长期文档：`MOD_ARCHITECTURE.md` 记录架构，`DEVELOPMENT_PROGRESS.md` 记录维护/构建/遗留测试，`IMPLEMENTATION_DECISIONS.md` 记录重要边界和兼容性决定，`TEST_CHECKLIST.md` 记录回归项与真实验证结果。
+
+每次代码、资源、Gradle 或配置发生变化后，都必须同步更新 `聆竹の休闲田园经济_模组内容书.md`，使其准确反映当前实际可体验的玩法、配方、规则和冻结数值。
+
+完成修改、文档同步、验证和 release 导出后，自动提交当时工作区内的全部新增、修改和删除：
 
 ```bash
 git status --short
@@ -94,6 +79,8 @@ git diff --cached --stat
 git commit -m "<准确描述本次工作>"
 ```
 
-不得只挑选部分文件暂存；应提交当时工作区内的全部新增、修改和删除，包括文档、配置、IDE 文件、日志和 release JAR。提交信息必须准确概括本次工作，并在最终报告中说明提交哈希。此规则只要求本地 Git commit，除非用户另外明确要求，否则不得自动 `push`、`rebase`、`reset` 或改写历史。
+不得只提交部分文件。最终报告说明提交哈希；除非用户明确要求，否则不得自动 `push`、`rebase`、`reset` 或改写历史。
 
-最终报告简述实现、根因（如为 Bug）、存档影响、验证结果和未运行测试。
+## 最终报告
+
+简述实际完成内容、Bug 根因与修复（如适用）、架构/存档影响、验证结果、release JAR 与备份结果、未运行测试和 Git 提交哈希。

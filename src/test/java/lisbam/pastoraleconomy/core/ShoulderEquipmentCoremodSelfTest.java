@@ -1,5 +1,11 @@
 package lisbam.pastoraleconomy.core;
 
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
+import lisbam.pastoraleconomy.network.message.SyncShoulderEquipmentMessage;
+import net.minecraft.init.Bootstrap;
+import net.minecraft.init.Items;
+import net.minecraft.item.ItemStack;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.tree.AbstractInsnNode;
@@ -27,8 +33,10 @@ public final class ShoulderEquipmentCoremodSelfTest {
         verifyElytraLookup(transformer, "net.minecraft.entity.EntityLivingBase");
         verifyElytraLookup(transformer, "net.minecraft.client.entity.EntityPlayerSP");
         verifyElytraLookup(transformer, "net.minecraft.network.NetHandlerPlayServer");
+        verifyElytraLookup(transformer, "net.minecraft.client.renderer.entity.layers.LayerElytra");
         verifyContainer(transformer);
         verifyObfuscatedReleaseNames(transformer);
+        verifyShoulderSyncPacket();
     }
 
     private static void verifyElytraLookup(ShoulderEquipmentTransformer transformer, String className)
@@ -66,6 +74,8 @@ public final class ShoulderEquipmentCoremodSelfTest {
         verifyObfuscatedElytraLookup(transformer, "net.minecraft.client.entity.EntityPlayerSP", "onLivingUpdate", "n");
         verifyObfuscatedElytraLookup(transformer, "net.minecraft.network.NetHandlerPlayServer",
                 "processEntityAction", "a");
+        verifyObfuscatedElytraLookup(transformer, "net.minecraft.client.renderer.entity.layers.LayerElytra",
+                "doRenderLayer", "a");
         ClassNode container = transform(transformer, "net.minecraft.inventory.ContainerPlayer",
                 "transferStackInSlot", "b", true);
         require(containsMethodCall(container, CONTAINER_HOOKS, "addShoulderSlot"),
@@ -136,6 +146,25 @@ public final class ShoulderEquipmentCoremodSelfTest {
             }
         }
         return false;
+    }
+
+    private static void verifyShoulderSyncPacket() {
+        Bootstrap.register();
+        ItemStack expected = new ItemStack(Items.ELYTRA);
+        expected.setItemDamage(17);
+        SyncShoulderEquipmentMessage outgoing = new SyncShoulderEquipmentMessage(42, expected);
+        ByteBuf buffer = Unpooled.buffer();
+        try {
+            outgoing.toBytes(buffer);
+            SyncShoulderEquipmentMessage incoming = new SyncShoulderEquipmentMessage();
+            incoming.fromBytes(buffer);
+            require(incoming.isValid() && incoming.getEntityId() == 42,
+                    "shoulder equipment packet must preserve the tracked entity id");
+            require(ItemStack.areItemStacksEqual(expected, incoming.getStack()),
+                    "shoulder equipment packet must preserve the Elytra stack");
+        } finally {
+            buffer.release();
+        }
     }
 
     private static byte[] readClass(String className) throws IOException {

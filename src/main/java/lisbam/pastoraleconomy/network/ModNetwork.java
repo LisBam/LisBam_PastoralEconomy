@@ -5,6 +5,7 @@ import lisbam.pastoraleconomy.network.handler.RequestMarketHistoryMessageHandler
 import lisbam.pastoraleconomy.network.handler.RequestMarketTooltipPriceMessageHandler;
 import lisbam.pastoraleconomy.network.handler.SyncMarketHistoryMessageHandler;
 import lisbam.pastoraleconomy.network.handler.SyncMarketTooltipPriceMessageHandler;
+import lisbam.pastoraleconomy.network.handler.SyncShoulderEquipmentMessageHandler;
 import lisbam.pastoraleconomy.network.handler.MerchantTradeRequestMessageHandler;
 import lisbam.pastoraleconomy.network.handler.SyncMerchantTradeMessageHandler;
 import lisbam.pastoraleconomy.network.handler.SyncTransportStateMessageHandler;
@@ -14,6 +15,7 @@ import lisbam.pastoraleconomy.network.message.RequestMarketTooltipPriceMessage;
 import lisbam.pastoraleconomy.network.message.SyncCoinsMessage;
 import lisbam.pastoraleconomy.network.message.SyncMarketHistoryMessage;
 import lisbam.pastoraleconomy.network.message.SyncMarketTooltipPriceMessage;
+import lisbam.pastoraleconomy.network.message.SyncShoulderEquipmentMessage;
 import lisbam.pastoraleconomy.network.message.MerchantTradeRequestMessage;
 import lisbam.pastoraleconomy.network.message.SyncMerchantTradeMessage;
 import lisbam.pastoraleconomy.network.message.SyncTransportStateMessage;
@@ -46,6 +48,7 @@ public final class ModNetwork {
     public static final int PACKET_SYNC_TRANSPORT_STATE = 6;
     public static final int PACKET_REQUEST_MARKET_TOOLTIP_PRICE = 7;
     public static final int PACKET_SYNC_MARKET_TOOLTIP_PRICE = 8;
+    public static final int PACKET_SYNC_SHOULDER_EQUIPMENT = 9;
     public static final SimpleNetworkWrapper CHANNEL =
             NetworkRegistry.INSTANCE.newSimpleChannel(CHANNEL_NAME);
 
@@ -87,6 +90,8 @@ public final class ModNetwork {
                 RequestMarketTooltipPriceMessage.class);
         registerClientbound(PACKET_SYNC_MARKET_TOOLTIP_PRICE, SyncMarketTooltipPriceMessageHandler.class,
                 SyncMarketTooltipPriceMessage.class);
+        registerClientbound(PACKET_SYNC_SHOULDER_EQUIPMENT, SyncShoulderEquipmentMessageHandler.class,
+                SyncShoulderEquipmentMessage.class);
     }
 
     public static <REQUEST extends IMessage, REPLY extends IMessage> void registerServerbound(
