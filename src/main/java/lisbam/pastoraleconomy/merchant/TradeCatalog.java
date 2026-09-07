@@ -82,8 +82,8 @@ public final class TradeCatalog {
 
     private static void addSellDefinitions(Map<String, TradeCatalogEntry> definitions) {
         add(definitions, "wheat", "sell/crop/wheat", TradePool.SELL_CORE, TradeCatalogEntry.UNLIMITED_STOCK, 50);
-        add(definitions, "carrot", "sell/crop/carrot", TradePool.SELL_CORE, TradeCatalogEntry.UNLIMITED_STOCK, 40);
-        add(definitions, "potato", "sell/crop/potato", TradePool.SELL_CORE, TradeCatalogEntry.UNLIMITED_STOCK, 40);
+        add(definitions, "carrot", "sell/crop/carrot", TradePool.SELL_CORE, TradeCatalogEntry.UNLIMITED_STOCK, 60);
+        add(definitions, "potato", "sell/crop/potato", TradePool.SELL_CORE, TradeCatalogEntry.UNLIMITED_STOCK, 60);
         add(definitions, "beetroot", "sell/crop/beetroot", TradePool.SELL_CORE, TradeCatalogEntry.UNLIMITED_STOCK, 50);
         add(definitions, "pumpkin", "sell/crop/pumpkin", TradePool.SELL_CORE, TradeCatalogEntry.UNLIMITED_STOCK, 125);
         add(definitions, "melon_block", "sell/crop/melon_block", TradePool.SELL_CORE, TradeCatalogEntry.UNLIMITED_STOCK, 150);
@@ -184,7 +184,7 @@ public final class TradeCatalog {
 
     private static void addRareBuyDefinitions(Map<String, TradeCatalogEntry> definitions) {
         String[][] rows = {
-                {"diamond", "12500", "16", "0.18"}, {"emerald", "5500", "16", "0.18"},
+                {"diamond", "12500", "16", "0.18"},
                 {"slime_ball", "2000", "8", "0.18"},
                 {"blaze_rod", "9000", "16", "0.18"}, {"ghast_tear", "12000", "16", "0.18"},
                 {"ender_pearl", "8000", "16", "0.18"}, {"wither_skeleton_skull", "40000", "4", "0.18"},

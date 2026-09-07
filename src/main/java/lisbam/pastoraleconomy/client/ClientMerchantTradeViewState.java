@@ -5,16 +5,28 @@ package lisbam.pastoraleconomy.client;
  * session. It deliberately carries no trade, inventory, or economic state.
  */
 public final class ClientMerchantTradeViewState {
-    private static boolean buyPage;
+    public static final int PAGE_SELL = 0;
+    public static final int PAGE_BUY = 1;
+    public static final int PAGE_EMERALD = 2;
+
+    private static int page;
 
     private ClientMerchantTradeViewState() {
     }
 
     public static boolean isBuyPage() {
-        return buyPage;
+        return page == PAGE_BUY;
     }
 
     public static void setBuyPage(boolean value) {
-        buyPage = value;
+        page = value ? PAGE_BUY : PAGE_SELL;
+    }
+
+    public static int getPage() {
+        return page;
+    }
+
+    public static void setPage(int value) {
+        page = value < PAGE_SELL || value > PAGE_EMERALD ? PAGE_SELL : value;
     }
 }

@@ -44,6 +44,9 @@ public final class MarketCoreSelfTest {
                 "building material prices must use the frozen final values");
         MarketCommodity carrotSell = MarketCatalog.get("lisbam_pastoral_economy:sell/crop/carrot");
         MarketCommodity carrotBuy = MarketCatalog.get("lisbam_pastoral_economy:buy/common/carrot");
+        require(carrotSell != null && carrotSell.getBasePrice() == 60L
+                        && base("lisbam_pastoral_economy:sell/crop/potato") == 60L,
+                "carrot and potato base sell prices must be sixty");
         require(carrotSell.getVariantIdentity().equals(carrotBuy.getVariantIdentity()),
                 "matching buy and sell variants must share a market random identity");
         Set<String> expectedSellGoods = new HashSet<String>(Arrays.asList(
@@ -204,16 +207,24 @@ public final class MarketCoreSelfTest {
 
         NBTTagCompound preRepriceSave = data.writeToNBT(new NBTTagCompound());
         replaceCurrentSnapshotPrice(preRepriceSave, "lisbam_pastoral_economy:buy/common/lapis_lazuli", 1600L);
+        replaceCurrentSnapshotPrice(preRepriceSave, "lisbam_pastoral_economy:sell/crop/carrot", 31L);
+        replaceCurrentSnapshotPrice(preRepriceSave, "lisbam_pastoral_economy:sell/crop/potato", 47L);
         PastoralWorldData preRepriceWorld = new PastoralWorldData();
         preRepriceWorld.readFromNBT(preRepriceSave);
         preRepriceWorld.ensureMarketDay(12L, 99L);
         require(price(preRepriceWorld, "lisbam_pastoral_economy:buy/common/lapis_lazuli") == 1600L,
                 "loading a pre-reprice save must preserve its current stored market price exactly");
+        require(price(preRepriceWorld, "lisbam_pastoral_economy:sell/crop/carrot") == 31L
+                        && price(preRepriceWorld, "lisbam_pastoral_economy:sell/crop/potato") == 47L,
+                "raising carrot and potato bases must not reset an old world's frozen current prices");
         preRepriceWorld.ensureMarketDay(13L, 99L);
         long returnedLapis = price(preRepriceWorld, "lisbam_pastoral_economy:buy/common/lapis_lazuli");
         require(returnedLapis < 1600L && returnedLapis > MarketPriceGenerator.maximumPrice(800L,
                         CommodityCategory.MINERALS_REDSTONE_COMMON_DROPS),
                 "the first new day must use the normal gradual return toward the new catalog base");
+        require(preRepriceWorld.getPreviousMarketPrice("lisbam_pastoral_economy:sell/crop/carrot").longValue() == 31L
+                        && preRepriceWorld.getPreviousMarketPrice("lisbam_pastoral_economy:sell/crop/potato").longValue() == 47L,
+                "the next day advances from the saved carrot and potato prices instead of rebasing them");
 
         NBTTagCompound missingCurrentHistories = data.writeToNBT(new NBTTagCompound());
         missingCurrentHistories.getCompoundTag("market").setTag("cropHistories", new net.minecraft.nbt.NBTTagList());

@@ -13,7 +13,7 @@ apply plugin: 'net.minecraftforge.gradle'
 apply plugin: 'eclipse'
 apply plugin: 'maven-publish'
 
-version = '1.5'
+version = '1.6'
 group = 'lisbam.pastoraleconomy'
 archivesBaseName = 'LisBam_PastoralEconomy'
 
@@ -175,6 +175,20 @@ task marketCoreSelfTest(type: JavaExec) {
     description = 'Runs the standalone deterministic market-core self-test.'
     classpath = sourceSets.test.runtimeClasspath
     main = 'lisbam.pastoraleconomy.market.MarketCoreSelfTest'
+}
+
+task emeraldMarketSelfTest(type: JavaExec) {
+    group = 'verification'
+    description = 'Runs deterministic persisted emerald-market price regression checks.'
+    classpath = sourceSets.test.runtimeClasspath
+    main = 'lisbam.pastoraleconomy.market.EmeraldMarketSelfTest'
+}
+
+task emeraldTradeRulesSelfTest(type: JavaExec) {
+    group = 'verification'
+    description = 'Runs integer fee, affordability, and overflow checks for emerald spot trades.'
+    classpath = sourceSets.test.runtimeClasspath
+    main = 'lisbam.pastoraleconomy.merchant.EmeraldTradeRulesSelfTest'
 }
 
 task playerDataSelfTest(type: JavaExec) {

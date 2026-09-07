@@ -173,6 +173,16 @@ public final class MarketService {
         return getReadyData(world).createMarketPriceSnapshot();
     }
 
+    /** Current shared emerald/coin spot price, refreshed only when the market is actually read. */
+    public static long getEmeraldCurrentPrice(World world) {
+        return getReadyData(world).getEmeraldCurrentPrice();
+    }
+
+    /** Previous shared emerald/coin spot price for today's delta display. */
+    public static long getEmeraldPreviousPrice(World world) {
+        return getReadyData(world).getEmeraldPreviousPrice();
+    }
+
     private static PastoralWorldData getReadyData(World world) {
         PastoralWorldData data = PastoralWorldData.get(world);
         data.ensureMarketDay(

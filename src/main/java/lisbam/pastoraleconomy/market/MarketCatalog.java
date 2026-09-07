@@ -102,8 +102,8 @@ public final class MarketCatalog {
 
     private static void addSellingDefinitions(Map<String, MarketCommodity> definitions) {
         add(definitions, "sell/crop/wheat", Items.WHEAT, 0, 50, CommodityCategory.CORE_CROPS, true);
-        add(definitions, "sell/crop/carrot", Items.CARROT, 0, 40, CommodityCategory.CORE_CROPS, true);
-        add(definitions, "sell/crop/potato", Items.POTATO, 0, 40, CommodityCategory.CORE_CROPS, true);
+        add(definitions, "sell/crop/carrot", Items.CARROT, 0, 60, CommodityCategory.CORE_CROPS, true);
+        add(definitions, "sell/crop/potato", Items.POTATO, 0, 60, CommodityCategory.CORE_CROPS, true);
         add(definitions, "sell/crop/beetroot", Items.BEETROOT, 0, 50, CommodityCategory.CORE_CROPS, true);
         add(definitions, "sell/crop/pumpkin", block(Blocks.PUMPKIN), 0, 125, CommodityCategory.CORE_CROPS, true);
         add(definitions, "sell/crop/melon_block", block(Blocks.MELON_BLOCK), 0, 150, CommodityCategory.CORE_CROPS, true);
@@ -246,7 +246,7 @@ public final class MarketCatalog {
 
     private static void addRareAndTreasurePurchaseDefinitions(Map<String, MarketCommodity> definitions) {
         Object[][] advanced = {
-                {"diamond", Items.DIAMOND, 0, 12500}, {"emerald", Items.EMERALD, 0, 5500},
+                {"diamond", Items.DIAMOND, 0, 12500},
                 {"blaze_rod", Items.BLAZE_ROD, 0, 9000}, {"ghast_tear", Items.GHAST_TEAR, 0, 12000},
                 {"ender_pearl", Items.ENDER_PEARL, 0, 8000}, {"wither_skeleton_skull", Items.SKULL, 1, 40000}
         };

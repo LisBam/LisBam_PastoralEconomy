@@ -1,6 +1,14 @@
 # 当前状态
 
-当前发行版本：`1.5`；既有第 15 批功能完成，1.5 为维护更新。
+当前发行版本：`1.6`；既有第 15 批功能完成，当前仅进行明确的新内容、平衡与维护更新。
+
+## 新内容：绿宝石现货市场与经济调整（2026-09-07）
+
+实现：新增独立的 `EmeraldMarketPriceGenerator` 与 `PastoralWorldData` v9 绿宝石市场字段。首次价格固定 1,000 金币，之后按冻结离散分布逐世界日变化并限制在 300～3,000；它不回归、不会在同日或时间回拨时重抽，跨日跳跃逐日补算。v8 或更旧世界缺少该字段时只建立今日/昨日各 1,000 的初始状态，普通市场快照和历史完全保留。商人第三个“炒币”页以原版绿宝石实物按 4% 手续费交易：买入为 `ceil(price * amount * 1.04)`，卖出为 `floor(price * amount * 0.96)`；界面仅显示服务端快照，Packet 11 请求不带价格、金币或库存，服务端在主线程复核真实会话、商人、距离、世界日、requestId、金币、主物品栏容量与持仓，并以库存/余额快照原子回滚异常。
+
+经济调整：胡萝卜与马铃薯基础收购价由 40 调为 60，已保存普通行情不重写；羊毛通用配方由任意颜色羊毛 ×1 → 线 ×4 调为 ×1。普通商人购买池和未来每日 Offer 删除原版绿宝石，历史持久绿宝石 Offer 读入时失效并重建；绿宝石矿石继续保留在珍宝池。Packet 0～10 discriminator 未变，Packet 4 追加绿宝石展示字段，Packet 11 追加为新 C2S 请求，故商人交易客户端与服务端必须同升 1.6。
+
+验证：Temurin Java 8 `1.8.0_504` 下 `compileJava`、`compileTestJava`、`processResources`、`emeraldTradeRulesSelfTest`、`emeraldMarketSelfTest`、`merchantCatalogSelfTest`、`marketCoreSelfTest`、`marketPacketSelfTest`、`pastoralWorldDataSelfTest` 与 `modGuiInputSelfTest` 均 PASS。`emeraldMarketSelfTest` 覆盖日变动全部区间端点、范围、确定性、首次初始化、跨日补算与 v8 缺字段迁移；`merchantCatalogSelfTest` 覆盖新价格、普通绿宝石删除、旧 Offer 重建及扩展快照编码。严格 Forge 1.12.2 audit 为 0 ERROR、7 条既有 S2C/Proxy 保守 `packet-thread` WARNING；新增 C2S handler 已显式调度服务端主线程。最终 JDK 8 `./gradlew build --no-daemon --console=plain` PASS，包含 `reobfJar`、`exportReleaseJar` 和 `verifyReleaseJar`，并核验 256 个生产 class 全部存在且为 Java 8。新 `release/LisBam_PastoralEconomy-1.6.jar` 为 531,118 bytes，SHA-256 `0ae27647b03a706a2d16218f7d13f64f6e2ff501bcac26f46b531dcc0ffadfab`，`unzip -t` PASS；目标版本 JAR 在构建前不存在，因此没有覆盖或备份。游戏内 GUI 与 Dedicated Server 端到端验证为 NOT RUN：当前环境没有可操作 Forge 客户端世界，且现有开发服务器 EULA 未接受。
 
 ## 紧急修复：多 Coremod 环境延迟类加载崩溃（2026-09-07）
 
