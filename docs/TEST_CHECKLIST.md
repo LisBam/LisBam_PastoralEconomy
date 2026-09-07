@@ -1,5 +1,15 @@
 # 测试清单
 
+## 维护：炒币双栏、出货晨间结算与区块加载器（2026-09-07）
+
+- [x] `git diff --check`：Java、lang、文档与资源改动无空白错误；`chunk_loader_active.png` 为可读的 16×16、8-bit RGBA PNG。PASS。
+- [x] Forge 1.12.2 static audit 与 `--strict-warnings` audit：均为 0 ERROR、7 条既有 S2C/Proxy `packet-thread` 保守 WARNING；新增 common 票据轮询不引用客户端类。PASS。
+- [ ] `chunkLoaderSelfTest`、`shippingBoxSelfTest`：新增红石票据保留边界与晨间 `0～1000` tick 结算窗口断言。NOT RUN：已检查 `/tmp/lbpe-jdk8`、常见 Linux JDK 路径、`/home`、`/tmp`、`/mnt` 和 Windows 常见 Java 路径，均无可用 JDK 8。
+- [ ] JDK 8 `./gradlew compileJava processResources build --no-daemon --console=plain`：NOT RUN；实际 `./gradlew compileJava --no-daemon --console=plain` 首个错误为 `JAVA_HOME is not set and no 'java' command could be found in your PATH`。未找到 JDK 8，故未执行 self-test、重混淆构建、release 导出、备份或 JAR 完整性检查。
+- [ ] 游戏内：打开商人炒币页，确认买入在左、卖出在右；两侧数量输入、滑条、上限、预计金额和按钮互不影响，中文“可买/可卖”之间没有乱码；伪造/过期请求仍由服务器拒绝。NOT RUN：当前无可操作 Forge 客户端世界。
+- [ ] 游戏内 / Dedicated Server：分别在凌晨、白天和清晨 `0～1000` tick 放入有绑定凭证的出货箱，确认仅清晨结算一次且夜间加载不抢占当天；启停、跨区块红石断电、破坏和重启后确认区块加载器只在真实有信号时持票。NOT RUN：当前无可进入的 Forge 世界或 Dedicated Server。
+- [ ] Release：目标为 `release/LisBam_PastoralEconomy-1.7.jar`。NOT RUN：没有可用 JDK 8，不能在覆盖前备份、执行 Wrapper build 或导出重混淆 JAR。
+
 ## 出货箱（2026-09-07）
 
 - [x] `shippingBoxSelfTest`：27 格库存 NBT、任面漏斗输入/禁止输出、两个唯一凭证均分、重复凭证去重、70% 向下取整、不可收购品保留、long 边界、每日标记、待发收益读写和 16×16 贴图可读均通过。PASS（Temurin Java 8 `1.8.0_504`）。

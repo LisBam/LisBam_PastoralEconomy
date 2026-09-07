@@ -39,8 +39,6 @@ public final class ModItems {
     }
 
     private static ItemBlock createChunkLoaderItem() {
-        ItemBlock item = new ItemBlock(ModBlocks.CHUNK_LOADER);
-        item.setRegistryName(ModBlocks.CHUNK_LOADER.getRegistryName());
-        return item;
+        return new ItemChunkLoader();
     }
 }

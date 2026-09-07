@@ -10,6 +10,12 @@ public final class ChunkLoaderSelfTest {
                 "active chunk loader light must equal half of a torch's level 14 light");
         require(ChunkLoaderRules.shouldBeActive(true), "a redstone signal must activate the chunk loader");
         require(!ChunkLoaderRules.shouldBeActive(false), "loss of redstone signal must deactivate the chunk loader");
+        require(ChunkLoaderRules.shouldKeepForcedChunk(true, true),
+                "only a valid, powered chunk loader may keep a ticket");
+        require(!ChunkLoaderRules.shouldKeepForcedChunk(true, false),
+                "a lost redstone signal must release its ticket even without a neighbour notification");
+        require(!ChunkLoaderRules.shouldKeepForcedChunk(false, true),
+                "a missing chunk-loader block must release any restored ticket");
         System.out.println("chunkLoaderSelfTest PASS");
     }
 

@@ -14,12 +14,15 @@ import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.item.ItemStack;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.text.translation.I18n;
 import net.minecraft.world.IBlockAccess;
 import net.minecraft.world.World;
 
 /** A redstone-controlled Forge ticket holder for exactly its own chunk. */
 public final class BlockChunkLoader extends Block {
     public static final PropertyBool POWERED = PropertyBool.create("powered");
+    /** Item and block share this direct key so an ItemBlock cannot append a second suffix. */
+    public static final String DISPLAY_NAME_KEY = "tile." + LisBamPastoralEconomy.MODID + ".chunk_loader";
 
     BlockChunkLoader() {
         super(Material.ROCK);
@@ -39,6 +42,11 @@ public final class BlockChunkLoader extends Block {
     @Override
     public TileEntity createTileEntity(World world, IBlockState state) {
         return new TileChunkLoader();
+    }
+
+    @Override
+    public String getLocalizedName() {
+        return I18n.translateToLocal(DISPLAY_NAME_KEY);
     }
 
     @Override

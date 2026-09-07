@@ -6,6 +6,7 @@ import lisbam.pastoraleconomy.block.ModBlocks;
 import lisbam.pastoraleconomy.tile.TileChunkLoader;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkPos;
 import net.minecraft.world.World;
@@ -49,6 +50,38 @@ public final class ChunkLoaderService {
     public static void onChunkLoaderBroken(World world, BlockPos pos, TileChunkLoader tile) {
         if (world instanceof WorldServer && !world.isRemote) {
             deactivate((WorldServer) world, pos, tile);
+        }
+    }
+
+    /**
+     * Redstone notifications are immediate when their neighbouring chunk is
+     * loaded, but a ticket can outlive a neighbour chunk. Recheck every active
+     * ticket on the logical server so a removed/off signal always releases it.
+     */
+    public static void tick(WorldServer world) {
+        if (world == null || world.isRemote) {
+            return;
+        }
+        Iterator<Map.Entry<Location, ForgeChunkManager.Ticket>> iterator = LOADER_TICKETS.entrySet().iterator();
+        while (iterator.hasNext()) {
+            Map.Entry<Location, ForgeChunkManager.Ticket> entry = iterator.next();
+            ForgeChunkManager.Ticket ticket = entry.getValue();
+            if (ticket == null || ticket.world != world) {
+                continue;
+            }
+            BlockPos pos = entry.getKey().getPosition();
+            TileEntity tileEntity = world.getTileEntity(pos);
+            boolean validChunkLoader = tileEntity instanceof TileChunkLoader && !tileEntity.isInvalid()
+                    && world.getBlockState(pos).getBlock() == ModBlocks.CHUNK_LOADER;
+            if (ChunkLoaderRules.shouldKeepForcedChunk(validChunkLoader, world.isBlockPowered(pos))) {
+                setActiveState(world, pos, (TileChunkLoader) tileEntity, true);
+                continue;
+            }
+            iterator.remove();
+            ForgeChunkManager.releaseTicket(ticket);
+            if (tileEntity instanceof TileChunkLoader) {
+                setActiveState(world, pos, (TileChunkLoader) tileEntity, false);
+            }
         }
     }
 

@@ -93,6 +93,13 @@ public final class ShippingBoxSelfTest {
                 "overflowing gross income must be rejected before inventory mutation");
         require(sum(ShippingBoxRules.splitEvenly(5L, Arrays.asList(firstOwner, secondOwner))) == 5L,
                 "remainder distribution must not lose coins");
+        require(ShippingBoxRules.isMorningSettlementWindow(0L)
+                        && ShippingBoxRules.isMorningSettlementWindow(1000L)
+                        && ShippingBoxRules.isMorningSettlementWindow(24000L),
+                "the day-start and vanilla day-command morning window must dispatch");
+        require(!ShippingBoxRules.isMorningSettlementWindow(1001L)
+                        && !ShippingBoxRules.isMorningSettlementWindow(23999L),
+                "late-day ticks must not consume the next morning's dispatch marker");
     }
 
     private static void verifyPayoutPersistence() {

@@ -2,6 +2,16 @@
 
 当前发行版本：`1.7`；既有第 15 批功能完成，当前仅进行明确的新内容、平衡与维护更新。
 
+## 维护：炒币界面、出货箱晨间结算与区块加载器（2026-09-07）
+
+实现：商人“炒币”页改为买入/卖出左右两栏，各栏均有独立原版数量滑条、输入框、服务器快照上限、预计金额和确认按钮；移除同一行“可买/可卖”之间原版字体不支持的全角空格，避免乱码。绿宝石交易的 Packet 11、服务端重验、费率和所有冻结数值不变。
+
+根因与修复：出货箱此前在任意时段的首次 Overworld END tick 立即写入当天 `lastDispatchDay`，夜间加载或重启会在清晨前耗尽当天批次。现在只有世界时间 `% 24000` 为 `0～1000` 的晨间窗口才尝试领取当天标记，再以当天刷新后的市场快照出售已加载箱内商品。区块加载器此前只依赖方块邻居通知，已经强制加载的区块在红石邻居位于其他已卸载区块等情况下不会收到断电通知，因此票据可永久遗留；现在每个逻辑服务端世界 END tick 都重新核验持票加载器的方块、TileEntity 和红石状态，不符合条件立即释放。充能贴图改为与未充能一致的深色石质/紫色框架，仅添加克制的青色核心和紫蓝发光；`ItemChunkLoader` 改用显式基础显示键，去除物品名末尾 `.name`。
+
+兼容性：没有改变 registry ID、TileEntity NBT、WorldSavedData schema、Capability、Packet discriminator 或经济规则；旧存档和已有 `forcedchunks.dat` 票据继续可读，重载后按当前红石状态决定保留或释放。
+
+验证：Forge 1.12.2 常规和 `--strict-warnings` 静态审计均为 0 ERROR、7 条既有 S2C/Proxy `packet-thread` 保守 WARNING。`git diff --check` 通过，激活贴图已核验为 16×16、8-bit RGBA PNG。`./gradlew compileJava --no-daemon --console=plain` 实际执行但因默认环境无 `JAVA_HOME` 且 PATH 无 `java` 停止；已检查 `/tmp/lbpe-jdk8`、常见 Linux JDK 路径、`/home`、`/tmp`、`/mnt` 与 Windows 常见 Java 路径，均未找到可用 JDK 8。因此 self-test、JDK 8 build、release 导出、游戏内与 Dedicated Server 验收均为 NOT RUN。
+
 ## 新内容：出货箱（2026-09-07）
 
 实现：新增 `shipping_box` 方块、ItemBlock、TileEntity、27 格原版三行箱子 Container/GUI、语言、模型、16×16 AI 像素贴图和 JSON 有序配方。方块各面接受漏斗输入、拒绝漏斗输出；玩家像使用普通箱子一样管理内容。逻辑服务端每天在市场价格更新后扫描已加载出货箱，只要箱内存在已绑定交易凭证，就按当天全局商人收购价卖出所有目录商品，整箱收入下调至 `floor(70%)`。每箱按唯一凭证 UUID 均分，余数稳定分配；牛奶桶返回空桶，凭证和不可售物不消费。

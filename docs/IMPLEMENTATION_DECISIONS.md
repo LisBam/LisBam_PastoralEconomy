@@ -1,5 +1,13 @@
 # 实施决策
 
+## DEC-066 炒币双栏、晨间出货与加载器票据复核（2026-09-07）
+
+决定：`GuiMerchantTrade` 的绿宝石分页按左买右卖布局保存两个完全独立的客户端数量值与原版 `GuiSlider`/`GuiTextField`，每个方向只读取服务器同步的自身上限并发送原有 Packet 11。原先一行的合并上限文本不再使用全角空格；本地化分别显示 `可买` 和 `可卖`，避免原版 `FontRenderer` 将中间字符渲染为乱码。这个界面状态不参与价格、库存或金币结算。
+
+决定：`ShippingBoxService` 只在 `World#getWorldTime() % 24000` 为 `0～1000` 的晨间窗口调用既有 `tryBeginDispatch`；1000 与原版 `/time set day` 对齐。这样当天标记不再在夜间/下午的首次 tick 被预先写入，且同一晨间窗口内仍只会执行一次。`ChunkLoaderService` 对所有逻辑服务端维度的活动 Forge ticket 在 END tick 检查原方块、TileEntity 和实际红石信号；失效或断电票据直接释放，正常票据继续只强制自身一个 `ChunkPos`。票据回调仍必须先强制自身区块来加载 TileEntity，随后由该复核决定保留或释放。
+
+兼容性：不修改 packet、注册名、NBT 或世界数据结构。新增 `ItemChunkLoader` 仅改变现有 ItemBlock 的展示方法，仍使用同一 `chunk_loader` registry ID 和物品形式；旧栈、方块和 `forcedchunks.dat` 无迁移需要。
+
 ## DEC-065 绿宝石现货行情与服务端原子结算（2026-09-07）
 
 决定：绿宝石只作为商人第三个“炒币”分页上的实物现货，不加入普通 `MarketCatalog`、行情书曲线或常规商人购买池；珍宝 `绿宝石矿石` 仍保留。`PastoralWorldData` 从 v8 升至 v9，在既有 `marketSeed` 下持久化独立的绿宝石初始化标记、当前价、昨日价和最后更新世界日。首次值固定为 1,000，后续每一世界日只生成一次并 clamp 在 300～3,000；多日跳跃逐日补算，时间回拨不重抽。v8 缺字段时只写入首次价格，绝不覆盖同日普通市场快照。

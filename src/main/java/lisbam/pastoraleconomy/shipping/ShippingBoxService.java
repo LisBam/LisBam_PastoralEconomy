@@ -31,8 +31,9 @@ public final class ShippingBoxService {
     }
 
     /**
-     * Runs from the overworld's logical-server tick. One persisted marker
-     * makes all loaded boxes one market-day batch, even over restarts.
+     * Runs from the overworld's logical-server tick. The first morning tick
+     * claims the persisted marker, so a late-night load cannot consume the
+     * next morning's sale opportunity.
      */
     public static void tick(WorldServer overworld) {
         if (overworld == null || overworld.isRemote || overworld.provider.getDimension() != 0) {
@@ -41,7 +42,8 @@ public final class ShippingBoxService {
         PastoralWorldData data = PastoralWorldData.get(overworld);
         ShippingBoxPayoutState payouts = data.getShippingBoxPayoutState();
         long worldDay = PastoralWorldData.getAuthoritativeMarketDay(overworld);
-        if (payouts.tryBeginDispatch(worldDay)) {
+        if (ShippingBoxRules.isMorningSettlementWindow(overworld.getWorldTime())
+                && payouts.tryBeginDispatch(worldDay)) {
             MarketPriceSnapshot prices = MarketService.getPriceSnapshot(overworld);
             for (TileShippingBox box : collectLoadedShippingBoxes(overworld)) {
                 SalePlan plan = createSalePlan(box, prices);
