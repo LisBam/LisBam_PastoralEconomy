@@ -4,6 +4,7 @@ import lisbam.pastoraleconomy.agriculture.AgricultureRules;
 import lisbam.pastoraleconomy.core.EnchantingCompatibilityHooks;
 import lisbam.pastoraleconomy.core.EnchantingTableTransformer;
 import lisbam.pastoraleconomy.event.ToolEnchantmentEventHandler;
+import lisbam.pastoraleconomy.event.AnvilEnchantmentEventHandler;
 import net.minecraft.enchantment.Enchantment;
 import net.minecraft.enchantment.EnchantmentData;
 import net.minecraft.enchantment.Enchantment.Rarity;
@@ -13,6 +14,7 @@ import net.minecraft.init.Items;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.ItemEnchantedBook;
 import net.minecraft.item.Item;
+import net.minecraftforge.event.AnvilUpdateEvent;
 
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassWriter;
@@ -45,6 +47,7 @@ public final class EnchantmentSelfTest {
         verifySrgRuntimeNameCompatibility();
         verifyLegacyItemLayoutCompatibility();
         verifyReforgedAnvilRule();
+        verifyHoeAnvilRepairRule();
         verifyHarvestFormulas();
         verifyProbabilityThresholds();
     }
@@ -62,6 +65,30 @@ public final class EnchantmentSelfTest {
         require(result.getOutput().getRepairCost() == 1, "Reforged output must restart at first-use repair cost");
         require(left.getRepairCost() == 31 && right.getRepairCost() == 15,
                 "Reforged must not mutate either anvil input's persistent NBT");
+    }
+
+    private static void verifyHoeAnvilRepairRule() {
+        ItemStack left = new ItemStack(Items.IRON_HOE);
+        left.setItemDamage(200);
+        ItemStack iron = new ItemStack(Items.IRON_INGOT, 2);
+        require(HoeAnvilRepairRules.isHoeRepairMaterial(left, iron),
+                "an iron hoe must accept iron ingots as its anvil repair material");
+        require(!HoeAnvilRepairRules.isHoeRepairMaterial(left, new ItemStack(Items.DIAMOND)),
+                "a hoe must reject the wrong-tier repair material");
+
+        AnvilUpdateEvent event = new AnvilUpdateEvent(left, iron, null, 0);
+        AnvilEnchantmentEventHandler.repairVanillaHoesWithTheirMaterials(event);
+        require(!event.getOutput().isEmpty() && event.getOutput().getItemDamage() == 76
+                        && event.getMaterialCost() == 2 && event.getCost() == 2,
+                "the custom hoe repair path must preserve vanilla quarter-durability material repair");
+        require(event.getOutput().getRepairCost() == 1,
+                "a first hoe repair must receive the normal next prior-work cost");
+
+        AnvilFirstUseRules.Result reforged = AnvilFirstUseRules.createResult(left, iron, null,
+                HoeAnvilRepairRules.isHoeRepairMaterial(left, iron));
+        require(reforged != null && reforged.getOutput().getItemDamage() == 76
+                        && reforged.getOutput().getRepairCost() == 1,
+                "Reforged hoes must retain their first-use repair behavior instead of losing material repair");
     }
 
     private static void verifyDefinitions() {

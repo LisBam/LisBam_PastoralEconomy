@@ -13,7 +13,6 @@ public final class BackpackInventory implements IInventory {
     private final EntityPlayer player;
     private final ItemBackpack expectedBackpack;
     private final NonNullList<ItemStack> contents;
-    private ItemStack expectedStack;
     private int page;
 
     public BackpackInventory(EntityPlayer player) {
@@ -23,7 +22,6 @@ public final class BackpackInventory implements IInventory {
         if (expectedBackpack == null) {
             throw new IllegalArgumentException("A backpack inventory requires an equipped backpack.");
         }
-        this.expectedStack = equipped;
         this.contents = BackpackStorage.read(equipped);
     }
 
@@ -44,8 +42,15 @@ public final class BackpackInventory implements IInventory {
     }
 
     public boolean hasExpectedBackpack() {
-        ItemStack equipped = ShoulderEquipmentService.getShoulderStack(player);
-        return equipped == expectedStack && !equipped.isEmpty() && equipped.getItem() == expectedBackpack;
+        return isExpectedBackpack(ShoulderEquipmentService.getShoulderStack(player), expectedBackpack);
+    }
+
+    /** Stack identity is intentionally irrelevant because shoulder state is copied for synchronization. */
+    static boolean isExpectedBackpack(ItemStack equipped, ItemBackpack expectedBackpack) {
+        // PlayerData and SyncShoulderEquipmentMessage deliberately store value
+        // copies. Object identity therefore changes after every authoritative
+        // NBT write or S2C snapshot while this Container remains open.
+        return expectedBackpack != null && !equipped.isEmpty() && equipped.getItem() == expectedBackpack;
     }
 
     public ItemStack getEquippedBackpack() {
@@ -129,7 +134,6 @@ public final class BackpackInventory implements IInventory {
         if (!backpack.isEmpty()) {
             BackpackStorage.write(backpack, contents);
             ShoulderEquipmentService.setShoulderStack(player, backpack);
-            expectedStack = ShoulderEquipmentService.getShoulderStack(player);
         }
         player.inventory.markDirty();
     }

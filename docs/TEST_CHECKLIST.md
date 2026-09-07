@@ -1,5 +1,21 @@
 # 测试清单
 
+## 维护：背包同步、行情书炒币与锄头铁砧修复（2026-09-08）
+
+- [x] JDK 8 `compileJava`、`compileTestJava`、`processResources`：PASS（Temurin Java 8 `1.8.0_504`）。
+- [x] `backpackSelfTest`：同步复制的背包 NBT 保留内容，复制后仍匹配原打开背包 tier、不同 tier 被拒绝。PASS。
+- [x] `emeraldMarketSelfTest`：首次点、跨日逐点追加、前日差值、30 日有界历史、NBT 往返和 v10 缺历史迁移均通过。PASS。
+- [x] `marketPacketSelfTest`：稳定绿宝石显示 key 仍通过既有有界请求/快照协议验证。PASS。
+- [x] `enchantmentSelfTest`：铁/错误材料匹配、铁锄两锭 25% 分段修复、材料消耗/费用/RepairCost，以及 Reforged 锄头首用结果均通过。PASS。
+- [x] `pastoralWorldDataSelfTest`：既有世界数据回归通过。PASS。
+- [x] `git diff --check`：Java、lang、文档与资源改动无空白错误。PASS。
+- [x] Forge 1.12.2 常规 static audit：0 ERROR、7 条既有 S2C/Proxy `packet-thread` 保守 WARNING；新增绿宝石请求复用既有服务端主线程 C2S handler，背包/铁砧修复没有客户端权威写入。PASS。
+- [ ] Forge 1.12.2 `--strict-warnings` audit：NOT PASS；同一 7 条既有 `packet-thread` WARNING 使命令返回 2，未掩盖结果。
+- [x] JDK 8 `./gradlew build --no-daemon --console=plain`：PASS（含 `test`、`reobfJar`、`exportReleaseJar`、`verifyReleaseJar`）；核验 270 个生产 class 均存在且为 Java 8。PASS（Temurin Java 8 `1.8.0_504`）。
+- [x] Release：覆盖前 `release/LisBam_PastoralEconomy-1.7.jar` 已备份为 `release/backup/backup_20260908-003216.jar`（556,164 bytes）。新重混淆 JAR 为 561,839 bytes，SHA-256 `52042dee6111049944b27d03878391651fe9878c849eac85c8b9d5ea8c80f3d1`，`unzip -t` PASS。
+- [ ] 游戏内：肩部背包装入/取出后不关闭 GUI 即确认槽位持续显示；行情书“炒币”页确认今日/昨日/曲线/费率；五档锄头以匹配材料和错误材料分别测试，且带 Reforged 的锄头仍可修。NOT RUN：当前无可操作 Forge 客户端世界。
+- [ ] Dedicated Server：受限 60 秒 Java 8 `runServer` 已进入 Forge/FML 启动与类加载，超时前未进入模组生命周期/世界；仍需以 v10 旧世界、多人背包同步和商人/行情书并发打开验证 v11 单点迁移、服务器权威曲线及 common 无客户端类加载。完整验收 NOT RUN。
+
 ## 维护：炒币双栏、出货晨间结算与区块加载器（2026-09-07）
 
 - [x] `git diff --check`：Java、lang、文档与资源改动无空白错误；`chunk_loader_active.png` 为可读的 16×16、8-bit RGBA PNG。PASS。

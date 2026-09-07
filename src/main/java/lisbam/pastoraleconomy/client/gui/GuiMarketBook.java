@@ -6,6 +6,7 @@ import lisbam.pastoraleconomy.market.MarketCatalog;
 import lisbam.pastoraleconomy.market.MarketCommodity;
 import lisbam.pastoraleconomy.market.MarketHistoryPoint;
 import lisbam.pastoraleconomy.market.MarketHistorySnapshot;
+import lisbam.pastoraleconomy.market.MarketService;
 import lisbam.pastoraleconomy.market.MarketTrend;
 import lisbam.pastoraleconomy.merchant.TradeCatalog;
 import lisbam.pastoraleconomy.network.ModNetwork;
@@ -15,6 +16,7 @@ import net.minecraft.client.gui.GuiTextField;
 import net.minecraft.client.gui.inventory.GuiContainer;
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.client.resources.I18n;
+import net.minecraft.init.Items;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.ResourceLocation;
 import org.lwjgl.input.Mouse;
@@ -29,8 +31,9 @@ import java.util.Locale;
 public final class GuiMarketBook extends GuiContainer {
     private static final int BUTTON_SELL_PAGE = 1;
     private static final int BUTTON_BUY_PAGE = 2;
-    private static final int BUTTON_SCROLL_UP = 3;
-    private static final int BUTTON_SCROLL_DOWN = 4;
+    private static final int BUTTON_EMERALD_PAGE = 3;
+    private static final int BUTTON_SCROLL_UP = 4;
+    private static final int BUTTON_SCROLL_DOWN = 5;
     private static final int SELECTOR_GOOD_BUTTON_OFFSET = 100;
     private static final int SELECTOR_COLUMNS = 3;
     private static final int SNAPSHOT_RETRY_TICKS = 40;
@@ -44,6 +47,7 @@ public final class GuiMarketBook extends GuiContainer {
     private boolean initialRequestSent;
     private boolean waitingForSnapshot;
     private boolean buyPage;
+    private boolean emeraldPage;
     private int prefetchIndex;
     private int selectorScrollRow;
     private long nextPrefetchTick;
@@ -51,6 +55,7 @@ public final class GuiMarketBook extends GuiContainer {
     private String buySearchQuery = "";
     private GuiButton sellPageButton;
     private GuiButton buyPageButton;
+    private GuiButton emeraldPageButton;
     private GuiButton scrollUpButton;
     private GuiButton scrollDownButton;
     private GuiTextField searchField;
@@ -75,13 +80,16 @@ public final class GuiMarketBook extends GuiContainer {
         }
         buttonList.clear();
         layout = Layout.create(width, height);
-        sellPageButton = new GuiButton(BUTTON_SELL_PAGE, layout.panelX + 6, layout.panelY + 20, 62, 14,
+        sellPageButton = new GuiButton(BUTTON_SELL_PAGE, layout.panelX + 6, layout.panelY + 20, 42, 14,
                 I18n.format("gui.lisbam_pastoral_economy.market_book.sell_page"));
-        buyPageButton = new GuiButton(BUTTON_BUY_PAGE, layout.panelX + 70, layout.panelY + 20, 62, 14,
+        buyPageButton = new GuiButton(BUTTON_BUY_PAGE, layout.panelX + 50, layout.panelY + 20, 42, 14,
                 I18n.format("gui.lisbam_pastoral_economy.market_book.buy_page"));
+        emeraldPageButton = new GuiButton(BUTTON_EMERALD_PAGE, layout.panelX + 94, layout.panelY + 20, 42, 14,
+                I18n.format("gui.lisbam_pastoral_economy.market_book.emerald_page"));
         buttonList.add(sellPageButton);
         buttonList.add(buyPageButton);
-        if (buyPage) {
+        buttonList.add(emeraldPageButton);
+        if (buyPage && !emeraldPage) {
             searchField = new GuiTextField(0, fontRenderer, layout.searchX, layout.searchY,
                     layout.searchWidth, layout.searchHeight);
             searchField.setMaxStringLength(48);
@@ -94,8 +102,10 @@ public final class GuiMarketBook extends GuiContainer {
         scrollDownButton = new GuiButton(BUTTON_SCROLL_DOWN,
                 layout.cropListX + layout.scrollButtonWidth + 3, layout.scrollButtonY,
                 layout.scrollButtonWidth, layout.scrollButtonHeight, "↓");
-        buttonList.add(scrollUpButton);
-        buttonList.add(scrollDownButton);
+        if (!emeraldPage) {
+            buttonList.add(scrollUpButton);
+            buttonList.add(scrollDownButton);
+        }
         addSelectorButtons();
         if (!initialRequestSent) {
             initialRequestSent = true;
@@ -111,6 +121,9 @@ public final class GuiMarketBook extends GuiContainer {
 
     /** Only visible selector cells become buttons; the full catalogue is never laid over the chart. */
     private void addSelectorButtons() {
+        if (emeraldPage) {
+            return;
+        }
         List<MarketCommodity> goods = visibleGoods();
         int first = selectorScrollRow * SELECTOR_COLUMNS;
         int maximum = Math.min(goods.size(), first + layout.selectorRows * SELECTOR_COLUMNS);
@@ -143,12 +156,15 @@ public final class GuiMarketBook extends GuiContainer {
         if (!button.enabled) {
             return;
         }
-        if (button.id == BUTTON_SELL_PAGE || button.id == BUTTON_BUY_PAGE) {
+        if (button.id == BUTTON_SELL_PAGE || button.id == BUTTON_BUY_PAGE || button.id == BUTTON_EMERALD_PAGE) {
             buyPage = button.id == BUTTON_BUY_PAGE;
+            emeraldPage = button.id == BUTTON_EMERALD_PAGE;
             prefetchIndex = 0;
             selectorScrollRow = 0;
-            List<MarketCommodity> goods = visibleGoods();
-            selectedCommodity = goods.isEmpty() ? SELL_GOODS.get(0) : goods.get(0);
+            if (!emeraldPage) {
+                List<MarketCommodity> goods = visibleGoods();
+                selectedCommodity = goods.isEmpty() ? SELL_GOODS.get(0) : goods.get(0);
+            }
             initGui();
             return;
         }
@@ -183,6 +199,9 @@ public final class GuiMarketBook extends GuiContainer {
     }
 
     private void scrollSelectors(int rowDelta) {
+        if (emeraldPage) {
+            return;
+        }
         int maximum = Math.max(0, selectorRowCount(visibleGoods()) - layout.selectorRows);
         int updated = Math.max(0, Math.min(maximum, selectorScrollRow + rowDelta));
         if (updated != selectorScrollRow) {
@@ -198,7 +217,7 @@ public final class GuiMarketBook extends GuiContainer {
         updateNavigation(null);
         if (forceRequest) {
             ModNetwork.CHANNEL.sendToServer(new RequestMarketHistoryMessage(
-                    selectedCommodity.getKey(),
+                    getActiveMarketKey(),
                     -1L,
                     activeRequestId
             ));
@@ -224,7 +243,7 @@ public final class GuiMarketBook extends GuiContainer {
             requestWindow(true);
         }
         updateNavigation(snapshot);
-        if (!waitingForSnapshot && mc.world != null && mc.world.getTotalWorldTime() >= nextPrefetchTick) {
+        if (!emeraldPage && !waitingForSnapshot && mc.world != null && mc.world.getTotalWorldTime() >= nextPrefetchTick) {
             List<MarketCommodity> goods = pageGoods();
             while (prefetchIndex < goods.size()
                     && (goods.get(prefetchIndex).getKey().equals(selectedCommodity.getKey())
@@ -274,13 +293,16 @@ public final class GuiMarketBook extends GuiContainer {
         }
         int mouseX = Mouse.getEventX() * width / mc.displayWidth;
         int mouseY = height - Mouse.getEventY() * height / mc.displayHeight - 1;
-        if (mouseX >= layout.cropListX && mouseX < layout.cropListX + layout.cropAreaWidth
+        if (!emeraldPage && mouseX >= layout.cropListX && mouseX < layout.cropListX + layout.cropAreaWidth
                 && mouseY >= layout.cropListY && mouseY < layout.scrollButtonY) {
             scrollSelectors(wheel > 0 ? -1 : 1);
         }
     }
 
     private void onSearchChanged() {
+        if (emeraldPage) {
+            return;
+        }
         selectorScrollRow = 0;
         List<MarketCommodity> goods = visibleGoods();
         if (!goods.isEmpty() && !containsCommodity(goods, selectedCommodity)) {
@@ -340,11 +362,30 @@ public final class GuiMarketBook extends GuiContainer {
 
         drawString(fontRenderer, I18n.format("gui.lisbam_pastoral_economy.market_book.world_day",
                 Long.toString(snapshot.getCurrentMarketDay())), layout.detailsX, layout.detailsY, 0xFFF2E4B7);
-        ItemStack icon = createCommodityDisplayStack(selectedCommodity);
+        ItemStack icon = createActiveDisplayStack();
         mc.getRenderItem().renderItemAndEffectIntoGUI(icon, layout.detailsX, layout.detailsY + 14);
         mc.getRenderItem().renderItemOverlayIntoGUI(fontRenderer, icon, layout.detailsX, layout.detailsY + 14, null);
         int textX = layout.detailsX + 20;
-        drawString(fontRenderer, icon.getDisplayName(), textX, layout.detailsY + 15, 0xFFFFFFFF);
+        drawString(fontRenderer, emeraldPage
+                ? I18n.format("gui.lisbam_pastoral_economy.market_book.emerald_title") : icon.getDisplayName(),
+                textX, layout.detailsY + 15, 0xFFFFFFFF);
+        if (emeraldPage) {
+            drawString(fontRenderer, I18n.format("gui.lisbam_pastoral_economy.market_book.emerald_current",
+                    formatCoins(snapshot.getCurrentPrice())), textX, layout.detailsY + 27, 0xFFBFE6A8);
+            Long previous = snapshot.getPreviousPrice();
+            String previousText = previous == null ? "—" : formatCoins(previous.longValue());
+            drawString(fontRenderer, I18n.format("gui.lisbam_pastoral_economy.market_book.emerald_previous",
+                    previousText), textX, layout.detailsY + 39, 0xFFD9D9D9);
+            MarketTrend trend = previous == null ? MarketTrend.FLAT
+                    : MarketTrend.compare(snapshot.getCurrentPrice(), previous.longValue());
+            drawString(fontRenderer, I18n.format("gui.lisbam_pastoral_economy.market_book.trend",
+                    trend.getSymbol(), getTrendName(trend)), textX, layout.detailsY + 51, getTrendColor(trend));
+            drawString(fontRenderer, I18n.format("gui.lisbam_pastoral_economy.market_book.emerald_range"),
+                    textX, layout.detailsY + 63, 0xFFF2E4B7);
+            drawString(fontRenderer, I18n.format("gui.lisbam_pastoral_economy.market_book.emerald_fee"),
+                    textX, layout.detailsY + 75, 0xFFE8D6A4);
+            return;
+        }
         drawString(fontRenderer, I18n.format("gui.lisbam_pastoral_economy.market_book.current_price",
                 formatCoins(snapshot.getCurrentPrice())), textX, layout.detailsY + 27, 0xFFBFE6A8);
         drawString(fontRenderer, I18n.format("gui.lisbam_pastoral_economy.market_book.base_price",
@@ -457,6 +498,9 @@ public final class GuiMarketBook extends GuiContainer {
     }
 
     private void drawSelectors() {
+        if (emeraldPage) {
+            return;
+        }
         if (searchField != null) {
             drawString(fontRenderer, I18n.format("gui.lisbam_pastoral_economy.market_book.search"),
                     layout.cropListX, layout.searchY - 10, 4210752);
@@ -509,7 +553,10 @@ public final class GuiMarketBook extends GuiContainer {
     private void drawItemTooltip(int mouseX, int mouseY) {
         if (mouseX >= layout.detailsX && mouseX < layout.detailsX + 16
                 && mouseY >= layout.detailsY + 14 && mouseY < layout.detailsY + 30) {
-            renderToolTip(createCommodityDisplayStack(selectedCommodity), mouseX, mouseY);
+            renderToolTip(createActiveDisplayStack(), mouseX, mouseY);
+            return;
+        }
+        if (emeraldPage) {
             return;
         }
         List<MarketCommodity> goods = visibleGoods();
@@ -542,14 +589,19 @@ public final class GuiMarketBook extends GuiContainer {
         return stack;
     }
 
+    private ItemStack createActiveDisplayStack() {
+        return emeraldPage ? new ItemStack(Items.EMERALD) : createCommodityDisplayStack(selectedCommodity);
+    }
+
     private MarketHistorySnapshot getActiveSnapshot() {
-        MarketHistorySnapshot exact = ClientMarketState.getSnapshot(selectedCommodity.getKey(), -1L, activeRequestId);
-        return exact == null ? ClientMarketState.getLatestSnapshot(selectedCommodity.getKey()) : exact;
+        String key = getActiveMarketKey();
+        MarketHistorySnapshot exact = ClientMarketState.getSnapshot(key, -1L, activeRequestId);
+        return exact == null ? ClientMarketState.getLatestSnapshot(key) : exact;
     }
 
     /** All merchant-sell newest windows arrive with the opening request id. */
     private boolean useCachedNewestWindow() {
-        MarketHistorySnapshot snapshot = ClientMarketState.getLatestSnapshot(selectedCommodity.getKey());
+        MarketHistorySnapshot snapshot = ClientMarketState.getLatestSnapshot(getActiveMarketKey());
         if (snapshot == null) {
             return false;
         }
@@ -559,11 +611,12 @@ public final class GuiMarketBook extends GuiContainer {
     }
 
     private void updateNavigation(MarketHistorySnapshot snapshot) {
-        if (sellPageButton != null) sellPageButton.enabled = buyPage;
-        if (buyPageButton != null) buyPageButton.enabled = !buyPage;
+        if (sellPageButton != null) sellPageButton.enabled = buyPage || emeraldPage;
+        if (buyPageButton != null) buyPageButton.enabled = !buyPage || emeraldPage;
+        if (emeraldPageButton != null) emeraldPageButton.enabled = !emeraldPage;
         int maximumScrollRow = Math.max(0, selectorRowCount(visibleGoods()) - layout.selectorRows);
-        if (scrollUpButton != null) scrollUpButton.enabled = selectorScrollRow > 0;
-        if (scrollDownButton != null) scrollDownButton.enabled = selectorScrollRow < maximumScrollRow;
+        if (scrollUpButton != null) scrollUpButton.enabled = !emeraldPage && selectorScrollRow > 0;
+        if (scrollDownButton != null) scrollDownButton.enabled = !emeraldPage && selectorScrollRow < maximumScrollRow;
         for (GuiButton button : buttonList) {
             if (button.id >= SELECTOR_GOOD_BUTTON_OFFSET) {
                 int visibleIndex = button.id - SELECTOR_GOOD_BUTTON_OFFSET;
@@ -576,10 +629,16 @@ public final class GuiMarketBook extends GuiContainer {
     }
 
     private List<MarketCommodity> pageGoods() {
+        if (emeraldPage) {
+            return Collections.emptyList();
+        }
         return buyPage ? BUY_GOODS : SELL_GOODS;
     }
 
     private List<MarketCommodity> visibleGoods() {
+        if (emeraldPage) {
+            return Collections.emptyList();
+        }
         if (!buyPage || buySearchQuery.trim().isEmpty()) {
             return pageGoods();
         }
@@ -624,6 +683,10 @@ public final class GuiMarketBook extends GuiContainer {
 
     private long currentClientTick() {
         return mc.world == null ? 0L : mc.world.getTotalWorldTime();
+    }
+
+    private String getActiveMarketKey() {
+        return emeraldPage ? MarketService.EMERALD_HISTORY_KEY : selectedCommodity.getKey();
     }
 
     /** Uses one complete vanilla panel texture instead of hand-drawing a container background. */

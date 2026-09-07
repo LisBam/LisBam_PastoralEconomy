@@ -35,7 +35,7 @@ import java.util.TreeMap;
  */
 public final class PastoralWorldData extends WorldSavedData {
     public static final String DATA_NAME = LisBamPastoralEconomy.MODID + "_world_data";
-    public static final int DATA_VERSION = 10;
+    public static final int DATA_VERSION = 11;
     public static final long MARKET_DAY_TICKS = 24000L;
     /** The market book has one 30-day window, so older points must never grow the save. */
     public static final int MARKET_HISTORY_RETENTION_DAYS = 30;
@@ -62,6 +62,7 @@ public final class PastoralWorldData extends WorldSavedData {
     private static final String KEY_EMERALD_CURRENT_PRICE = "emeraldCurrentPrice";
     private static final String KEY_EMERALD_PREVIOUS_PRICE = "emeraldPreviousPrice";
     private static final String KEY_EMERALD_LAST_UPDATE_DAY = "emeraldLastUpdateDay";
+    private static final String KEY_EMERALD_HISTORY = "emeraldHistory";
 
     private int dataVersion = DATA_VERSION;
     private boolean firstInitializationCompleted;
@@ -79,6 +80,8 @@ public final class PastoralWorldData extends WorldSavedData {
     private long emeraldCurrentPrice = EmeraldMarketPriceGenerator.INITIAL_PRICE;
     private long emeraldPreviousPrice = EmeraldMarketPriceGenerator.INITIAL_PRICE;
     private long emeraldLastUpdateDay = -1L;
+    /** The market book retains only the actual daily emerald prices needed for its 30-day chart. */
+    private final NavigableMap<Long, Long> emeraldPriceHistory = new TreeMap<Long, Long>();
     /** Batch 08--10 world-owned village, station, merchant, offer, and stock state. */
     private final MerchantWorldState merchantWorldState = new MerchantWorldState();
     /** Batch 14 world-owned physical transport-node registry. */
@@ -221,6 +224,10 @@ public final class PastoralWorldData extends WorldSavedData {
         return emeraldLastUpdateDay;
     }
 
+    public synchronized List<MarketHistoryPoint> getEmeraldHistory(int limit, Long beforeExclusiveDay) {
+        return getPriceHistory(emeraldPriceHistory, emeraldLastUpdateDay, limit, beforeExclusiveDay);
+    }
+
     /** One immutable price view avoids repeated WorldSavedData lookups per merchant GUI snapshot. */
     public synchronized MarketPriceSnapshot createMarketPriceSnapshot() {
         return new MarketPriceSnapshot(currentMarketDay,
@@ -230,53 +237,11 @@ public final class PastoralWorldData extends WorldSavedData {
 
     public synchronized List<MarketHistoryPoint> getCropHistory(String key, long visibleThroughDay, int limit,
                                                                  Long beforeExclusiveDay) {
-        if (limit <= 0) {
-            return Collections.emptyList();
-        }
-        NavigableMap<Long, Long> history = cropPriceHistory.get(key);
-        if (history == null || history.isEmpty()) {
-            return Collections.emptyList();
-        }
-        NavigableMap<Long, Long> visible = history.headMap(visibleThroughDay, true);
-        if (beforeExclusiveDay != null && !visible.isEmpty()) {
-            long effectiveBefore = beforeExclusiveDay.longValue();
-            if (effectiveBefore <= visible.firstKey().longValue()) {
-                return Collections.emptyList();
-            }
-            if (effectiveBefore <= visible.lastKey().longValue()) {
-                visible = visible.headMap(effectiveBefore, false);
-            }
-        }
-        if (visible.isEmpty()) {
-            return Collections.emptyList();
-        }
-        List<Long> days = new ArrayList<Long>();
-        Iterator<Long> descending = visible.descendingKeySet().iterator();
-        int effectiveLimit = Math.min(limit, MARKET_HISTORY_RETENTION_DAYS);
-        while (descending.hasNext() && days.size() < effectiveLimit) {
-            days.add(descending.next());
-        }
-        Collections.reverse(days);
-        List<MarketHistoryPoint> points = new ArrayList<MarketHistoryPoint>();
-        for (Long day : days) {
-            Map.Entry<Long, Long> previous = history.lowerEntry(day);
-            points.add(new MarketHistoryPoint(day.longValue(), history.get(day).longValue(),
-                    previous == null ? null : previous.getValue()));
-        }
-        return Collections.unmodifiableList(points);
+        return getPriceHistory(cropPriceHistory.get(key), visibleThroughDay, limit, beforeExclusiveDay);
     }
 
     public synchronized MarketHistoryPoint getCropHistoryPoint(String key, long worldDay, long visibleThroughDay) {
-        if (worldDay > visibleThroughDay) {
-            return null;
-        }
-        NavigableMap<Long, Long> history = cropPriceHistory.get(key);
-        if (history == null || !history.containsKey(worldDay)) {
-            return null;
-        }
-        Map.Entry<Long, Long> previous = history.lowerEntry(worldDay);
-        return new MarketHistoryPoint(worldDay, history.get(worldDay).longValue(),
-                previous == null ? null : previous.getValue());
+        return getPriceHistoryPoint(cropPriceHistory.get(key), worldDay, visibleThroughDay);
     }
 
     /**
@@ -477,6 +442,50 @@ public final class PastoralWorldData extends WorldSavedData {
         }
     }
 
+    private List<MarketHistoryPoint> getPriceHistory(NavigableMap<Long, Long> history, long visibleThroughDay,
+                                                      int limit, Long beforeExclusiveDay) {
+        if (limit <= 0 || history == null || history.isEmpty() || visibleThroughDay < 0L) {
+            return Collections.emptyList();
+        }
+        NavigableMap<Long, Long> visible = history.headMap(visibleThroughDay, true);
+        if (beforeExclusiveDay != null && !visible.isEmpty()) {
+            long effectiveBefore = beforeExclusiveDay.longValue();
+            if (effectiveBefore <= visible.firstKey().longValue()) {
+                return Collections.emptyList();
+            }
+            if (effectiveBefore <= visible.lastKey().longValue()) {
+                visible = visible.headMap(effectiveBefore, false);
+            }
+        }
+        if (visible.isEmpty()) {
+            return Collections.emptyList();
+        }
+        List<Long> days = new ArrayList<Long>();
+        Iterator<Long> descending = visible.descendingKeySet().iterator();
+        int effectiveLimit = Math.min(limit, MARKET_HISTORY_RETENTION_DAYS);
+        while (descending.hasNext() && days.size() < effectiveLimit) {
+            days.add(descending.next());
+        }
+        Collections.reverse(days);
+        List<MarketHistoryPoint> points = new ArrayList<MarketHistoryPoint>();
+        for (Long day : days) {
+            Map.Entry<Long, Long> previous = history.lowerEntry(day);
+            points.add(new MarketHistoryPoint(day.longValue(), history.get(day).longValue(),
+                    previous == null ? null : previous.getValue()));
+        }
+        return Collections.unmodifiableList(points);
+    }
+
+    private MarketHistoryPoint getPriceHistoryPoint(NavigableMap<Long, Long> history, long worldDay,
+                                                     long visibleThroughDay) {
+        if (worldDay > visibleThroughDay || history == null || !history.containsKey(worldDay)) {
+            return null;
+        }
+        Map.Entry<Long, Long> previous = history.lowerEntry(worldDay);
+        return new MarketHistoryPoint(worldDay, history.get(worldDay).longValue(),
+                previous == null ? null : previous.getValue());
+    }
+
     /**
      * Advances the independent emerald price from the same lazily accessed
      * world-day clock as ordinary goods.  A newly introduced NBT segment is
@@ -489,14 +498,16 @@ public final class PastoralWorldData extends WorldSavedData {
             emeraldCurrentPrice = EmeraldMarketPriceGenerator.INITIAL_PRICE;
             emeraldPreviousPrice = EmeraldMarketPriceGenerator.INITIAL_PRICE;
             emeraldLastUpdateDay = worldDay;
+            appendEmeraldHistory(emeraldLastUpdateDay, emeraldCurrentPrice);
             return true;
         }
         if (worldDay <= emeraldLastUpdateDay) {
-            // A server administrator can turn time backwards.  Normal market
-            // history handles that compatibility path separately; this compact
-            // three-value market never rerolls merely because time moved back.
-            return false;
+            // A server administrator can turn time backwards. The spot market
+            // never rerolls, but v10 and earlier saves need one truthful point
+            // for their already-persisted current price.
+            return appendEmeraldHistory(emeraldLastUpdateDay, emeraldCurrentPrice);
         }
+        boolean changed = false;
         while (emeraldLastUpdateDay < worldDay) {
             if (emeraldLastUpdateDay == Long.MAX_VALUE) {
                 break;
@@ -507,8 +518,20 @@ public final class PastoralWorldData extends WorldSavedData {
                     marketSeed, nextDay, emeraldCurrentPrice
             );
             emeraldLastUpdateDay = nextDay;
+            appendEmeraldHistory(emeraldLastUpdateDay, emeraldCurrentPrice);
+            changed = true;
         }
-        return true;
+        return changed;
+    }
+
+    private boolean appendEmeraldHistory(long day, long price) {
+        if (day < 0L || price < EmeraldMarketPriceGenerator.MINIMUM_PRICE
+                || price > EmeraldMarketPriceGenerator.MAXIMUM_PRICE) {
+            return false;
+        }
+        Long previous = emeraldPriceHistory.put(Long.valueOf(day), Long.valueOf(price));
+        trimCropHistory(emeraldPriceHistory);
+        return previous == null || previous.longValue() != price;
     }
 
     private void clearMarketData() {
@@ -524,6 +547,7 @@ public final class PastoralWorldData extends WorldSavedData {
         emeraldCurrentPrice = EmeraldMarketPriceGenerator.INITIAL_PRICE;
         emeraldPreviousPrice = EmeraldMarketPriceGenerator.INITIAL_PRICE;
         emeraldLastUpdateDay = -1L;
+        emeraldPriceHistory.clear();
     }
 
     private NBTTagCompound writeMarket() {
@@ -544,6 +568,7 @@ public final class PastoralWorldData extends WorldSavedData {
             market.setLong(KEY_EMERALD_CURRENT_PRICE, emeraldCurrentPrice);
             market.setLong(KEY_EMERALD_PREVIOUS_PRICE, emeraldPreviousPrice);
             market.setLong(KEY_EMERALD_LAST_UPDATE_DAY, emeraldLastUpdateDay);
+            market.setTag(KEY_EMERALD_HISTORY, writeEmeraldHistory());
         }
         return market;
     }
@@ -580,6 +605,17 @@ public final class PastoralWorldData extends WorldSavedData {
         return histories;
     }
 
+    private NBTTagList writeEmeraldHistory() {
+        NBTTagList points = new NBTTagList();
+        for (Map.Entry<Long, Long> point : emeraldPriceHistory.entrySet()) {
+            NBTTagCompound serializedPoint = new NBTTagCompound();
+            serializedPoint.setLong(KEY_DAY, point.getKey().longValue());
+            serializedPoint.setLong(KEY_PRICE_VALUE, point.getValue().longValue());
+            points.appendTag(serializedPoint);
+        }
+        return points;
+    }
+
     private void readMarket(NBTTagCompound market) {
         marketInitialized = market.getBoolean(KEY_MARKET_INITIALIZED);
         if (!marketInitialized) {
@@ -607,6 +643,7 @@ public final class PastoralWorldData extends WorldSavedData {
                 emeraldCurrentPrice = current;
                 emeraldPreviousPrice = previous;
                 emeraldLastUpdateDay = day;
+                readEmeraldHistory(market.getTagList(KEY_EMERALD_HISTORY, 10));
             }
         }
         // Preserve recorded prices exactly. In particular, a catalog base-price
@@ -655,6 +692,19 @@ public final class PastoralWorldData extends WorldSavedData {
                 }
             }
             cropPriceHistory.put(key, history);
+        }
+    }
+
+    private void readEmeraldHistory(NBTTagList serializedPoints) {
+        for (int index = 0; index < serializedPoints.tagCount(); index++) {
+            NBTTagCompound point = serializedPoints.getCompoundTagAt(index);
+            long day = point.getLong(KEY_DAY);
+            long price = point.getLong(KEY_PRICE_VALUE);
+            if (day >= 0L && price >= EmeraldMarketPriceGenerator.MINIMUM_PRICE
+                    && price <= EmeraldMarketPriceGenerator.MAXIMUM_PRICE) {
+                emeraldPriceHistory.put(Long.valueOf(day), Long.valueOf(price));
+                trimCropHistory(emeraldPriceHistory);
+            }
         }
     }
 

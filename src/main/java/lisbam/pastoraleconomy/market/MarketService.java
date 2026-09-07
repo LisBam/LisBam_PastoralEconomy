@@ -15,6 +15,8 @@ import java.util.List;
  */
 public final class MarketService {
     public static final int DEFAULT_HISTORY_DAYS = PastoralWorldData.MARKET_HISTORY_RETENTION_DAYS;
+    /** Stable display-only key for the emerald/coin spot-market chart. */
+    public static final String EMERALD_HISTORY_KEY = "lisbam_pastoral_economy:emerald/spot";
 
     private MarketService() {
     }
@@ -60,6 +62,22 @@ public final class MarketService {
         return getReadyData(world).hasPreviousMarketSnapshot();
     }
 
+    /** Includes ordinary book commodities and the independent emerald spot market. */
+    public static boolean isHistoryTracked(String commodityKey) {
+        return EMERALD_HISTORY_KEY.equals(commodityKey)
+                || (MarketCatalog.get(commodityKey) != null && MarketCatalog.get(commodityKey).isHistoryTracked());
+    }
+
+    /** The emerald market intentionally keeps its own last-update day across world-time rollbacks. */
+    public static long getHistoryCurrentDay(World world, String commodityKey) {
+        PastoralWorldData data = getReadyData(world);
+        if (EMERALD_HISTORY_KEY.equals(commodityKey)) {
+            return data.getEmeraldLastUpdateDay();
+        }
+        requireHistoryCommodity(commodityKey);
+        return data.getCurrentMarketDay();
+    }
+
     public static MarketTrend getCurrentTrend(World world, String commodityKey) {
         long current = getCurrentPrice(world, commodityKey);
         Long previous = getPreviousPrice(world, commodityKey);
@@ -97,8 +115,11 @@ public final class MarketService {
             throw new IllegalArgumentException("Market history window limit must be between 1 and 30.");
         }
 
-        MarketCommodity commodity = requireHistoryCommodity(commodityKey);
         PastoralWorldData data = getReadyData(world);
+        if (EMERALD_HISTORY_KEY.equals(commodityKey)) {
+            return createEmeraldHistorySnapshot(data, beforeExclusiveDay, limit, requestId);
+        }
+        MarketCommodity commodity = requireHistoryCommodity(commodityKey);
         long currentDay = data.getCurrentMarketDay();
         if (beforeExclusiveDay < -1L || (beforeExclusiveDay >= 0L && beforeExclusiveDay > currentDay)) {
             throw new IllegalArgumentException("Market history cursor is outside the current world day.");
@@ -156,6 +177,27 @@ public final class MarketService {
                 hasOlder,
                 hasNewer
         );
+    }
+
+    private static MarketHistorySnapshot createEmeraldHistorySnapshot(
+            PastoralWorldData data, long beforeExclusiveDay, int limit, int requestId
+    ) {
+        long currentDay = data.getEmeraldLastUpdateDay();
+        if (beforeExclusiveDay < -1L || (beforeExclusiveDay >= 0L && beforeExclusiveDay > currentDay)) {
+            throw new IllegalArgumentException("Emerald market history cursor is outside the current market day.");
+        }
+        long currentPrice = data.getEmeraldCurrentPrice();
+        Long previousPrice = Long.valueOf(data.getEmeraldPreviousPrice());
+        List<MarketHistoryPoint> points = data.getEmeraldHistory(limit,
+                beforeExclusiveDay == -1L ? null : Long.valueOf(beforeExclusiveDay));
+        if (beforeExclusiveDay == -1L && points.isEmpty()) {
+            points = Collections.singletonList(new MarketHistoryPoint(currentDay, currentPrice, previousPrice));
+        }
+        boolean hasOlder = !points.isEmpty()
+                && !data.getEmeraldHistory(1, Long.valueOf(points.get(0).getWorldDay())).isEmpty();
+        boolean hasNewer = beforeExclusiveDay != -1L && !points.isEmpty();
+        return new MarketHistorySnapshot(requestId, EMERALD_HISTORY_KEY, beforeExclusiveDay, currentDay,
+                currentPrice, previousPrice, points, hasOlder, hasNewer);
     }
 
     @Nullable
