@@ -16,6 +16,13 @@ public final class AnvilFirstUseRules {
 
     @Nullable
     public static Result createResult(ItemStack left, ItemStack right, String requestedName) {
+        return createResult(left, right, requestedName, false);
+    }
+
+    /** Allows Reforged to use the same first-use calculation for the explicit hoe material repair path. */
+    @Nullable
+    public static Result createResult(ItemStack left, ItemStack right, String requestedName,
+                                      boolean additionalRepairMaterial) {
         if (left.isEmpty() || right.isEmpty()) {
             return null;
         }
@@ -26,7 +33,8 @@ public final class AnvilFirstUseRules {
         int cost = 0;
         int materialCost = 0;
 
-        if (output.isItemStackDamageable() && output.getItem().getIsRepairable(left, right)) {
+        if (output.isItemStackDamageable()
+                && (output.getItem().getIsRepairable(left, right) || additionalRepairMaterial)) {
             int repairAmount = Math.min(output.getItemDamage(), output.getMaxDamage() / 4);
             if (repairAmount <= 0) {
                 return null;

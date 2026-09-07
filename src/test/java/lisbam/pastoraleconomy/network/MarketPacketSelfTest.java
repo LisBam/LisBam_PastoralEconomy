@@ -18,6 +18,7 @@ import java.util.List;
 public final class MarketPacketSelfTest {
     private static final String WHEAT = "lisbam_pastoral_economy:sell/crop/wheat";
     private static final String CARROT = "lisbam_pastoral_economy:sell/crop/carrot";
+    private static final String EMERALD = "lisbam_pastoral_economy:emerald/spot";
 
     private MarketPacketSelfTest() {
     }
@@ -128,7 +129,8 @@ public final class MarketPacketSelfTest {
     private static void verifyDisplayOnlyRequestsRemainIndependent() {
         RequestMarketHistoryMessage first = new RequestMarketHistoryMessage(WHEAT, -1L, 1);
         RequestMarketHistoryMessage second = new RequestMarketHistoryMessage(CARROT, -1L, 2);
-        require(first.isValid() && second.isValid(),
+        RequestMarketHistoryMessage emerald = new RequestMarketHistoryMessage(EMERALD, -1L, 3);
+        require(first.isValid() && second.isValid() && emerald.isValid(),
                 "each bounded display request must be eligible for immediate server-thread handling");
     }
 

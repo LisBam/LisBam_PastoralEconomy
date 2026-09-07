@@ -1,5 +1,13 @@
 # 实施决策
 
+## DEC-067 背包值复制、绿宝石显示历史与锄头材料修理（2026-09-08）
+
+决定：`BackpackInventory` 的开放会话以肩部仍持有同一 `ItemBackpack` 实例类型为有效条件，而不比较 `ItemStack` 引用；`PlayerData#setShoulderStack` 和 Packet 9 的客户端接收都按设计复制栈。绿宝石历史归既有 `PastoralWorldData.market` 段的 v11 `emeraldHistory` 所有，最多保存 30 个 `(worldDay, price)`；行情书以稳定显示 key `lisbam_pastoral_economy:emerald/spot` 复用 Packet 1 请求和 Packet 2 快照。铁砧以 `AnvilUpdateEvent` 只接管五把原版锄头与其 `Item.ToolMaterial#getRepairItemStack()` 匹配的材料；Reforged 入口把同一材料匹配传给现有首用计算，避免该附魔锄头退回不可修理状态。
+
+原因：背包私有 NBT 每次更新后必须向所有者同步，但值复制是 Capability/网络的正确隔离方式，引用身份不能跨该边界。绿宝石的价格没有普通 `MarketCatalog` 商品身份，强行加入购买/收购目录会破坏其“只在商人现货页交易”的规则；独立有界历史和只读 key 可以复用成熟的图表协议而不扩展交易面。Forge 1.12.2 的 `ItemHoe` 不是 `ItemTool`，也未覆写 `getIsRepairable`，故原版铁砧没有材料修理分支；明确的五项映射能恢复预期行为且不影响模组/第三方物品。
+
+兼容性与影响：WorldSavedData v1--v10 仍可读；缺少 `emeraldHistory` 时只写入已有当前价格的单点，绝不重抽。没有新增或重排 Packet discriminator、registry ID、PlayerData/背包 NBT key，也不修改普通商品价格、绿宝石手续费或商人事务。不同背包 tier 或无背包仍使旧 Container 不可交互；同 tier 栈在合法同步复制后保持可见。锄头修理不添加物品 NBT，旧锄头立即可用。
+
 ## DEC-066 炒币双栏、晨间出货与加载器票据复核（2026-09-07）
 
 决定：`GuiMerchantTrade` 的绿宝石分页按左买右卖布局保存两个完全独立的客户端数量值与原版 `GuiSlider`/`GuiTextField`，每个方向只读取服务器同步的自身上限并发送原有 Packet 11。原先一行的合并上限文本不再使用全角空格；本地化分别显示 `可买` 和 `可卖`，避免原版 `FontRenderer` 将中间字符渲染为乱码。这个界面状态不参与价格、库存或金币结算。

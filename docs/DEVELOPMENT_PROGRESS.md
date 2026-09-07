@@ -2,6 +2,16 @@
 
 当前发行版本：`1.7`；既有第 15 批功能完成，当前仅进行明确的新内容、平衡与维护更新。
 
+## 维护：背包同步、行情书炒币与锄头铁砧修复（2026-09-08）
+
+根因与修复：背包服务端 NBT 写入本身正确，但 `BackpackInventory` 把肩部 `ItemStack` 的对象引用当作身份。Capability 和所有者 Packet 9 同步均会复制该栈，首次放入/取出后的 S2C 副本替换客户端对象后，仍打开的 Container 因 `==` 失败显示全空，重开才从已写入 NBT 重新读到物品。现改为验证同一背包 Item tier；服务端 Container、物品私有 NBT、背包套娃拒绝和不同 tier/移除后的关闭边界不变。
+
+行情书新增“炒币”第三页。`PastoralWorldData` 升至 v11，在既有绿宝石当前/昨日价旁保存至多 30 个实际世界日 `emeraldHistory` 点；新世界从首次 1,000 价开始记录，跨日补算逐日追加。v10 旧世界第一次读取只由保存的当前价补一个当前日点，不重抽也不改变普通行情。显示复用既有 Packet 1/2 的受限只读快照 key，客户端只画绿宝石曲线、今日/昨日、涨跌、300～3,000 范围和商人 4% 费率；交易仍仅在服务器权威的商人“炒币”页进行。
+
+锄头铁砧问题经 Forge 1.12.2 映射源码/字节码核对，确认 `ItemHoe` 未覆写 `getIsRepairable`，继承的 `Item` 方法恒返回 false；近期作物耐久改动没有接管铁砧。新增受限 `AnvilUpdateEvent` 规则，只接受木板、圆石、铁锭、金锭、钻石分别修理木/石/铁/金/钻石锄，沿用每材料 25% 上限、消耗数、经验和后续 RepairCost；带 Reforged 的锄头继续按既有首次费用结果修理。
+
+验证：Temurin JDK 8 `1.8.0_504` 下 `compileJava`、`compileTestJava`、`processResources`、`backpackSelfTest`、`emeraldMarketSelfTest`、`marketPacketSelfTest`、`enchantmentSelfTest` 与 `pastoralWorldDataSelfTest` 均 PASS。Forge 1.12.2 常规 audit 为 0 ERROR、7 条既有 S2C/Proxy `packet-thread` 保守 WARNING；`--strict-warnings` 因相同 7 条告警返回 2，未标记 PASS；`git diff --check` PASS。受限 60 秒 `runServer` 已实际进入 Forge/FML Java 8 启动与类加载，超时前未到模组生命周期/世界，完整 Dedicated Server 验收仍为 NOT RUN。最终 `./gradlew build --no-daemon --console=plain` PASS，含 `test`、`reobfJar`、`exportReleaseJar`、`verifyReleaseJar`；门禁核验 270 个 Java 8 生产 class。覆盖前 1.7 JAR 已备份为 `release/backup/backup_20260908-003216.jar`（556,164 bytes）；新 `release/LisBam_PastoralEconomy-1.7.jar` 为 561,839 bytes，SHA-256 `52042dee6111049944b27d03878391651fe9878c849eac85c8b9d5ea8c80f3d1`，`unzip -t` PASS。游戏内背包、行情书和铁砧回归为 NOT RUN：当前无可操作 Forge 客户端世界。
+
 ## 维护：炒币界面、出货箱晨间结算与区块加载器（2026-09-07）
 
 实现：商人“炒币”页改为买入/卖出左右两栏，各栏均有独立原版数量滑条、输入框、服务器快照上限、预计金额和确认按钮；移除同一行“可买/可卖”之间原版字体不支持的全角空格，避免乱码。绿宝石交易的 Packet 11、服务端重验、费率和所有冻结数值不变。

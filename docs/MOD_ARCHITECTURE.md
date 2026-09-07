@@ -6,6 +6,13 @@
 
 ## 已实现
 
+### 2026-09-08 维护：背包同步、行情书炒币与锄头铁砧修复
+
+- `BackpackInventory` 不再用 `ItemStack` 的 Java 对象身份判断肩部背包仍在装备。`PlayerData` 与 Packet 9 的所有者快照会按值复制肩部栈，原先客户端收到首次同步副本后会把开放 Container 的所有槽读为 `EMPTY`；现在只验证肩部仍是打开时相同的背包 Item tier，服务端的 NBT 库存和 Container 权威性不变。
+- `PastoralWorldData` 升至 schema `v11`。既有 `market` 段追加有界 `emeraldHistory`（最多 30 个实际日价点）；首次绿宝石初始化和此后每个补算的世界日各记录一次。旧 v10 缺该段时只以已经持久化的当前价补出当前日一点，不重算普通市场或绿宝石价格。行情书复用 Packet 1/2 的有界显示快照，以稳定只读 key `lisbam_pastoral_economy:emerald/spot` 提供“炒币”第三页；没有新 Packet discriminator、交易入口或客户端权威状态。
+- `GuiMarketBook` 的“炒币”页显示原版绿宝石图标、今日/昨日现货价、涨跌、300～3,000 固定范围、商人 4% 手续费说明和最多 30 点曲线；买卖仍只在服务端验证的商人页面进行。
+- Forge 1.12.2 的 `ItemHoe` 继承 `Item#getIsRepairable`（恒为 false），并非近期作物耐久事件造成。`HoeAnvilRepairRules` 因而只为五把原版锄头恢复其材质的原版式铁砧材料修理（每份至多修复最大耐久的 25%）；带 Reforged 的锄头仍由既有首用费用计算处理。没有新的注册项、玩家 NBT、背包 NBT key 或网络包。
+
 ### 2026-09-07 新内容：出货箱
 
 - 新增稳定 `shipping_box` Block/ItemBlock/TileEntity ID、GUI ID `5` 与 `TileShippingBox` 27 格库存。它使用标准 `IInventory`/`ISidedInventory`：玩家和箱子一样可自由放取，所有面均可由漏斗输入，但 `canExtractItem` 恒为 `false`，故无法被漏斗抽出。破坏时按通常容器规则掉落内部物品。

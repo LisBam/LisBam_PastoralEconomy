@@ -3,6 +3,7 @@ package lisbam.pastoraleconomy.event;
 import lisbam.pastoraleconomy.LisBamPastoralEconomy;
 import lisbam.pastoraleconomy.equipment.FeatherWingsRules;
 import lisbam.pastoraleconomy.enchantment.AnvilFirstUseRules;
+import lisbam.pastoraleconomy.enchantment.HoeAnvilRepairRules;
 import lisbam.pastoraleconomy.enchantment.ModEnchantments;
 import lisbam.pastoraleconomy.item.ItemFeatherWings;
 import net.minecraft.enchantment.EnchantmentHelper;
@@ -26,7 +27,29 @@ public final class AnvilEnchantmentEventHandler {
         if (left.isEmpty() || EnchantmentHelper.getEnchantmentLevel(ModEnchantments.REFORGED, left) <= 0) {
             return;
         }
-        AnvilFirstUseRules.Result result = AnvilFirstUseRules.createResult(left, event.getRight(), event.getName());
+        AnvilFirstUseRules.Result result = AnvilFirstUseRules.createResult(left, event.getRight(), event.getName(),
+                HoeAnvilRepairRules.isHoeRepairMaterial(left, event.getRight()));
+        if (result == null) {
+            return;
+        }
+        event.setOutput(result.getOutput());
+        event.setCost(result.getCost());
+        event.setMaterialCost(result.getMaterialCost());
+    }
+
+    /**
+     * Minecraft/Forge 1.12.2's ItemHoe inherits Item#getIsRepairable, which
+     * always returns false. Restore the ordinary material-repair calculation
+     * only for the five vanilla hoes and leave every other anvil item alone.
+     */
+    @SubscribeEvent
+    public static void repairVanillaHoesWithTheirMaterials(AnvilUpdateEvent event) {
+        ItemStack left = event.getLeft();
+        if (left.isEmpty() || EnchantmentHelper.getEnchantmentLevel(ModEnchantments.REFORGED, left) > 0) {
+            return;
+        }
+        HoeAnvilRepairRules.Result result = HoeAnvilRepairRules.createVanillaRepairResult(
+                left, event.getRight(), event.getName());
         if (result == null) {
             return;
         }

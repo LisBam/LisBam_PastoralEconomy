@@ -1,6 +1,5 @@
 package lisbam.pastoraleconomy.network.handler;
 
-import lisbam.pastoraleconomy.market.MarketCommodity;
 import lisbam.pastoraleconomy.market.MarketHistorySnapshot;
 import lisbam.pastoraleconomy.market.MarketService;
 import lisbam.pastoraleconomy.gui.ContainerMarketBook;
@@ -54,8 +53,7 @@ public final class RequestMarketHistoryMessageHandler
                 || !(player.openContainer instanceof ContainerMarketBook)) {
             return;
         }
-        MarketCommodity commodity = MarketService.getCommodity(request.getCommodityKey());
-        if (commodity == null || !commodity.isHistoryTracked()) {
+        if (!MarketService.isHistoryTracked(request.getCommodityKey())) {
             return;
         }
 
@@ -64,21 +62,21 @@ public final class RequestMarketHistoryMessageHandler
             // One bounded response per request keeps opening the book cheap;
             // the client gradually prefetches the remaining catalogue entries.
             MarketHistorySnapshot snapshot = MarketService.getHistorySnapshot(
-                    player.getServerWorld(), commodity.getKey(), -1L,
+                    player.getServerWorld(), request.getCommodityKey(), -1L,
                     MarketService.DEFAULT_HISTORY_DAYS, request.getRequestId());
             ModNetwork.CHANNEL.sendTo(new SyncMarketHistoryMessage(snapshot), player);
             return;
         }
 
         WorldServer playerWorld = player.getServerWorld();
-        long currentDay = MarketService.getCurrentMarketDay(playerWorld);
+        long currentDay = MarketService.getHistoryCurrentDay(playerWorld, request.getCommodityKey());
         if (cursor > currentDay) {
             return;
         }
 
         MarketHistorySnapshot snapshot = MarketService.getHistorySnapshot(
                 playerWorld,
-                commodity.getKey(),
+                request.getCommodityKey(),
                 cursor,
                 MarketService.DEFAULT_HISTORY_DAYS,
                 request.getRequestId()

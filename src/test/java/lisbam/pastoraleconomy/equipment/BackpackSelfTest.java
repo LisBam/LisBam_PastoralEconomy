@@ -46,6 +46,17 @@ public final class BackpackSelfTest {
                         && restored.get(53).getCount() == 3 && restored.get(107).getCount() == 64,
                 "all four storage pages round-trip");
 
+        // Shoulder state is value-copied by the capability and S2C snapshot
+        // path. The storage NBT must consequently survive an object replacement.
+        ItemStack synchronizedCopy = superBackpack.copy();
+        check(BackpackStorage.read(synchronizedCopy).get(0).getCount() == 17
+                        && BackpackStorage.read(synchronizedCopy).get(53).getCount() == 3,
+                "a synchronized backpack copy must retain visible storage contents");
+        check(BackpackInventory.isExpectedBackpack(synchronizedCopy, ModItems.SUPER_BACKPACK),
+                "a copied synchronized shoulder stack must remain valid for its open backpack container");
+        check(!BackpackInventory.isExpectedBackpack(synchronizedCopy, ModItems.ADVANCED_BACKPACK),
+                "a different backpack tier must not remain valid for an open container");
+
         restored.set(1, new ItemStack(ModItems.BACKPACK));
         BackpackStorage.write(superBackpack, restored);
         check(BackpackStorage.read(superBackpack).get(1).isEmpty(), "nested backpacks are never serialized");

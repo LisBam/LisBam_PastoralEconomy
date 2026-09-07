@@ -4,6 +4,7 @@ import lisbam.pastoraleconomy.data.world.PastoralWorldData;
 import net.minecraft.init.Bootstrap;
 import net.minecraft.nbt.NBTTagCompound;
 
+import java.util.List;
 import java.util.Random;
 
 /** Deterministic regression checks for the independent persisted emerald market. */
@@ -48,6 +49,10 @@ public final class EmeraldMarketSelfTest {
         check(data.getEmeraldCurrentPrice() == 1000L && data.getEmeraldPreviousPrice() == 1000L
                         && data.getEmeraldLastUpdateDay() == 40L,
                 "a new world initializes emerald price once without a same-day roll");
+        List<MarketHistoryPoint> history = data.getEmeraldHistory(30, null);
+        check(history.size() == 1 && history.get(0).getWorldDay() == 40L
+                        && history.get(0).getPrice() == 1000L && !history.get(0).hasPreviousPoint(),
+                "the first emerald price must become the first bounded chart point");
         data.ensureMarketDay(40L, 98765L);
         check(data.getEmeraldCurrentPrice() == 1000L && data.getEmeraldLastUpdateDay() == 40L,
                 "reopening the same day cannot reroll emerald price");
@@ -58,6 +63,20 @@ public final class EmeraldMarketSelfTest {
                         && data.getEmeraldPreviousPrice() >= EmeraldMarketPriceGenerator.MINIMUM_PRICE
                         && data.getEmeraldPreviousPrice() <= EmeraldMarketPriceGenerator.MAXIMUM_PRICE,
                 "skipped days advance one bounded emerald price step per world day");
+        history = data.getEmeraldHistory(30, null);
+        check(history.size() == 3 && history.get(0).getWorldDay() == 40L
+                        && history.get(2).getWorldDay() == 42L
+                        && history.get(2).getPrice() == data.getEmeraldCurrentPrice()
+                        && history.get(1).hasPreviousPoint() && history.get(1).getPreviousPrice().longValue() == 1000L,
+                "each skipped emerald day must append a sequential chart point with its actual prior price");
+
+        NBTTagCompound saved = data.writeToNBT(new NBTTagCompound());
+        PastoralWorldData restored = new PastoralWorldData();
+        restored.readFromNBT(saved);
+        restored.ensureMarketDay(42L, 98765L);
+        check(restored.getEmeraldHistory(30, null).size() == 3
+                        && restored.getEmeraldHistory(30, null).get(2).getPrice() == data.getEmeraldCurrentPrice(),
+                "the retained emerald chart must survive a save reload without a reroll");
 
         NBTTagCompound legacy = data.writeToNBT(new NBTTagCompound());
         NBTTagCompound market = legacy.getCompoundTag("market");
@@ -65,6 +84,7 @@ public final class EmeraldMarketSelfTest {
         market.removeTag("emeraldCurrentPrice");
         market.removeTag("emeraldPreviousPrice");
         market.removeTag("emeraldLastUpdateDay");
+        market.removeTag("emeraldHistory");
         legacy.setInteger("dataVersion", 8);
         PastoralWorldData migrated = new PastoralWorldData();
         migrated.readFromNBT(legacy);
@@ -72,6 +92,9 @@ public final class EmeraldMarketSelfTest {
         check(migrated.getEmeraldCurrentPrice() == 1000L && migrated.getEmeraldPreviousPrice() == 1000L
                         && migrated.getEmeraldLastUpdateDay() == 42L,
                 "an old world without emerald fields initializes at 1000 without an immediate roll");
+        check(migrated.getEmeraldHistory(30, null).size() == 1
+                        && migrated.getEmeraldHistory(30, null).get(0).getWorldDay() == 42L,
+                "an old world starts the new chart at its truthful first visible price");
     }
 
     private static void check(boolean condition, String message) {
