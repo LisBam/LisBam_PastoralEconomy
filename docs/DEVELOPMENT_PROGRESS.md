@@ -2,6 +2,16 @@
 
 当前发行版本：`1.5`；既有第 15 批功能完成，1.5 为维护更新。
 
+## 紧急修复：多 Coremod 环境延迟类加载崩溃（2026-09-07）
+
+根因：崩溃并非蟹笼库存、捕捞或农业规则自身抛错。用户日志中的 `LaunchClassLoader.findClass:182` 对空 `transformedClass` 执行 `defineClass`，同一进程先后无法解析 `AgricultureRules$Crop`、`ContainerCrabTrap` 和 `CrabTrapRules`；逐个检查发生崩溃时对应的 497,424-byte release 备份与当前 release，三个 class 均真实存在、非空且 JAR 可完整解压。项目作为 Coremod 与普通模组共包，却只将 `lisbam.pastoraleconomy.core` 排除于全局转换链，导致其余业务类的首次加载仍经过同环境中全部第三方 Transformer 及 LaunchWrapper 的负资源缓存；任一步返回空字节就会表现为这些互不相关类的 `NoClassDefFoundError`。
+
+修复：`EnchantingTableCorePlugin` 将 `TransformerExclusions` 扩大为稳定根包 `lisbam.pastoraleconomy`。本模组自己的 class 从此直接由 LaunchClassLoader 的父实现定义，不再交给无关 Coremod 改写；两个本模组 Transformer 仍只处理明确的原版目标。构建增加 `verifyReleaseJar`：`build` 导出重混淆成品后，逐项对照全部编译生产 class，确认 JAR 条目存在、非空、可读取且均为 Java 8 major 52，任何漏包或损坏都会令构建失败。
+
+兼容性与影响：不修改 registry ID、NBT、Capability、WorldSavedData、Packet discriminator、GUI ID 或存档 schema，旧世界无需迁移。修改只改变本模组 class 的装载边界，不改变蟹笼、农业、肩部装备或经济玩法。
+
+验证：Temurin Java 8 `1.8.0_504` 下 `compileJava`、`compileTestJava`、`shoulderEquipmentSelfTest`、`crabTrapSelfTest` 均 PASS；Coremod 自检新增独立 LaunchClassLoader 对上述三个延迟类的实际装载，并保持肩部原版类注入通过。Forge 1.12.2 常规 audit 为 0 ERROR、7 条既有 `packet-thread` 保守 WARNING。带显式 Coremod 的 `runServer` 在 120 秒内确认根包隔离注解可装载且 Coremod 成功入队，超时前仍停在开发环境映射载入、未进入模组生命周期/世界；真实 Windows 多 Coremod 客户端及蟹笼点击为 NOT RUN。最终 `./gradlew build --no-daemon --console=plain` PASS，包含 `test`、`reobfJar`、`exportReleaseJar` 和 `verifyReleaseJar`；门禁成功核验 243 个生产 class。新 release JAR 为 503,927 bytes，SHA-256 `cb76eafbe1d45d4ef561b74cefb2bdef7a60705e9cf6488fcdf5830d0e742527`，`unzip -t` PASS；覆盖前 503,932-byte JAR 已备份为 `release/backup/backup_20260907-090138.jar`，SHA-256 `860ae85ab4c3099b246d687b8bde7d597383d1a3c39f145994d92c1dce38ffea`。
+
 ## 紧急修复：锄头耐久、作物掉落与多人方块同步（2026-09-06）
 
 根因：上一轮把所有锄头作物破坏都塞入原本仅承载附魔成熟收获的玩家级 `HarvestAction`，并在 `HarvestDropsEvent` 回调仍执行原版掉落代码时直接损伤主手栈；精耕也在同一回调内立即把 AIR 改成新苗。Forge 1.12.2 的实际顺序会在 `BreakEvent` 前先给破坏者发送临时 AIR 包，再执行方块移除、掉落事件和区块批量同步。两项中途写入使工具补扣依赖附魔动作匹配，并让成熟作物、AIR、新苗的客户端更新发生在同一原版收获调用中，实机出现未扣耐久、无掉落假象、成熟幽灵作物及其他玩家看不到新苗。此前纯规则自检只覆盖“哪些作物需要补扣”，没有覆盖该事件时序。

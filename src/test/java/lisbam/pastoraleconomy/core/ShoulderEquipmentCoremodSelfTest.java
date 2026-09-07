@@ -8,6 +8,7 @@ import net.minecraft.init.Items;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraftforge.registries.GameData;
+import net.minecraftforge.fml.relauncher.IFMLLoadingPlugin;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.tree.AbstractInsnNode;
@@ -18,8 +19,11 @@ import org.objectweb.asm.tree.MethodNode;
 import org.objectweb.asm.tree.TypeInsnNode;
 
 import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URL;
+import java.util.Arrays;
 
 /** Exercises the release Coremod against the actual mapped 1.12.2 bytecode. */
 public final class ShoulderEquipmentCoremodSelfTest {
@@ -30,7 +34,9 @@ public final class ShoulderEquipmentCoremodSelfTest {
     private ShoulderEquipmentCoremodSelfTest() {
     }
 
-    public static void main(String[] args) throws IOException {
+    public static void main(String[] args) throws Exception {
+        verifyModNamespaceIsTransformerExcluded();
+        verifyLazyGameplayClassesLoadOutsideTransformerChain();
         ShoulderEquipmentTransformer transformer = new ShoulderEquipmentTransformer();
         verifyElytraLookup(transformer, "net.minecraft.entity.EntityLivingBase");
         verifyElytraLookup(transformer, "net.minecraft.client.entity.EntityPlayerSP");
@@ -41,6 +47,39 @@ public final class ShoulderEquipmentCoremodSelfTest {
         verifyShoulderSyncPacket();
         verifyBackpackShoulderSyncPacket();
         verifyFeatherWingsShoulderSyncPacket();
+    }
+
+    private static void verifyModNamespaceIsTransformerExcluded() {
+        IFMLLoadingPlugin.TransformerExclusions exclusions =
+                EnchantingTableCorePlugin.class.getAnnotation(IFMLLoadingPlugin.TransformerExclusions.class);
+        require(exclusions != null
+                        && Arrays.asList(exclusions.value()).contains("lisbam.pastoraleconomy"),
+                "the complete mod namespace must bypass unrelated Coremod transformers");
+    }
+
+    private static void verifyLazyGameplayClassesLoadOutsideTransformerChain() throws Exception {
+        String[] classPathEntries = System.getProperty("java.class.path").split(File.pathSeparator);
+        URL[] classPath = new URL[classPathEntries.length];
+        for (int index = 0; index < classPathEntries.length; index++) {
+            classPath[index] = new File(classPathEntries[index]).toURI().toURL();
+        }
+        net.minecraft.launchwrapper.LaunchClassLoader loader =
+                new net.minecraft.launchwrapper.LaunchClassLoader(classPath);
+        loader.addTransformerExclusion("lisbam.pastoraleconomy");
+        try {
+            String[] lazyClasses = {
+                    "lisbam.pastoraleconomy.agriculture.AgricultureRules$Crop",
+                    "lisbam.pastoraleconomy.gui.ContainerCrabTrap",
+                    "lisbam.pastoraleconomy.crabtrap.CrabTrapRules"
+            };
+            for (String className : lazyClasses) {
+                Class<?> loaded = Class.forName(className, false, loader);
+                require(className.equals(loaded.getName()),
+                        "isolated LaunchClassLoader must load " + className);
+            }
+        } finally {
+            loader.close();
+        }
     }
 
     private static void verifyElytraLookup(ShoulderEquipmentTransformer transformer, String className)

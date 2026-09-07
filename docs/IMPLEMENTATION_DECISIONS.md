@@ -1,5 +1,13 @@
 # 实施决策
 
+## DEC-064 本模组根包绕过全局 Coremod 转换链（2026-09-07）
+
+决定：随发行 JAR 加载的 `EnchantingTableCorePlugin` 将 `@TransformerExclusions` 从 `lisbam.pastoraleconomy.core` 扩大为完整稳定根包 `lisbam.pastoraleconomy`。本模组普通 class 与 Coremod helper 均由 LaunchClassLoader 直接定义；自有两个 `IClassTransformer` 仍只按转换后的原版类名处理 `Item`、`ContainerPlayer`、`EntityLivingBase`、`EntityPlayerSP`、`NetHandlerPlayServer` 和 `LayerElytra`。`build` 在 `reobfJar`/`exportReleaseJar` 后自动执行 `verifyReleaseJar`，逐个确认全部编译生产 class 已进入成品且为 Java 8 字节码。
+
+原因：用户的同一运行实例对三个互不相关且已确认存在于成品中的 class 报 `NoClassDefFoundError`，底层均为 LaunchWrapper 1.12 的 `findClass` 在转换结果为 `null` 时进入 `defineClass`。仅排除 core 子包使农业、GUI 和蟹笼规则继续经过所有第三方 Transformer 与 LaunchWrapper 负资源缓存，扩大隔离可从入口消除该不必要依赖；自有 Transformer 从不以本模组 class 为目标，因此不会损失任何注入功能。
+
+影响：类加载边界变化不触及注册名、持久化或协议。第三方 Coremod 将不能修改 `lisbam.pastoraleconomy` 下的 class；这是有意的兼容性边界，外部模组仍可通过 Forge 事件、注册对象与正常 Java 调用进行交互。旧存档无需迁移。
+
 ## DEC-063 作物掉落、补种和锄头损耗分阶段提交（2026-09-06）
 
 决定：DEC-062 中“把锄头补扣并入 `AgricultureEnchantmentEventHandler.HarvestAction` 并在匹配的 `HarvestDropsEvent` 立即损伤栈”的部分作废。新的 `HoeCropDurabilityEventHandler` 直接以服务端 `HarvestDropsEvent` 作为成功凭证，只为真实非创造玩家、五种原版锄头和既有零硬度作物登记一次损耗；服务器 END tick 确认仍是捕获的快捷栏栈后才执行 `damageItem`、工具损坏事件和库存同步。它同时通过世界监听器重新广播该坐标当时的最终权威状态。Fine Cultivation 在掉落事件中仍先真实消耗掉落/库存种植物，但仅登记补种；END tick 再确认 AIR 与耕地并设置同作物默认 age 0。手动成功种植列表内作物后也登记一次 END tick 最终状态广播，该广播不接受客户端提供的方块状态。
