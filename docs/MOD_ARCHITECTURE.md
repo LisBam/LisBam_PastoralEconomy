@@ -6,6 +6,11 @@
 
 ## 已实现
 
+### 2026-09-07 维护：Coremod 类加载隔离与发行完整性
+
+- `core.EnchantingTableCorePlugin` 通过 `@TransformerExclusions("lisbam.pastoraleconomy")` 将完整自有根包排除出 LaunchWrapper 全局转换链。本模组业务类不是任何自有 Transformer 的目标，直接定义可避免第三方 Coremod 或负资源缓存让农业内部类、GUI Container、蟹笼规则等首次延迟加载得到空字节；自有 Transformer 仍只修改明确的原版类目标。
+- `verifyReleaseJar` 在 `exportReleaseJar` 后打开实际 `release/LisBam_PastoralEconomy-<version>.jar`，逐项对照 `build/classes/java/main` 的全部生产 class，要求条目存在、非空、可读取且 class major version 为 52。它作为 `build` 的最终任务执行，故漏包、空条目或非 Java 8 字节码不能被当成可发布构建。
+
 ### 2026-09-06 维护：农作物事件时序、锄头耐久与伐木耐久
 
 - `FellingDurabilityRules` 是伐木的纯耐久边界：斧头仅剩 1 点耐久时不启动；在触发原木尚未执行原版扣耐久前，二级原木必须额外预留“触发原木 1 点 + 最终 1 点”。`TreeFellingEventHandler` 继续对原木和树叶调用原版 `tryHarvestBlock`，因此保护与掉落不变；成功连锁树叶后恢复该次工具损耗，树叶不会消耗伐木耐久。

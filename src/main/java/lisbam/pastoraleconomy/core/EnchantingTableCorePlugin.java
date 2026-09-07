@@ -7,7 +7,10 @@ import java.util.Map;
 /** Loads the narrowly scoped 1.12.2 enchanting and shoulder-equipment transformers. */
 @IFMLLoadingPlugin.Name("LisBam Pastoral Economy Enchanting Compatibility")
 @IFMLLoadingPlugin.MCVersion("1.12.2")
-@IFMLLoadingPlugin.TransformerExclusions({"lisbam.pastoraleconomy.core"})
+// None of the mod's own classes are transformer targets. Keeping the complete
+// namespace out of the global transformer chain also prevents unrelated
+// coremods from returning a null byte array for a lazily loaded gameplay class.
+@IFMLLoadingPlugin.TransformerExclusions({"lisbam.pastoraleconomy"})
 public final class EnchantingTableCorePlugin implements IFMLLoadingPlugin {
     @Override
     public String[] getASMTransformerClass() {

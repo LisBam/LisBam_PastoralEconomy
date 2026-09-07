@@ -1,5 +1,16 @@
 # 测试清单
 
+## 多 Coremod 环境延迟类加载回归（2026-09-07）
+
+- [x] 崩溃定位：LaunchWrapper 1.12 的源码/字节码确认 `findClass:182` 为 `defineClass(... transformedClass.length ...)`；日志中的底层 NPE 表明转换结果为 `null`，不是蟹笼 tick 或农业方法主动抛错。PASS。
+- [x] 历史成品核验：发生崩溃时对应的 497,424-byte 备份和当前 release 均包含非空 `AgricultureRules$Crop.class`、`ContainerCrabTrap.class`、`CrabTrapRules.class`，`unzip -t` 无错误且 class major 为 52。PASS。
+- [x] `shoulderEquipmentSelfTest`：Coremod 注解包含完整 `lisbam.pastoraleconomy` 根包；独立 LaunchClassLoader 真实延迟加载上述三个 class；肩部原版目标和既有同步包回归保持。PASS（Temurin Java 8 `1.8.0_504`）。
+- [x] `crabTrapSelfTest`：蟹笼规则、功能槽、20 槽库存和 NBT 回归保持。PASS（Temurin Java 8 `1.8.0_504`）。
+- [x] Forge 1.12.2 常规 audit：0 ERROR、7 条既有 `packet-thread` 保守 WARNING。PASS。
+- [x] 最终 Java 8 `./gradlew build --no-daemon --console=plain`：PASS（含 `test`、`reobfJar`、`exportReleaseJar`、`verifyReleaseJar`）；逐项核验 243 个生产 class 均存在、非空、可读且 major 52。release JAR 为 503,927 bytes，SHA-256 `cb76eafbe1d45d4ef561b74cefb2bdef7a60705e9cf6488fcdf5830d0e742527`，`unzip -t` PASS；旧 503,932-byte JAR 已备份为 `release/backup/backup_20260907-090138.jar`。
+- [ ] Dedicated Server 世界：带显式 Coremod 的 Java 8 `runServer` 在 120 秒内成功发现并入队本模组 Coremod，根包隔离装载无错误；超时前仍停在开发环境映射载入，未进入模组生命周期/世界，完整验收 NOT RUN。
+- [ ] Windows 多 Coremod 客户端：使用唯一一份新 JAR 完全重启游戏后，验证种植、打开蟹笼、蟹笼 tick/保存均不再出现 `AgricultureRules$Crop`、`ContainerCrabTrap`、`CrabTrapRules` 的 `NoClassDefFoundError`。NOT RUN：当前环境没有用户所列的完整 Windows 客户端/Coremod 组合。
+
 ## 作物收获时序、锄头耐久与多人同步回归（2026-09-06）
 
 - [x] Forge 1.12.2 字节码/源码核对：确认 `tryHarvestBlock` 在 BreakEvent 前发送破坏者 AIR 包，成功移除后才进入 `Block#harvestBlock` 与 `HarvestDropsEvent`；补种和工具损耗均已移出该原版掉落调用。PASS（Forge `14.23.5.2859` mapped JAR）。

@@ -117,7 +117,58 @@ task exportReleaseJar(type: Copy) {
     into "$projectDir/release"
 }
 
-build.finalizedBy('exportReleaseJar')
+task verifyReleaseJar {
+    group = 'verification'
+    description = 'Checks that every compiled production class is readable from the exported Java 8 jar.'
+    dependsOn 'exportReleaseJar'
+    doLast {
+        File releaseJar = file("$projectDir/release/${archivesBaseName}-${version}.jar")
+        if (!releaseJar.isFile() || releaseJar.length() == 0L) {
+            throw new GradleException("Missing or empty release jar: ${releaseJar}")
+        }
+        File classesDir = file("$buildDir/classes/java/main")
+        java.util.jar.JarFile jarFile = new java.util.jar.JarFile(releaseJar)
+        int checkedClasses = 0
+        try {
+            fileTree(classesDir).matching { include '**/*.class' }.each { File classFile ->
+                String entryName = classesDir.toPath().relativize(classFile.toPath()).toString().replace('\\', '/')
+                java.util.jar.JarEntry entry = jarFile.getJarEntry(entryName)
+                if (entry == null || entry.size == 0L) {
+                    throw new GradleException("Release jar is missing compiled class: ${entryName}")
+                }
+                byte[] header = new byte[8]
+                InputStream input = jarFile.getInputStream(entry)
+                int offset = 0
+                try {
+                    while (offset < header.length) {
+                        int read = input.read(header, offset, header.length - offset)
+                        if (read < 0) {
+                            break
+                        }
+                        offset += read
+                    }
+                } finally {
+                    input.close()
+                }
+                int majorVersion = offset == header.length
+                        ? ((header[6] & 0xff) << 8) | (header[7] & 0xff)
+                        : -1
+                if (majorVersion != 52) {
+                    throw new GradleException("Release class is not Java 8 bytecode: ${entryName} (major ${majorVersion})")
+                }
+                checkedClasses++
+            }
+        } finally {
+            jarFile.close()
+        }
+        if (checkedClasses == 0) {
+            throw new GradleException('No production classes were checked in the release jar')
+        }
+        logger.lifecycle("Verified ${checkedClasses} Java 8 production classes in ${releaseJar.name}")
+    }
+}
+
+build.finalizedBy('verifyReleaseJar')
 
 task marketCoreSelfTest(type: JavaExec) {
     group = 'verification'
