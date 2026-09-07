@@ -538,3 +538,12 @@ Reforged 对有右输入的修理、合并和附魔书操作通过 `AnvilUpdateE
 - 成年牛的挤奶冷却归属于牛实体，而非玩家；最近一次成功挤奶 tick 写入 `Entity#getEntityData()`，因此区块卸载、重启和多人共享同一头牛时仍保持 6000 tick 冷却。`disableMilkingCooldown=false` 时，事件在客户端和服务端都取消原版桶交互：客户端只返回 `SUCCESS`、不触碰物品栏；服务端对合法成年牛执行一次完整的原版等价结算（播放挤奶音效、扣除一只空桶、手中耗尽则替换牛奶桶，否则入包，满包则掉落），结算成功后才写入实体 tick。冷却命中直接返回 `FAIL`，不扣桶、不产奶、不更新时间。开启配置后不接管交互，恢复原版 `EntityCow` 路径。这样交互包仍可正常到达服务端，但不存在客户端假牛奶桶覆盖服务端库存的窗口。
 - 价格表以工作簿手调小麦值乘 50 转为现有整数金币基准，保留全部既有 market key、历史和存档结构，不迁移旧价格快照；新值仅在新世界日生成时生效，已冻结的历史点不重写。
 - Forge 1.12.2 在剪刀/锄头的原始 enchantability 为 0 时，会在附魔台生成候选前直接退出；同时原版 `Efficiency` 的较新 Forge 附魔台筛选不接受剪刀，虽然原版效率书可正常经铁砧应用。公开 Forge 事件无法补回候选，故发行 JAR 用带 manifest 的最小 Coremod：按实际发现的 `Item` 布局补丁 `ItemStack` 重载及效率筛选，或回退补丁旧式无参附魔力。附魔力 helper 必须接收 `this Item` 和原版附魔力，不能把 `ItemStack` 误作第一个实参，否则所有剪刀/锄头身份比较都会失败并继续返回 0。注入 helper 采用 `Object` 描述符，不能再因 MCP/SRG 内部名不同而找不到方法；效率筛选不增加条件跳转，而是在每个既有布尔返回点以 `(Object,Object,boolean)` helper 合并原版结果，从而无需生成新的 Java 8 StackMap frame。遇到未知布局会记录错误并返回未改动 `Item`，绝不使客户端/服务器不能启动。剪刀使用铁工具附魔力、各锄头使用其材质附魔力，剪刀效率直接使用原版 `Efficiency`。不再注册/生成 `shears_efficiency`；旧存档的同名 MissingMapping 重映射到原版效率，避免旧物品失去附魔。耐久直接在附魔台可得；经验修补与消失诅咒保留原版书本/铁砧路径。
+## DEC-064 每日挤奶、原版伐木耐久与区块加载器（2026-09-07）
+
+决定：挤奶限制由“每头牛成功后等待 6,000 tick”改为“每头成年牛在当前世界日最多成功一次”。`MilkCooldownRules` 以 `World#getWorldTime() / 24,000` 计算当前世界日；服务端只把成功挤奶的世界日写入牛实体 NBT 新 key `lisbam_pastoral_economy_last_milked_day`。旧的 tick key 不再读取，故旧存档载入后会在下一次交互直接迁入当前每日规则，而不会被旧五分钟倒计时锁住。客户端预测抑制、服务端桶结算、多人共享同一牛和配置旁路保持不变。
+
+决定：不为伐木另行扣耐久。经 Forge 1.12.2 `PlayerInteractionManager#tryHarvestBlock` 源码核对，伐木对每个二级原木走原版逐格采掘，并在成功移除前调用当前主手 `ItemStack#onBlockDestroyed`；原版斧头的该路径由 `damageItem` 结算，耐久附魔会对每一格独立判定。这样保留保护事件、掉落、工具损坏事件和全部原版耐久语义；树叶的已存在恢复逻辑仍只恢复树叶产生的伤害。
+
+决定：区块加载器使用新的稳定 `chunk_loader` Block/Item/TileEntity 注册 ID。方块实例的激活布尔值归 `TileChunkLoader` NBT 所有；显示和光照用 `powered` 方块状态同步，激活光照固定为 7。`ChunkLoaderService` 只在逻辑服务端为有红石信号的有效 TileEntity 申请一张 Forge 1.12.2 `NORMAL` ticket 并 `forceChunk(new ChunkPos(pos))`，因此每台只加载自身一个区块。票据 modData 以独立 kind 和 `BlockPos` 标识，通过既有的模组唯一回调恢复；断电、破坏、无效 ticket 或区块加载后发现无信号均释放 ticket。没有为静态 ticket map 伪造持久化：活跃 ticket 由 Forge `forcedchunks.dat` 保存，方块状态由 TileEntity NBT 保存。
+
+兼容性与影响：新增一个方块 ID、一个 ItemBlock ID、一个 TileEntity ID、两个方块贴图、一个方块状态/模型组和一个配方；现有 WorldSavedData schema、玩家 Capability、packet discriminator、既有票据和 registry ID 不变。新的挤奶日 key 与旧 tick key 并存但互不冲突，旧实体和世界不需迁移。

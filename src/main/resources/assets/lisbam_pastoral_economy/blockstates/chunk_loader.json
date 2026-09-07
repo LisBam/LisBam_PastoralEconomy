@@ -1,0 +1,6 @@
+{
+  "variants": {
+    "powered=false": { "model": "lisbam_pastoral_economy:chunk_loader" },
+    "powered=true": { "model": "lisbam_pastoral_economy:chunk_loader_active" }
+  }
+}

@@ -1,24 +1,19 @@
 package lisbam.pastoraleconomy.event;
 
-/** Pure timing rules for the per-cow milking cooldown. */
+/** Pure world-day rules for the shared daily cow milking refresh. */
 public final class MilkCooldownRules {
-    public static final long COOLDOWN_TICKS = 5L * 60L * 20L;
+    public static final long TICKS_PER_DAY = 24000L;
 
     private MilkCooldownRules() {
     }
 
-    public static boolean isOnCooldown(long lastMilkedTick, long currentTick) {
-        if (lastMilkedTick < 0L || currentTick < lastMilkedTick) {
-            return false;
-        }
-        return currentTick - lastMilkedTick < COOLDOWN_TICKS;
+    public static long getWorldDay(long worldTime) {
+        return Math.max(0L, worldTime) / TICKS_PER_DAY;
     }
 
-    public static long remainingTicks(long lastMilkedTick, long currentTick) {
-        if (!isOnCooldown(lastMilkedTick, currentTick)) {
-            return 0L;
-        }
-        return COOLDOWN_TICKS - (currentTick - lastMilkedTick);
+    /** A cow can be milked once for each current world day. */
+    public static boolean isOnCooldown(long lastMilkedDay, long currentWorldDay) {
+        return lastMilkedDay == currentWorldDay;
     }
 
     /** Enabled cooldown owns the transaction on the server and blocks client prediction. */
@@ -31,7 +26,7 @@ public final class MilkCooldownRules {
         return !cooldownDisabled && onCooldown;
     }
 
-    /** Persist the timestamp only after an owned server transaction succeeds. */
+    /** Persist the world day only after an owned server transaction succeeds. */
     public static boolean shouldRecordSuccess(boolean cooldownDisabled, boolean onCooldown,
                                               boolean transactionSucceeded) {
         return !cooldownDisabled && !onCooldown && transactionSucceeded;

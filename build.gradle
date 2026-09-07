@@ -284,9 +284,16 @@ task goldenBoneMealSelfTest(type: JavaExec) {
 
 task milkCooldownSelfTest(type: JavaExec) {
     group = 'verification'
-    description = 'Runs deterministic per-cow milking cooldown checks.'
+    description = 'Runs deterministic daily cow milking refresh checks.'
     classpath = sourceSets.test.runtimeClasspath
     main = 'lisbam.pastoraleconomy.event.MilkCooldownSelfTest'
+}
+
+task chunkLoaderSelfTest(type: JavaExec) {
+    group = 'verification'
+    description = 'Runs deterministic redstone chunk-loader rule checks.'
+    classpath = sourceSets.test.runtimeClasspath
+    main = 'lisbam.pastoraleconomy.chunkloader.ChunkLoaderSelfTest'
 }
 
 task shoulderEquipmentSelfTest(type: JavaExec) {

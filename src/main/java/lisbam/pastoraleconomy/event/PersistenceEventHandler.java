@@ -6,6 +6,7 @@ import lisbam.pastoraleconomy.data.player.IPlayerData;
 import lisbam.pastoraleconomy.data.player.PlayerDataCapability;
 import lisbam.pastoraleconomy.data.player.PlayerDataProvider;
 import lisbam.pastoraleconomy.data.world.PastoralWorldData;
+import lisbam.pastoraleconomy.chunkloader.ChunkLoaderService;
 import lisbam.pastoraleconomy.equipment.ShoulderEquipmentService;
 import lisbam.pastoraleconomy.merchant.VillageService;
 import lisbam.pastoraleconomy.merchant.TradeVoucherStorageService;
@@ -61,6 +62,7 @@ public final class PersistenceEventHandler {
     public static void forgetVoucherChestTickets(WorldEvent.Unload event) {
         if (!event.getWorld().isRemote) {
             TradeVoucherStorageService.forgetWorld(event.getWorld());
+            ChunkLoaderService.forgetWorld(event.getWorld());
         }
     }
 
