@@ -3,6 +3,7 @@ package lisbam.pastoraleconomy.gui;
 import lisbam.pastoraleconomy.LisBamPastoralEconomy;
 import lisbam.pastoraleconomy.entity.EntityMerchant;
 import lisbam.pastoraleconomy.tile.TileCrabTrap;
+import lisbam.pastoraleconomy.tile.TileShippingBox;
 import lisbam.pastoraleconomy.tile.TileTransportStation;
 import lisbam.pastoraleconomy.tile.TileVillageStation;
 import net.minecraft.entity.player.EntityPlayer;
@@ -35,6 +36,11 @@ public final class ModGuiHandler implements IGuiHandler {
                         (TileCrabTrap) world.getTileEntity(new net.minecraft.util.math.BlockPos(x, y, z)));
             }
             return null;
+        }
+        if (guiId == GuiIds.SHIPPING_BOX) {
+            net.minecraft.util.math.BlockPos boxPos = new net.minecraft.util.math.BlockPos(x, y, z);
+            return world.getTileEntity(boxPos) instanceof TileShippingBox
+                    ? new ContainerShippingBox(player.inventory, (TileShippingBox) world.getTileEntity(boxPos)) : null;
         }
         if (guiId == GuiIds.TRANSPORT_STATION) {
             net.minecraft.util.math.BlockPos stationPos = new net.minecraft.util.math.BlockPos(x, y, z);

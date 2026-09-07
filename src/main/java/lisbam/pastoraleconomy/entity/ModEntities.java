@@ -3,6 +3,7 @@ package lisbam.pastoraleconomy.entity;
 import lisbam.pastoraleconomy.LisBamPastoralEconomy;
 import lisbam.pastoraleconomy.tile.TileCrabTrap;
 import lisbam.pastoraleconomy.tile.TileChunkLoader;
+import lisbam.pastoraleconomy.tile.TileShippingBox;
 import lisbam.pastoraleconomy.tile.TileVillageStation;
 import lisbam.pastoraleconomy.tile.TileTransportStation;
 import net.minecraft.util.ResourceLocation;
@@ -25,6 +26,8 @@ public final class ModEntities {
                 new ResourceLocation(LisBamPastoralEconomy.MODID, "village_station"));
         GameRegistry.registerTileEntity(TileCrabTrap.class,
                 new ResourceLocation(LisBamPastoralEconomy.MODID, "crab_trap"));
+        GameRegistry.registerTileEntity(TileShippingBox.class,
+                new ResourceLocation(LisBamPastoralEconomy.MODID, "shipping_box"));
         GameRegistry.registerTileEntity(TileTransportStation.class,
                 new ResourceLocation(LisBamPastoralEconomy.MODID, "transport_station"));
         GameRegistry.registerTileEntity(TileChunkLoader.class,

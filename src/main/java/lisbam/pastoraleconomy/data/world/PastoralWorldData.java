@@ -10,6 +10,7 @@ import lisbam.pastoraleconomy.market.MarketPriceSnapshot;
 import lisbam.pastoraleconomy.market.MarketPriceGenerator;
 import lisbam.pastoraleconomy.merchant.MerchantWorldState;
 import lisbam.pastoraleconomy.merchant.VoucherChestRegistry;
+import lisbam.pastoraleconomy.shipping.ShippingBoxPayoutState;
 import lisbam.pastoraleconomy.transport.TransportWorldState;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.nbt.NBTTagList;
@@ -34,7 +35,7 @@ import java.util.TreeMap;
  */
 public final class PastoralWorldData extends WorldSavedData {
     public static final String DATA_NAME = LisBamPastoralEconomy.MODID + "_world_data";
-    public static final int DATA_VERSION = 9;
+    public static final int DATA_VERSION = 10;
     public static final long MARKET_DAY_TICKS = 24000L;
     /** The market book has one 30-day window, so older points must never grow the save. */
     public static final int MARKET_HISTORY_RETENTION_DAYS = 30;
@@ -44,6 +45,7 @@ public final class PastoralWorldData extends WorldSavedData {
     private static final String KEY_MERCHANT = "merchant";
     private static final String KEY_TRANSPORT = "transport";
     private static final String KEY_VOUCHER_CHESTS = "voucherChests";
+    private static final String KEY_SHIPPING_BOX_PAYOUTS = "shippingBoxPayouts";
     private static final String KEY_MARKET_INITIALIZED = "initialized";
     private static final String KEY_MARKET_SEED = "seed";
     private static final String KEY_FIRST_MARKET_DAY = "firstDay";
@@ -83,6 +85,8 @@ public final class PastoralWorldData extends WorldSavedData {
     private final TransportWorldState transportWorldState = new TransportWorldState();
     /** Physical chest positions retained solely while they hold a bound trade voucher. */
     private final VoucherChestRegistry voucherChestRegistry = new VoucherChestRegistry();
+    /** Daily batch marker and deferred owner payments for shipping boxes. */
+    private final ShippingBoxPayoutState shippingBoxPayoutState = new ShippingBoxPayoutState();
 
     public PastoralWorldData() {
         this(DATA_NAME);
@@ -296,6 +300,11 @@ public final class PastoralWorldData extends WorldSavedData {
         return voucherChestRegistry;
     }
 
+    /** Mutable on the logical server main thread; callers mark this root dirty after mutation. */
+    public synchronized ShippingBoxPayoutState getShippingBoxPayoutState() {
+        return shippingBoxPayoutState;
+    }
+
     @Override
     public void readFromNBT(NBTTagCompound compound) {
         int storedVersion = compound.hasKey(KEY_DATA_VERSION) ? compound.getInteger(KEY_DATA_VERSION) : 1;
@@ -304,6 +313,7 @@ public final class PastoralWorldData extends WorldSavedData {
         merchantWorldState.readFromNBT(new NBTTagCompound());
         transportWorldState.readFromNBT(new NBTTagCompound());
         voucherChestRegistry.readFromNBT(new NBTTagCompound());
+        shippingBoxPayoutState.readFromNBT(new NBTTagCompound());
 
         if (storedVersion >= 3 && compound.hasKey(KEY_MARKET, 10)) {
             readMarket(compound.getCompoundTag(KEY_MARKET));
@@ -317,6 +327,9 @@ public final class PastoralWorldData extends WorldSavedData {
         if (storedVersion >= 8 && compound.hasKey(KEY_VOUCHER_CHESTS, 10)) {
             voucherChestRegistry.readFromNBT(compound.getCompoundTag(KEY_VOUCHER_CHESTS));
         }
+        if (storedVersion >= 10 && compound.hasKey(KEY_SHIPPING_BOX_PAYOUTS, 10)) {
+            shippingBoxPayoutState.readFromNBT(compound.getCompoundTag(KEY_SHIPPING_BOX_PAYOUTS));
+        }
         dataVersion = DATA_VERSION;
     }
 
@@ -329,6 +342,7 @@ public final class PastoralWorldData extends WorldSavedData {
         compound.setTag(KEY_MERCHANT, merchantWorldState.writeToNBT());
         compound.setTag(KEY_TRANSPORT, transportWorldState.writeToNBT());
         compound.setTag(KEY_VOUCHER_CHESTS, voucherChestRegistry.writeToNBT());
+        compound.setTag(KEY_SHIPPING_BOX_PAYOUTS, shippingBoxPayoutState.writeToNBT());
         return compound;
     }
 

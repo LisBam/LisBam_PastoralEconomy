@@ -13,7 +13,7 @@ apply plugin: 'net.minecraftforge.gradle'
 apply plugin: 'eclipse'
 apply plugin: 'maven-publish'
 
-version = '1.6'
+version = '1.7'
 group = 'lisbam.pastoraleconomy'
 archivesBaseName = 'LisBam_PastoralEconomy'
 
@@ -308,6 +308,13 @@ task chunkLoaderSelfTest(type: JavaExec) {
     description = 'Runs deterministic redstone chunk-loader rule checks.'
     classpath = sourceSets.test.runtimeClasspath
     main = 'lisbam.pastoraleconomy.chunkloader.ChunkLoaderSelfTest'
+}
+
+task shippingBoxSelfTest(type: JavaExec) {
+    group = 'verification'
+    description = 'Runs shipping-box inventory, payout, and settlement arithmetic regression checks.'
+    classpath = sourceSets.test.runtimeClasspath
+    main = 'lisbam.pastoraleconomy.shipping.ShippingBoxSelfTest'
 }
 
 task shoulderEquipmentSelfTest(type: JavaExec) {

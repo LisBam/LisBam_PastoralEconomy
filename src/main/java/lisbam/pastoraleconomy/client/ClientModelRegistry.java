@@ -50,6 +50,11 @@ public final class ClientModelRegistry {
                 new ModelResourceLocation(ModBlocks.CRAB_TRAP.getRegistryName(), "inventory")
         );
         ModelLoader.setCustomModelResourceLocation(
+                ModItems.SHIPPING_BOX_ITEM,
+                0,
+                new ModelResourceLocation(ModBlocks.SHIPPING_BOX.getRegistryName(), "inventory")
+        );
+        ModelLoader.setCustomModelResourceLocation(
                 ModItems.TRANSPORT_STATION_ITEM,
                 0,
                 new ModelResourceLocation(ModBlocks.TRANSPORT_STATION.getRegistryName(), "inventory")
