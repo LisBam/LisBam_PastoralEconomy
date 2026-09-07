@@ -10,7 +10,7 @@
 
 兼容性：没有改变 registry ID、TileEntity NBT、WorldSavedData schema、Capability、Packet discriminator 或经济规则；旧存档和已有 `forcedchunks.dat` 票据继续可读，重载后按当前红石状态决定保留或释放。
 
-验证：Forge 1.12.2 常规和 `--strict-warnings` 静态审计均为 0 ERROR、7 条既有 S2C/Proxy `packet-thread` 保守 WARNING。`git diff --check` 通过，激活贴图已核验为 16×16、8-bit RGBA PNG。`./gradlew compileJava --no-daemon --console=plain` 实际执行但因默认环境无 `JAVA_HOME` 且 PATH 无 `java` 停止；已检查 `/tmp/lbpe-jdk8`、常见 Linux JDK 路径、`/home`、`/tmp`、`/mnt` 与 Windows 常见 Java 路径，均未找到可用 JDK 8。因此 self-test、JDK 8 build、release 导出、游戏内与 Dedicated Server 验收均为 NOT RUN。
+验证：Forge 1.12.2 常规和 `--strict-warnings` 静态审计均为 0 ERROR、7 条既有 S2C/Proxy `packet-thread` 保守 WARNING。`git diff --check` 通过，激活贴图已核验为 16×16、8-bit RGBA PNG。Temurin Java 8 `1.8.0_504` 恢复后，`./gradlew build --no-daemon --console=plain` 已 PASS，含 `test`、`reobfJar`、`exportReleaseJar` 与 `verifyReleaseJar`，门禁核验 267 个生产 class 均为 Java 8；覆盖前 JAR 已备份为 `release/backup/backup_20260907-194025.jar`，新 1.7 JAR 为 556,164 bytes、SHA-256 `dd12cb778c37f314aa9b056a1ed5c2865af75f0e2c4723e846f23a325e458337`，`unzip -t` PASS。用户要求直接导出，故 `chunkLoaderSelfTest`、`shippingBoxSelfTest` 未运行；游戏内与 Dedicated Server 验收仍为 NOT RUN。
 
 ## 新内容：出货箱（2026-09-07）
 
