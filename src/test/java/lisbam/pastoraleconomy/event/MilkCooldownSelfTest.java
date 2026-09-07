@@ -1,18 +1,19 @@
 package lisbam.pastoraleconomy.event;
 
-/** Deterministic boundary checks for the five-minute per-cow timer. */
+/** Deterministic boundary checks for the once-per-world-day cow refresh. */
 public final class MilkCooldownSelfTest {
     private MilkCooldownSelfTest() {
     }
 
     public static void main(String[] args) {
-        require(MilkCooldownRules.COOLDOWN_TICKS == 6000L, "five minutes must equal 6000 ticks");
-        require(!MilkCooldownRules.isOnCooldown(-1L, 0L), "unset timestamp is ready");
-        require(MilkCooldownRules.isOnCooldown(100L, 100L), "same tick is cooling down");
-        require(MilkCooldownRules.isOnCooldown(100L, 6099L), "cooldown lasts through tick 6099");
-        require(!MilkCooldownRules.isOnCooldown(100L, 6100L), "cooldown expires at 6000 ticks");
-        require(!MilkCooldownRules.isOnCooldown(100L, 99L), "time rollback does not lock the cow forever");
-        require(MilkCooldownRules.remainingTicks(100L, 1100L) == 5000L, "remaining timer");
+        require(MilkCooldownRules.TICKS_PER_DAY == 24000L, "a Minecraft day must equal 24000 ticks");
+        require(MilkCooldownRules.getWorldDay(0L) == 0L, "world starts on day zero");
+        require(MilkCooldownRules.getWorldDay(23999L) == 0L, "day zero includes tick 23999");
+        require(MilkCooldownRules.getWorldDay(24000L) == 1L, "day one starts at tick 24000");
+        require(MilkCooldownRules.getWorldDay(-1L) == 0L, "negative time cannot produce a negative day");
+        require(!MilkCooldownRules.isOnCooldown(-1L, 4L), "an unmilked cow is ready");
+        require(MilkCooldownRules.isOnCooldown(4L, 4L), "a cow is unavailable for the rest of its milk day");
+        require(!MilkCooldownRules.isOnCooldown(4L, 5L), "all cows refresh together on the next day");
         require(MilkCooldownRules.shouldTakeOwnership(false),
                 "enabled cooldown must use the server-owned milk transaction");
         require(!MilkCooldownRules.shouldTakeOwnership(true),
@@ -22,7 +23,7 @@ public final class MilkCooldownSelfTest {
         require(!MilkCooldownRules.shouldReject(true, true),
                 "the bypass setting must allow the vanilla transaction");
         require(MilkCooldownRules.shouldRecordSuccess(false, false, true),
-                "a successful owned transaction records the cow timestamp");
+                "a successful owned transaction records the cow milk day");
         require(!MilkCooldownRules.shouldRecordSuccess(false, false, false),
                 "a failed transaction must not record a cooldown timestamp");
         require(!MilkCooldownRules.shouldRecordSuccess(false, true, true),

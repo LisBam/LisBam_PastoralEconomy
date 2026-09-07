@@ -775,3 +775,12 @@
 修复：冷却启用时 `MilkingCooldownEventHandler` 在两侧都取消原版桶交互。客户端不修改物品栏，只返回 `SUCCESS` 结束预测；服务端先验证成年目标、空桶和实体 NBT 冷却，再独立执行原版等价事务：播放 `ENTITY_COW_MILK`，扣一只空桶，手中耗尽则替换牛奶桶，否则尝试加入主背包，满包时按原版丢出。事务完成后才写入最近成功 tick；冷却命中不扣桶、不产奶、不更新 tick。关闭配置时完全跳过处理器并走原版逻辑。新增纯规则断言覆盖服务端接管、冷却拒绝、成功后记录和客户端延后库存同步。
 
 验证：Temurin Java 8 `1.8.0_504` 下 `compileJava`、`compileTestJava`、`milkCooldownSelfTest`、`compileJava processResources build` 均 PASS；最终构建包含 `test`、`reobfJar` 和 `exportReleaseJar`，release JAR 已覆盖导出且非空。Forge 1.12.2 工具链检查为 0 问题；静态审计为 0 ERROR、6 条既有 `packet-thread` WARNING。游戏内客户端和 Dedicated Server 仍需用户实际验证。
+## 2026-09-07 维护：每日挤奶、伐木耐久附魔核验与区块加载器
+
+完成：成年牛/哞菇的挤奶限制从每实体 6,000 tick 改为“当前世界日每只成功一次”，世界日按 `World#getWorldTime() / 24,000` 计算，下一世界日统一恢复；客户端预测抑制、服务端桶结算与配置旁路保持。新增 `chunk_loader` 方块、ItemBlock、TileEntity、双状态模型/双语名称、有序配方和两张 AI 绘制后缩放为 16×16 RGBA 的方块贴图。红石供电时由服务端申请 Forge NORMAL ticket，仅强制所在 `ChunkPos`；断电、破坏或重载后无供电释放，既有模组唯一 ticket callback 按 modData 恢复。充能状态光照为 7。
+
+伐木核验：没有新增手工耐久扣除。`TreeFellingEventHandler` 已对每个二级原木调用原版 `PlayerInteractionManager#tryHarvestBlock`；Forge 1.12.2 源码确认此路径逐格调用主手 `ItemStack#onBlockDestroyed`，由原版斧头 `damageItem` 对每格独立结算耐久附魔。编译后 `javap` 也确认二级原木与树叶采掘点均为该原版调用；树叶既有损伤恢复保持不变。
+
+已验证：Temurin Java 8 `1.8.0_504` 下 `compileJava`、`compileTestJava`、`processResources`、`milkCooldownSelfTest`、`toolDurabilitySelfTest` 与 `chunkLoaderSelfTest` 均 PASS；两张 PNG 均为 16×16、8-bit RGBA；Forge 1.12.2 静态审计为 0 ERROR、7 条既有 `packet-thread` WARNING。最终 `./gradlew build --no-daemon --console=plain` PASS，含 `reobfJar`、`exportReleaseJar` 和 249 个 Java 8 生产类核验；旧 release JAR 已备份到 `release/backup/backup_20260907-132027.jar`。新 `release/LisBam_PastoralEconomy-1.5.jar` 为 516,800 bytes，SHA-256 为 `9ccc32785b3c28b2d9f0e78528db8db359af9db366e7e057ea8cc25afc4ee702`，`unzip -t` PASS。
+
+NOT RUN：游戏内红石、断电、破坏、重启恢复、多人每日挤奶和 Dedicated Server 世界验证仍待可进入的 Forge 世界。

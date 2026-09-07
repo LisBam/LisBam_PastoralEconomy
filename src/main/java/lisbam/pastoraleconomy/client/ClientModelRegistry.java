@@ -54,6 +54,11 @@ public final class ClientModelRegistry {
                 0,
                 new ModelResourceLocation(ModBlocks.TRANSPORT_STATION.getRegistryName(), "inventory")
         );
+        ModelLoader.setCustomModelResourceLocation(
+                ModItems.CHUNK_LOADER_ITEM,
+                0,
+                new ModelResourceLocation(ModBlocks.CHUNK_LOADER.getRegistryName(), "inventory")
+        );
     }
 
     private static void registerItemModel(net.minecraft.item.Item item, String path) {

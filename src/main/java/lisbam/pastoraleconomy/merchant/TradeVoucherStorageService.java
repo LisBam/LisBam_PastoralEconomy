@@ -1,6 +1,7 @@
 package lisbam.pastoraleconomy.merchant;
 
 import lisbam.pastoraleconomy.LisBamPastoralEconomy;
+import lisbam.pastoraleconomy.chunkloader.ChunkLoaderService;
 import lisbam.pastoraleconomy.data.world.PastoralWorldData;
 import lisbam.pastoraleconomy.item.ItemTradeVoucher;
 import net.minecraft.block.Block;
@@ -47,6 +48,9 @@ public final class TradeVoucherStorageService {
                     }
                     WorldServer serverWorld = (WorldServer) world;
                     for (ForgeChunkManager.Ticket ticket : tickets) {
+                        if (ChunkLoaderService.restoreChunkLoaderTicket(ticket, world)) {
+                            continue;
+                        }
                         if (!ticket.getModData().hasKey(TICKET_POSITION_KEY)) {
                             ForgeChunkManager.releaseTicket(ticket);
                             continue;

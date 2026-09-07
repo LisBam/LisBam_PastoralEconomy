@@ -440,3 +440,16 @@
 - [ ] 游戏内：剪刀/锄头附魔台实际候选、剪刀原版效率书本/铁砧和丰收增产。NOT RUN：当前环境无可操作 Forge 客户端。
 - [ ] Dedicated Server：完整加载 Coremod 后以空桶依次对两头牛挤奶，确认已挤牛冷却、冷却命中不扣桶不产奶、服务端生成的牛奶桶可饮用、满背包时牛奶桶掉落、区块重载/重启保持且“取消挤奶冷却”会绕过限制。NOT RUN：60 秒 `runServer` 已发现并入队 Coremod，但在完整模组/世界加载前超时；`run/eula.txt` 保持 `eula=false`。
 - [x] 最终 release：`compileJava processResources build`（含 `test`、`reobfJar`、`exportReleaseJar`）PASS；`release/LisBam_PastoralEconomy-1.5.jar` 已由本次构建覆盖导出且非空。
+# 每日挤奶、伐木耐久附魔与区块加载器（2026-09-07）
+
+- [x] JDK 8 `./gradlew compileJava --no-daemon --console=plain`：PASS；新增 common 方块、TileEntity、Forge ticket 服务、挤奶规则和注册路径均通过 1.12.2 编译。
+- [x] `MilkCooldownSelfTest`：以当前 main classes 重新编译并运行，确认世界日为 24,000 tick、同日拒绝、下一日统一恢复、配置旁路和客户端预测抑制规则。PASS。
+- [x] `ChunkLoaderSelfTest`：以当前 main classes 重新编译并运行，确认红石激活/撤除边界和 7 级（火把一半）充能光照。PASS。
+- [x] 资源检查：`chunk_loader_inactive.png` 与 `chunk_loader_active.png` 均为 16×16、8-bit RGBA PNG；blockstate、两份 block model、item model、双语名称和有序配方已随源文件存在。PASS。
+- [x] 伐木耐久附魔代码审查：Forge 1.12.2 `PlayerInteractionManager#tryHarvestBlock` 源码和当前编译类均确认每个二级原木走原版逐格采掘/耐久路径；不重复增加手工耐久损耗。PASS。
+- [x] Forge 1.12.2 常规 audit：0 ERROR、7 条既有 `packet-thread` 保守 WARNING。PASS。
+- [x] Temurin Java 8 `1.8.0_504`：`compileTestJava`、`processResources`、`milkCooldownSelfTest`、`toolDurabilitySelfTest`、`chunkLoaderSelfTest` 均 PASS；其中伐木自检确认逐块走原版耐久路径，区块加载器自检确认红石边界和光照等级。
+- [x] 最终 `./gradlew build --no-daemon --console=plain`：PASS（含 `test`、`reobfJar`、`exportReleaseJar` 与 249 个 Java 8 生产类核验）。构建前已备份 `release/backup/backup_20260907-132027.jar`；新 `release/LisBam_PastoralEconomy-1.5.jar` 为 516,800 bytes，SHA-256 `9ccc32785b3c28b2d9f0e78528db8db359af9db366e7e057ea8cc25afc4ee702`，`unzip -t` PASS。
+- [ ] 游戏内单人/多人：同一成年牛在同一世界日第二次挤奶不扣桶、不产奶；任意其他未挤奶牛仍可挤；到下一世界日所有牛一起恢复；关闭配置后连续挤奶恢复原版。NOT RUN：当前无可操作 Forge 世界。
+- [ ] 游戏内区块加载器：无红石时不加载；供电后仅自身区块持续 tick/保持加载，贴图切为充能并发出 7 级光；断电和破坏后 ticket 移除；退出重启后有供电实例恢复，且 Forge ticket 上限不足时安全保持未充能。NOT RUN：当前无可进入 Dedicated Server 世界。
+- [ ] Dedicated Server：确认 common 代码不加载客户端类，并在专用世界验证多台加载器、跨区块红石边界、保存/重启与 ticket 上限。NOT RUN：最终 JDK 8 build 已通过，待可进入服务器。

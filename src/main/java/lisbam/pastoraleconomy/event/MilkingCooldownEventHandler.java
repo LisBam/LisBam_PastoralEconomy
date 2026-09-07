@@ -22,7 +22,7 @@ import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
  */
 @Mod.EventBusSubscriber(modid = LisBamPastoralEconomy.MODID)
 public final class MilkingCooldownEventHandler {
-    private static final String LAST_MILKED_TICK_KEY = "lisbam_pastoral_economy_last_milked_tick";
+    private static final String LAST_MILKED_DAY_KEY = "lisbam_pastoral_economy_last_milked_day";
 
     private MilkingCooldownEventHandler() {
     }
@@ -56,10 +56,10 @@ public final class MilkingCooldownEventHandler {
             return;
         }
 
-        long now = event.getWorld().getTotalWorldTime();
-        long last = cow.getEntityData().hasKey(LAST_MILKED_TICK_KEY)
-                ? cow.getEntityData().getLong(LAST_MILKED_TICK_KEY) : -1L;
-        boolean onCooldown = MilkCooldownRules.isOnCooldown(last, now);
+        long currentWorldDay = MilkCooldownRules.getWorldDay(event.getWorld().getWorldTime());
+        long lastMilkedDay = cow.getEntityData().hasKey(LAST_MILKED_DAY_KEY)
+                ? cow.getEntityData().getLong(LAST_MILKED_DAY_KEY) : -1L;
+        boolean onCooldown = MilkCooldownRules.isOnCooldown(lastMilkedDay, currentWorldDay);
         if (MilkCooldownRules.shouldReject(cooldownDisabled, onCooldown)) {
             event.setCanceled(true);
             event.setCancellationResult(EnumActionResult.FAIL);
@@ -69,7 +69,7 @@ public final class MilkingCooldownEventHandler {
         boolean transactionSucceeded = completeServerMilking(event);
         if (MilkCooldownRules.shouldRecordSuccess(cooldownDisabled, onCooldown,
                 transactionSucceeded)) {
-            cow.getEntityData().setLong(LAST_MILKED_TICK_KEY, now);
+            cow.getEntityData().setLong(LAST_MILKED_DAY_KEY, currentWorldDay);
         }
         event.setCanceled(true);
         event.setCancellationResult(EnumActionResult.SUCCESS);
