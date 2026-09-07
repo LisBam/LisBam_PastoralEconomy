@@ -4,6 +4,7 @@ import lisbam.pastoraleconomy.LisBamPastoralEconomy;
 import lisbam.pastoraleconomy.config.ModSettings;
 import lisbam.pastoraleconomy.market.MarketCatalog;
 import lisbam.pastoraleconomy.market.MarketCommodity;
+import lisbam.pastoraleconomy.market.EmeraldMarketPriceGenerator;
 import lisbam.pastoraleconomy.market.MarketHistoryPoint;
 import lisbam.pastoraleconomy.market.MarketPriceSnapshot;
 import lisbam.pastoraleconomy.market.MarketPriceGenerator;
@@ -33,7 +34,7 @@ import java.util.TreeMap;
  */
 public final class PastoralWorldData extends WorldSavedData {
     public static final String DATA_NAME = LisBamPastoralEconomy.MODID + "_world_data";
-    public static final int DATA_VERSION = 8;
+    public static final int DATA_VERSION = 9;
     public static final long MARKET_DAY_TICKS = 24000L;
     /** The market book has one 30-day window, so older points must never grow the save. */
     public static final int MARKET_HISTORY_RETENTION_DAYS = 30;
@@ -55,6 +56,10 @@ public final class PastoralWorldData extends WorldSavedData {
     private static final String KEY_CROP_HISTORIES = "cropHistories";
     private static final String KEY_HISTORY_KEY = "key";
     private static final String KEY_HISTORY_POINTS = "points";
+    private static final String KEY_EMERALD_MARKET_INITIALIZED = "emeraldInitialized";
+    private static final String KEY_EMERALD_CURRENT_PRICE = "emeraldCurrentPrice";
+    private static final String KEY_EMERALD_PREVIOUS_PRICE = "emeraldPreviousPrice";
+    private static final String KEY_EMERALD_LAST_UPDATE_DAY = "emeraldLastUpdateDay";
 
     private int dataVersion = DATA_VERSION;
     private boolean firstInitializationCompleted;
@@ -67,6 +72,11 @@ public final class PastoralWorldData extends WorldSavedData {
     private final Map<String, Long> previousMarketPrices = new LinkedHashMap<String, Long>();
     private final Map<String, NavigableMap<Long, Long>> cropPriceHistory =
             new LinkedHashMap<String, NavigableMap<Long, Long>>();
+    /** Independent high-volatility price persisted beside the normal market snapshots. */
+    private boolean emeraldMarketInitialized;
+    private long emeraldCurrentPrice = EmeraldMarketPriceGenerator.INITIAL_PRICE;
+    private long emeraldPreviousPrice = EmeraldMarketPriceGenerator.INITIAL_PRICE;
+    private long emeraldLastUpdateDay = -1L;
     /** Batch 08--10 world-owned village, station, merchant, offer, and stock state. */
     private final MerchantWorldState merchantWorldState = new MerchantWorldState();
     /** Batch 14 world-owned physical transport-node registry. */
@@ -144,6 +154,7 @@ public final class PastoralWorldData extends WorldSavedData {
             previousMarketDay = -1L;
             previousMarketPrices.clear();
             appendCropHistory(worldDay, currentMarketPrices);
+            ensureEmeraldMarketDay(worldDay);
             markDirty();
             return;
         }
@@ -151,6 +162,9 @@ public final class PastoralWorldData extends WorldSavedData {
         if (worldDay == currentMarketDay) {
             boolean changed = fillMissingCurrentPrices();
             if (ensureCurrentCropHistory()) {
+                changed = true;
+            }
+            if (ensureEmeraldMarketDay(worldDay)) {
                 changed = true;
             }
             if (changed) {
@@ -167,6 +181,7 @@ public final class PastoralWorldData extends WorldSavedData {
             // deterministic fallback when no full historic snapshot exists.
             restoreMarketDay(worldDay);
         }
+        ensureEmeraldMarketDay(worldDay);
         markDirty();
     }
 
@@ -188,6 +203,18 @@ public final class PastoralWorldData extends WorldSavedData {
 
     public synchronized boolean hasPreviousMarketSnapshot() {
         return previousMarketDay >= 0L;
+    }
+
+    public synchronized long getEmeraldCurrentPrice() {
+        return emeraldCurrentPrice;
+    }
+
+    public synchronized long getEmeraldPreviousPrice() {
+        return emeraldPreviousPrice;
+    }
+
+    public synchronized long getEmeraldLastUpdateDay() {
+        return emeraldLastUpdateDay;
     }
 
     /** One immutable price view avoids repeated WorldSavedData lookups per merchant GUI snapshot. */
@@ -436,6 +463,40 @@ public final class PastoralWorldData extends WorldSavedData {
         }
     }
 
+    /**
+     * Advances the independent emerald price from the same lazily accessed
+     * world-day clock as ordinary goods.  A newly introduced NBT segment is
+     * initialized for the current day and deliberately does not roll once in
+     * that same access, which keeps upgraded worlds at exactly 1000 initially.
+     */
+    private boolean ensureEmeraldMarketDay(long worldDay) {
+        if (!emeraldMarketInitialized) {
+            emeraldMarketInitialized = true;
+            emeraldCurrentPrice = EmeraldMarketPriceGenerator.INITIAL_PRICE;
+            emeraldPreviousPrice = EmeraldMarketPriceGenerator.INITIAL_PRICE;
+            emeraldLastUpdateDay = worldDay;
+            return true;
+        }
+        if (worldDay <= emeraldLastUpdateDay) {
+            // A server administrator can turn time backwards.  Normal market
+            // history handles that compatibility path separately; this compact
+            // three-value market never rerolls merely because time moved back.
+            return false;
+        }
+        while (emeraldLastUpdateDay < worldDay) {
+            if (emeraldLastUpdateDay == Long.MAX_VALUE) {
+                break;
+            }
+            long nextDay = emeraldLastUpdateDay + 1L;
+            emeraldPreviousPrice = emeraldCurrentPrice;
+            emeraldCurrentPrice = EmeraldMarketPriceGenerator.calculateNextPrice(
+                    marketSeed, nextDay, emeraldCurrentPrice
+            );
+            emeraldLastUpdateDay = nextDay;
+        }
+        return true;
+    }
+
     private void clearMarketData() {
         marketInitialized = false;
         marketSeed = 0L;
@@ -445,6 +506,10 @@ public final class PastoralWorldData extends WorldSavedData {
         currentMarketPrices.clear();
         previousMarketPrices.clear();
         cropPriceHistory.clear();
+        emeraldMarketInitialized = false;
+        emeraldCurrentPrice = EmeraldMarketPriceGenerator.INITIAL_PRICE;
+        emeraldPreviousPrice = EmeraldMarketPriceGenerator.INITIAL_PRICE;
+        emeraldLastUpdateDay = -1L;
     }
 
     private NBTTagCompound writeMarket() {
@@ -460,6 +525,12 @@ public final class PastoralWorldData extends WorldSavedData {
             market.setTag(KEY_PREVIOUS_SNAPSHOT, writeSnapshot(previousMarketDay, previousMarketPrices));
         }
         market.setTag(KEY_CROP_HISTORIES, writeCropHistories());
+        market.setBoolean(KEY_EMERALD_MARKET_INITIALIZED, emeraldMarketInitialized);
+        if (emeraldMarketInitialized) {
+            market.setLong(KEY_EMERALD_CURRENT_PRICE, emeraldCurrentPrice);
+            market.setLong(KEY_EMERALD_PREVIOUS_PRICE, emeraldPreviousPrice);
+            market.setLong(KEY_EMERALD_LAST_UPDATE_DAY, emeraldLastUpdateDay);
+        }
         return market;
     }
 
@@ -507,6 +578,23 @@ public final class PastoralWorldData extends WorldSavedData {
             readSnapshot(market.getCompoundTag(KEY_PREVIOUS_SNAPSHOT), previousMarketPrices, false);
         }
         readCropHistories(market.getTagList(KEY_CROP_HISTORIES, 10));
+        if (market.getBoolean(KEY_EMERALD_MARKET_INITIALIZED)
+                && market.hasKey(KEY_EMERALD_CURRENT_PRICE, 4)
+                && market.hasKey(KEY_EMERALD_PREVIOUS_PRICE, 4)
+                && market.hasKey(KEY_EMERALD_LAST_UPDATE_DAY, 4)) {
+            long current = market.getLong(KEY_EMERALD_CURRENT_PRICE);
+            long previous = market.getLong(KEY_EMERALD_PREVIOUS_PRICE);
+            long day = market.getLong(KEY_EMERALD_LAST_UPDATE_DAY);
+            if (current >= EmeraldMarketPriceGenerator.MINIMUM_PRICE
+                    && current <= EmeraldMarketPriceGenerator.MAXIMUM_PRICE
+                    && previous >= EmeraldMarketPriceGenerator.MINIMUM_PRICE
+                    && previous <= EmeraldMarketPriceGenerator.MAXIMUM_PRICE && day >= 0L) {
+                emeraldMarketInitialized = true;
+                emeraldCurrentPrice = current;
+                emeraldPreviousPrice = previous;
+                emeraldLastUpdateDay = day;
+            }
+        }
         // Preserve recorded prices exactly. In particular, a catalog base-price
         // adjustment must not rewrite an existing save's current day; the next
         // chained daily step gradually returns that value toward the new base.

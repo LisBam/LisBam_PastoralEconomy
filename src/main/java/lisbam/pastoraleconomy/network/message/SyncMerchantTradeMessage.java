@@ -5,6 +5,7 @@ import lisbam.pastoraleconomy.merchant.MerchantTradeOfferView;
 import lisbam.pastoraleconomy.merchant.MerchantTradeSnapshot;
 import lisbam.pastoraleconomy.merchant.TradeCatalog;
 import lisbam.pastoraleconomy.merchant.TradeCatalogEntry;
+import lisbam.pastoraleconomy.market.EmeraldMarketPriceGenerator;
 import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
 
 import java.nio.charset.StandardCharsets;
@@ -32,14 +33,24 @@ public final class SyncMerchantTradeMessage implements IMessage {
     @Override
     public void fromBytes(ByteBuf buffer) {
         snapshot = null;
-        if (buffer.readableBytes() < 16 + 4 + 8 + 8 + 12) {
+        if (buffer.readableBytes() < 16 + 4 + 8 + 8 + 8 + 8 + 4 + 4 + 4) {
             return;
         }
         UUID merchantId = new UUID(buffer.readLong(), buffer.readLong());
         int windowId = buffer.readInt();
         long day = buffer.readLong();
         long balance = buffer.readLong();
-        if (day < 0L || balance < 0L) {
+        long emeraldCurrent = buffer.readLong();
+        long emeraldPrevious = buffer.readLong();
+        int emeraldHoldings = buffer.readInt();
+        int emeraldMaxBuy = buffer.readInt();
+        int emeraldMaxSell = buffer.readInt();
+        if (day < 0L || balance < 0L
+                || emeraldCurrent < EmeraldMarketPriceGenerator.MINIMUM_PRICE
+                || emeraldCurrent > EmeraldMarketPriceGenerator.MAXIMUM_PRICE
+                || emeraldPrevious < EmeraldMarketPriceGenerator.MINIMUM_PRICE
+                || emeraldPrevious > EmeraldMarketPriceGenerator.MAXIMUM_PRICE
+                || emeraldHoldings < 0 || emeraldMaxBuy < 0 || emeraldMaxSell < 0) {
             return;
         }
         List<MerchantTradeOfferView> sells = readViews(buffer, MerchantTradeSnapshot.SELL_COUNT);
@@ -47,7 +58,8 @@ public final class SyncMerchantTradeMessage implements IMessage {
         if (sells == null || buys == null) {
             return;
         }
-        snapshot = new MerchantTradeSnapshot(merchantId, windowId, day, balance, sells, buys);
+        snapshot = new MerchantTradeSnapshot(merchantId, windowId, day, balance, emeraldCurrent, emeraldPrevious,
+                emeraldHoldings, emeraldMaxBuy, emeraldMaxSell, sells, buys);
     }
 
     private static List<MerchantTradeOfferView> readViews(ByteBuf buffer, int count) {
@@ -110,6 +122,11 @@ public final class SyncMerchantTradeMessage implements IMessage {
         buffer.writeInt(snapshot.getWindowId());
         buffer.writeLong(snapshot.getWorldDay());
         buffer.writeLong(snapshot.getBalance());
+        buffer.writeLong(snapshot.getEmeraldCurrentPrice());
+        buffer.writeLong(snapshot.getEmeraldPreviousPrice());
+        buffer.writeInt(snapshot.getEmeraldHoldings());
+        buffer.writeInt(snapshot.getEmeraldMaxBuy());
+        buffer.writeInt(snapshot.getEmeraldMaxSell());
         writeViews(buffer, snapshot.getSellOffers());
         writeViews(buffer, snapshot.getBuyOffers());
     }

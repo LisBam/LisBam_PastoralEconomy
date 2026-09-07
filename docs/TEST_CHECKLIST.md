@@ -1,5 +1,17 @@
 # 测试清单
 
+## 绿宝石现货市场与经济调整（2026-09-07）
+
+- [x] `emeraldTradeRulesSelfTest`：4% 买入向上取整、卖出向下取整、最大可买数量和 long 边界均通过。PASS（Temurin Java 8 `1.8.0_504`）。
+- [x] `emeraldMarketSelfTest`：五个离散日变动区间的端点、300～3,000 边界、同种子确定性、首次 1,000、跨日逐步推进、同日不重抽和 v8 缺字段迁移均通过。PASS（Temurin Java 8 `1.8.0_504`）。
+- [x] `merchantCatalogSelfTest`：胡萝卜/马铃薯基础价 60、常规绿宝石目录/Offer 删除、绿宝石矿石保留、旧持久绿宝石 Offer 失效重建，以及扩展 Packet 4 快照编解码均通过。PASS（Temurin Java 8 `1.8.0_504`）。
+- [x] `marketCoreSelfTest`：普通市场新基础价生效，已保存当日胡萝卜/马铃薯快照不重写，下一日昨日价承接旧保存值。PASS（Temurin Java 8 `1.8.0_504`）。
+- [x] `pastoralWorldDataSelfTest`、`marketPacketSelfTest`、`modGuiInputSelfTest`、`compileJava`、`compileTestJava`、`processResources`：世界数据兼容、既有行情协议、数量输入和资源/Java 8 编译回归通过。PASS（Temurin Java 8 `1.8.0_504`）。
+- [x] Forge 1.12.2 `--strict-warnings` audit：0 ERROR、7 条既有 S2C/Proxy `packet-thread` 保守 WARNING；新增绿宝石 C2S handler 显式切回服务端主线程。PASS（警告已记录）。
+- [x] 最终 Java 8 `./gradlew build --no-daemon --console=plain`：PASS（含 `test`、`reobfJar`、`exportReleaseJar`、`verifyReleaseJar`）；核验 256 个生产 class 均存在且为 Java 8。`release/LisBam_PastoralEconomy-1.6.jar` 为 531,118 bytes，SHA-256 `0ae27647b03a706a2d16218f7d13f64f6e2ff501bcac26f46b531dcc0ffadfab`，`unzip -t` PASS；该 1.6 目标在构建前不存在，所以未产生覆盖备份。
+- [ ] 游戏内单人：打开商人第三页，确认同一组原版滑条/输入框控制买卖数量，显示今日/昨日/涨跌、持仓、上下限和预计手续费；分别测试余额不足、背包满、持仓不足、跨日、重登与时间回拨，确认没有掉落、复制、吞物或客户端价格结算。NOT RUN：当前环境没有可操作 Forge 客户端世界。
+- [ ] Dedicated Server：以 1.6 客户端连接，验证 Packet 4 扩展和 Packet 11 的会话、距离、重复 requestId、余额、背包容量、持仓与多玩家同步均由服务器拒绝/结算。NOT RUN：当前环境没有可进入的 Dedicated Server 世界，且现有开发服务器 EULA 未接受。
+
 ## 多 Coremod 环境延迟类加载回归（2026-09-07）
 
 - [x] 崩溃定位：LaunchWrapper 1.12 的源码/字节码确认 `findClass:182` 为 `defineClass(... transformedClass.length ...)`；日志中的底层 NPE 表明转换结果为 `null`，不是蟹笼 tick 或农业方法主动抛错。PASS。

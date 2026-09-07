@@ -8,9 +8,12 @@ import lisbam.pastoraleconomy.gui.ContainerMerchantTrade;
 import lisbam.pastoraleconomy.market.MarketTrend;
 import lisbam.pastoraleconomy.merchant.MerchantTradeOfferView;
 import lisbam.pastoraleconomy.merchant.MerchantTradeSnapshot;
+import lisbam.pastoraleconomy.merchant.EmeraldTradeAction;
+import lisbam.pastoraleconomy.merchant.EmeraldTradeRules;
 import lisbam.pastoraleconomy.merchant.TradeCatalog;
 import lisbam.pastoraleconomy.merchant.TradeCatalogEntry;
 import lisbam.pastoraleconomy.network.ModNetwork;
+import lisbam.pastoraleconomy.network.message.EmeraldTradeRequestMessage;
 import lisbam.pastoraleconomy.network.message.MerchantTradeRequestMessage;
 import net.minecraft.client.gui.GuiButton;
 import net.minecraft.client.gui.GuiTextField;
@@ -29,8 +32,11 @@ import org.lwjgl.input.Keyboard;
 public final class GuiMerchantTrade extends GuiContainer implements GuiSlider.ISlider {
     private static final int BUTTON_SELL_PAGE = 1;
     private static final int BUTTON_BUY_PAGE = 2;
+    private static final int BUTTON_EMERALD_PAGE = 3;
     private static final int BUTTON_CONFIRM_OFFSET = 100;
     private static final int BUTTON_SLIDER_OFFSET = 200;
+    private static final int BUTTON_EMERALD_BUY = 300;
+    private static final int BUTTON_EMERALD_SELL = 301;
     private static final int MAX_QUANTITY = 4096;
     private static final ResourceLocation VANILLA_PANEL_TEXTURE = new ResourceLocation(
             "minecraft", "textures/gui/demo_background.png");
@@ -45,7 +51,10 @@ public final class GuiMerchantTrade extends GuiContainer implements GuiSlider.IS
     private final int[] sellQuantities = new int[MerchantTradeSnapshot.SELL_COUNT];
     private final int[] buyQuantities = new int[MerchantTradeSnapshot.BUY_COUNT];
     private final int[] sellHeldCounts = new int[MerchantTradeSnapshot.SELL_COUNT];
-    private boolean buyPage = ClientMerchantTradeViewState.isBuyPage();
+    private int page = ClientMerchantTradeViewState.getPage();
+    private int emeraldQuantity = 1;
+    /** The shared quantity control follows the last requested spot-market side. */
+    private boolean emeraldBuyMode = true;
     private int nextRequestId;
     private GuiTextField[] quantityFields = new GuiTextField[0];
     private GuiSlider[] quantitySliders = new GuiSlider[0];
@@ -63,20 +72,24 @@ public final class GuiMerchantTrade extends GuiContainer implements GuiSlider.IS
         super.initGui();
         buttonList.clear();
         layout = Layout.create(width, height);
-        int tabWidth = (layout.panelWidth - 16) / 2;
+        int tabWidth = (layout.panelWidth - 22) / 3;
         buttonList.add(new GuiButton(BUTTON_SELL_PAGE, layout.panelX + 5, layout.tabY, tabWidth, 14,
                 I18n.format("gui.lisbam_pastoral_economy.merchant.sell")));
         buttonList.add(new GuiButton(BUTTON_BUY_PAGE, layout.panelX + 11 + tabWidth, layout.tabY, tabWidth, 14,
                 I18n.format("gui.lisbam_pastoral_economy.merchant.buy")));
+        buttonList.add(new GuiButton(BUTTON_EMERALD_PAGE, layout.panelX + 17 + tabWidth * 2, layout.tabY, tabWidth, 14,
+                I18n.format("gui.lisbam_pastoral_economy.merchant.emerald")));
 
         int count = pageOfferCount();
         quantityFields = new GuiTextField[count];
         quantitySliders = new GuiSlider[count];
         MerchantTradeSnapshot snapshot = ClientMerchantTradeState.get();
-        refreshSellHeldCounts(snapshot);
+        if (isSellPage()) {
+            refreshSellHeldCounts(snapshot);
+        }
         for (int index = 0; index < count; index++) {
-            int cardX = layout.cardX(index, buyPage);
-            int controlsY = layout.controlsY(index, buyPage);
+            int cardX = isEmeraldPage() ? layout.emeraldControlX() : layout.cardX(index, isBuyPage());
+            int controlsY = isEmeraldPage() ? layout.emeraldControlsY() : layout.controlsY(index, isBuyPage());
             MerchantTradeOfferView view = getView(snapshot, index);
             int quantity = clampQuantity(index, getQuantity(index), view);
             setQuantity(index, quantity);
@@ -88,27 +101,41 @@ public final class GuiMerchantTrade extends GuiContainer implements GuiSlider.IS
 
             GuiTextField field = new GuiTextField(index, fontRenderer, layout.fieldX(cardX), controlsY,
                     layout.fieldWidth, 12);
-            field.setMaxStringLength(4);
+            field.setMaxStringLength(10);
             field.setTextColor(0xFFFFFF);
             field.setDisabledTextColour(0xFFFFFF);
             field.setText(Integer.toString(quantity));
             quantityFields[index] = field;
 
-            buttonList.add(new GuiButton(BUTTON_CONFIRM_OFFSET + index, layout.confirmX(cardX), controlsY,
-                    layout.confirmWidth, 12, I18n.format("gui.lisbam_pastoral_economy.merchant.confirm")));
+            if (!isEmeraldPage()) {
+                buttonList.add(new GuiButton(BUTTON_CONFIRM_OFFSET + index, layout.confirmX(cardX), controlsY,
+                        layout.confirmWidth, 12, I18n.format("gui.lisbam_pastoral_economy.merchant.confirm")));
+            }
+        }
+        if (isEmeraldPage()) {
+            buttonList.add(new GuiButton(BUTTON_EMERALD_BUY, layout.emeraldBuyX(), layout.emeraldButtonsY(),
+                    layout.emeraldButtonWidth(), 14, I18n.format("gui.lisbam_pastoral_economy.merchant.emerald_buy")));
+            buttonList.add(new GuiButton(BUTTON_EMERALD_SELL, layout.emeraldSellX(), layout.emeraldButtonsY(),
+                    layout.emeraldButtonWidth(), 14, I18n.format("gui.lisbam_pastoral_economy.merchant.emerald_sell")));
         }
         updateControls(snapshot);
     }
 
     @Override
     protected void actionPerformed(GuiButton button) {
-        if (button.id == BUTTON_SELL_PAGE || button.id == BUTTON_BUY_PAGE) {
-            buyPage = button.id == BUTTON_BUY_PAGE;
-            ClientMerchantTradeViewState.setBuyPage(buyPage);
+        if (button.id == BUTTON_SELL_PAGE || button.id == BUTTON_BUY_PAGE || button.id == BUTTON_EMERALD_PAGE) {
+            page = button.id == BUTTON_SELL_PAGE ? ClientMerchantTradeViewState.PAGE_SELL
+                    : button.id == BUTTON_BUY_PAGE ? ClientMerchantTradeViewState.PAGE_BUY
+                    : ClientMerchantTradeViewState.PAGE_EMERALD;
+            ClientMerchantTradeViewState.setPage(page);
             initGui();
             return;
         }
         if (button.id >= BUTTON_SLIDER_OFFSET && button.id < BUTTON_SLIDER_OFFSET + pageOfferCount()) {
+            return;
+        }
+        if ((button.id == BUTTON_EMERALD_BUY || button.id == BUTTON_EMERALD_SELL) && button.enabled) {
+            sendEmeraldTrade(button.id == BUTTON_EMERALD_BUY ? EmeraldTradeAction.BUY : EmeraldTradeAction.SELL);
             return;
         }
         if (button.id < BUTTON_CONFIRM_OFFSET || button.id >= BUTTON_CONFIRM_OFFSET + pageOfferCount()
@@ -126,7 +153,7 @@ public final class GuiMerchantTrade extends GuiContainer implements GuiSlider.IS
             return;
         }
         ModNetwork.CHANNEL.sendToServer(new MerchantTradeRequestMessage(snapshot.getMerchantId(), snapshot.getWindowId(),
-                snapshot.getWorldDay(), buyPage, slot, quantity, nextRequestId()));
+                snapshot.getWorldDay(), isBuyPage(), slot, quantity, nextRequestId()));
     }
 
     @Override
@@ -135,7 +162,7 @@ public final class GuiMerchantTrade extends GuiContainer implements GuiSlider.IS
             field.updateCursorCounter();
         }
         MerchantTradeSnapshot snapshot = ClientMerchantTradeState.get();
-        if (!buyPage) {
+        if (isSellPage()) {
             refreshSellHeldCounts(snapshot);
         }
         updateControls(snapshot);
@@ -230,8 +257,12 @@ public final class GuiMerchantTrade extends GuiContainer implements GuiSlider.IS
         String coins = I18n.format("gui.lisbam_pastoral_economy.merchant.coins", format(balance));
         drawContainerText(coins, layout.panelRight - 6 - fontRenderer.getStringWidth(coins), layout.panelY + 20);
 
-        for (int index = 0; index < pageOfferCount(); index++) {
-            drawOffer(getView(snapshot, index), index);
+        if (isEmeraldPage()) {
+            drawEmeraldMarket(snapshot);
+        } else {
+            for (int index = 0; index < pageOfferCount(); index++) {
+                drawOffer(getView(snapshot, index), index);
+            }
         }
         super.drawScreen(mouseX, mouseY, partialTicks);
         for (GuiTextField field : quantityFields) {
@@ -254,9 +285,9 @@ public final class GuiMerchantTrade extends GuiContainer implements GuiSlider.IS
     }
 
     private void drawOffer(MerchantTradeOfferView view, int index) {
-        int x = layout.cardX(index, buyPage);
-        int y = layout.cardY(index, buyPage);
-        int cardHeight = layout.cardHeight(buyPage);
+        int x = layout.cardX(index, isBuyPage());
+        int y = layout.cardY(index, isBuyPage());
+        int cardHeight = layout.cardHeight(isBuyPage());
         if (view == null || !view.isEnabled()) {
             drawCenteredContainerText(I18n.format("gui.lisbam_pastoral_economy.merchant.future"),
                     x + layout.cardWidth / 2, y + (cardHeight - 8) / 2);
@@ -288,7 +319,7 @@ public final class GuiMerchantTrade extends GuiContainer implements GuiSlider.IS
         String baseText = I18n.format("gui.lisbam_pastoral_economy.merchant.base_price", format(basePrice));
         drawContainerText(fontRenderer.trimStringToWidth(baseText, layout.cardWidth - 28), textX, y + 23);
         if (cardHeight >= 42) {
-            String amount = buyPage
+            String amount = isBuyPage()
                     ? I18n.format("gui.lisbam_pastoral_economy.merchant.remaining",
                     view.getRemainingItems() < 0
                             ? I18n.format("gui.lisbam_pastoral_economy.merchant.unlimited")
@@ -299,11 +330,81 @@ public final class GuiMerchantTrade extends GuiContainer implements GuiSlider.IS
         }
     }
 
+    /** Draws the third tab in the existing merchant panel, using its one shared quantity control. */
+    private void drawEmeraldMarket(MerchantTradeSnapshot snapshot) {
+        int x = layout.emeraldTextX();
+        int y = layout.cardTop;
+        if (snapshot == null) {
+            drawCenteredContainerText(I18n.format("gui.lisbam_pastoral_economy.merchant.emerald_loading"),
+                    width / 2, y + 30);
+            return;
+        }
+        long current = snapshot.getEmeraldCurrentPrice();
+        long previous = snapshot.getEmeraldPreviousPrice();
+        long delta = current - previous;
+        int quantity = getQuantity(0);
+        long base = EmeraldTradeRules.calculateBaseAmount(current, quantity);
+        long buyCost = EmeraldTradeRules.calculateBuyCost(current, quantity);
+        long sellIncome = EmeraldTradeRules.calculateSellIncome(current, quantity);
+        long buyFee = buyCost < 0L || base < 0L ? 0L : buyCost - base;
+        long sellFee = sellIncome < 0L || base < 0L ? 0L : base - sellIncome;
+
+        drawCenteredContainerText(I18n.format("gui.lisbam_pastoral_economy.merchant.emerald_pair"), width / 2, y);
+        drawContainerText(I18n.format("gui.lisbam_pastoral_economy.merchant.emerald_current", format(current)), x, y + 16);
+        drawContainerText(I18n.format("gui.lisbam_pastoral_economy.merchant.emerald_previous", format(previous)), x, y + 28);
+        drawContainerText(I18n.format("gui.lisbam_pastoral_economy.merchant.emerald_change", formatSigned(delta)), x, y + 40);
+        drawContainerText(I18n.format("gui.lisbam_pastoral_economy.merchant.emerald_change_percent",
+                formatPercent(delta, previous)), x, y + 52);
+        drawContainerText(I18n.format("gui.lisbam_pastoral_economy.merchant.emerald_fee",
+                Integer.toString(EmeraldTradeRules.FEE_PERCENT)), x, y + 64);
+        drawContainerText(I18n.format("gui.lisbam_pastoral_economy.merchant.emerald_holding",
+                Integer.toString(snapshot.getEmeraldHoldings())), x, y + 76);
+        drawContainerText(I18n.format("gui.lisbam_pastoral_economy.merchant.emerald_limits",
+                Integer.toString(snapshot.getEmeraldMaxBuy()), Integer.toString(snapshot.getEmeraldMaxSell())), x, y + 88);
+        drawContainerText(I18n.format("gui.lisbam_pastoral_economy.merchant.emerald_quantity_mode",
+                I18n.format(emeraldBuyMode ? "gui.lisbam_pastoral_economy.merchant.emerald_buy"
+                        : "gui.lisbam_pastoral_economy.merchant.emerald_sell")), x, y + 100);
+        drawContainerText(I18n.format("gui.lisbam_pastoral_economy.merchant.emerald_buy_total", format(buyCost),
+                format(buyFee)), x, y + 112);
+        drawContainerText(I18n.format("gui.lisbam_pastoral_economy.merchant.emerald_sell_total", format(sellIncome),
+                format(sellFee)), x, y + 124);
+    }
+
+    private void sendEmeraldTrade(EmeraldTradeAction action) {
+        MerchantTradeSnapshot snapshot = ClientMerchantTradeState.get();
+        if (snapshot == null) {
+            return;
+        }
+        emeraldBuyMode = action == EmeraldTradeAction.BUY;
+        int maximum = emeraldMaximum(snapshot);
+        if (maximum <= 0) {
+            updateControls(snapshot);
+            return;
+        }
+        int quantity = Math.max(1, Math.min(maximum, getQuantity(0)));
+        setQuantity(0, quantity);
+        if (quantityFields.length > 0) {
+            quantityFields[0].setText(Integer.toString(quantity));
+        }
+        ModNetwork.CHANNEL.sendToServer(new EmeraldTradeRequestMessage(snapshot.getMerchantId(), snapshot.getWindowId(),
+                snapshot.getWorldDay(), action, quantity, nextRequestId()));
+    }
+
+    private int emeraldMaximum(MerchantTradeSnapshot snapshot) {
+        if (snapshot == null) {
+            return 0;
+        }
+        return emeraldBuyMode ? snapshot.getEmeraldMaxBuy() : snapshot.getEmeraldMaxSell();
+    }
+
     private void drawItemTooltip(int mouseX, int mouseY) {
+        if (isEmeraldPage()) {
+            return;
+        }
         MerchantTradeSnapshot snapshot = ClientMerchantTradeState.get();
         for (int index = 0; index < pageOfferCount(); index++) {
-            int x = layout.cardX(index, buyPage) + 4;
-            int y = layout.cardY(index, buyPage) + 4;
+            int x = layout.cardX(index, isBuyPage()) + 4;
+            int y = layout.cardY(index, isBuyPage()) + 4;
             if (mouseX < x || mouseX >= x + 16 || mouseY < y || mouseY >= y + 16) {
                 continue;
             }
@@ -328,8 +429,25 @@ public final class GuiMerchantTrade extends GuiContainer implements GuiSlider.IS
     private void updateControls(MerchantTradeSnapshot snapshot) {
         // The current page is not an action, and an unavailable offer must use
         // the standard 1.12.2 disabled GuiButton treatment.
-        setButtonEnabled(BUTTON_SELL_PAGE, buyPage);
-        setButtonEnabled(BUTTON_BUY_PAGE, !buyPage);
+        setButtonEnabled(BUTTON_SELL_PAGE, !isSellPage());
+        setButtonEnabled(BUTTON_BUY_PAGE, !isBuyPage());
+        setButtonEnabled(BUTTON_EMERALD_PAGE, !isEmeraldPage());
+        if (isEmeraldPage()) {
+            int maximum = emeraldMaximum(snapshot);
+            int quantity = clampQuantity(0, getQuantity(0), null);
+            setQuantity(0, quantity);
+            configureSlider(quantitySliders[0], quantity, maximum, maximum > 0);
+            if (!quantityFields[0].isFocused()) {
+                quantityFields[0].setText(Integer.toString(quantity));
+            }
+            quantityFields[0].setEnabled(maximum > 0);
+            if (maximum <= 0) {
+                quantityFields[0].setFocused(false);
+            }
+            setButtonEnabled(BUTTON_EMERALD_BUY, snapshot != null && snapshot.getEmeraldMaxBuy() > 0);
+            setButtonEnabled(BUTTON_EMERALD_SELL, snapshot != null && snapshot.getEmeraldMaxSell() > 0);
+            return;
+        }
         for (int index = 0; index < quantityFields.length; index++) {
             MerchantTradeOfferView view = getView(snapshot, index);
             int quantity = clampQuantity(index, getQuantity(index), view);
@@ -366,8 +484,9 @@ public final class GuiMerchantTrade extends GuiContainer implements GuiSlider.IS
             return 1;
         }
         String text = quantityFields[index].getText();
-        if (isDecimalQuantity(text)) {
-            setQuantity(index, clampQuantity(index, Integer.parseInt(text), view));
+        Integer parsed = parseQuantity(text);
+        if (parsed != null) {
+            setQuantity(index, clampQuantity(index, parsed.intValue(), view));
         }
         int quantity = clampQuantity(index, getQuantity(index), view);
         setQuantity(index, quantity);
@@ -383,6 +502,9 @@ public final class GuiMerchantTrade extends GuiContainer implements GuiSlider.IS
     }
 
     private boolean isTradable(MerchantTradeOfferView view, int index) {
+        if (isEmeraldPage()) {
+            return emeraldMaximum(ClientMerchantTradeState.get()) > 0;
+        }
         if (view == null || !view.isEnabled()) {
             return false;
         }
@@ -390,10 +512,13 @@ public final class GuiMerchantTrade extends GuiContainer implements GuiSlider.IS
     }
 
     private int maxQuantity(MerchantTradeOfferView view, int index) {
+        if (isEmeraldPage()) {
+            return emeraldMaximum(ClientMerchantTradeState.get());
+        }
         if (view == null || !view.isEnabled()) {
             return 0;
         }
-        if (buyPage) {
+        if (isBuyPage()) {
             int stock = view.getRemainingItems();
             int stockLimit = stock < 0 ? MAX_QUANTITY : Math.max(0, Math.min(MAX_QUANTITY, stock));
             MerchantTradeSnapshot snapshot = ClientMerchantTradeState.get();
@@ -411,23 +536,30 @@ public final class GuiMerchantTrade extends GuiContainer implements GuiSlider.IS
         if (snapshot == null) {
             return null;
         }
-        if (buyPage) {
+        if (isBuyPage()) {
             return slot < snapshot.getBuyOffers().size() ? snapshot.getBuyOffers().get(slot) : null;
         }
         return slot < snapshot.getSellOffers().size() ? snapshot.getSellOffers().get(slot) : null;
     }
 
     private int pageOfferCount() {
-        return buyPage ? MerchantTradeSnapshot.BUY_COUNT : MerchantTradeSnapshot.SELL_COUNT;
+        return isEmeraldPage() ? 1 : isBuyPage() ? MerchantTradeSnapshot.BUY_COUNT : MerchantTradeSnapshot.SELL_COUNT;
     }
 
     private int getQuantity(int index) {
-        int[] quantities = buyPage ? buyQuantities : sellQuantities;
+        if (isEmeraldPage()) {
+            return emeraldQuantity > 0 ? emeraldQuantity : 1;
+        }
+        int[] quantities = isBuyPage() ? buyQuantities : sellQuantities;
         return quantities[index] > 0 ? quantities[index] : 1;
     }
 
     private void setQuantity(int index, int quantity) {
-        int[] quantities = buyPage ? buyQuantities : sellQuantities;
+        if (isEmeraldPage()) {
+            emeraldQuantity = quantity;
+            return;
+        }
+        int[] quantities = isBuyPage() ? buyQuantities : sellQuantities;
         quantities[index] = quantity;
     }
 
@@ -445,16 +577,19 @@ public final class GuiMerchantTrade extends GuiContainer implements GuiSlider.IS
                 || keyCode == Keyboard.KEY_RIGHT || keyCode == Keyboard.KEY_HOME || keyCode == Keyboard.KEY_END;
     }
 
-    private static boolean isDecimalQuantity(String text) {
-        if (text.isEmpty()) {
-            return false;
+    private static Integer parseQuantity(String text) {
+        if (text == null || text.isEmpty()) {
+            return null;
         }
+        int result = 0;
         for (int index = 0; index < text.length(); index++) {
-            if (!Character.isDigit(text.charAt(index))) {
-                return false;
+            char character = text.charAt(index);
+            if (!Character.isDigit(character) || result > (Integer.MAX_VALUE - (character - '0')) / 10) {
+                return null;
             }
+            result = result * 10 + (character - '0');
         }
-        return true;
+        return Integer.valueOf(result);
     }
 
     private int nextRequestId() {
@@ -524,6 +659,31 @@ public final class GuiMerchantTrade extends GuiContainer implements GuiSlider.IS
             formatted.append(digits.charAt(index));
         }
         return formatted.toString();
+    }
+
+    private static String formatSigned(long value) {
+        return (value > 0L ? "+" : value < 0L ? "-" : "") + format(Math.abs(value));
+    }
+
+    private static String formatPercent(long delta, long previous) {
+        if (previous <= 0L) {
+            return "—";
+        }
+        long hundredths = Math.round(Math.abs(delta) * 10000.0D / previous);
+        return (delta > 0L ? "+" : delta < 0L ? "-" : "") + (hundredths / 100L) + "."
+                + (hundredths % 100L < 10L ? "0" : "") + (hundredths % 100L) + "%";
+    }
+
+    private boolean isSellPage() {
+        return page == ClientMerchantTradeViewState.PAGE_SELL;
+    }
+
+    private boolean isBuyPage() {
+        return page == ClientMerchantTradeViewState.PAGE_BUY;
+    }
+
+    private boolean isEmeraldPage() {
+        return page == ClientMerchantTradeViewState.PAGE_EMERALD;
     }
 
     /** Draw the complete vanilla panel in one operation; never assemble it from texture fragments. */
@@ -617,6 +777,34 @@ public final class GuiMerchantTrade extends GuiContainer implements GuiSlider.IS
 
         private int confirmX(int cardX) {
             return fieldX(cardX) + fieldWidth + 3;
+        }
+
+        private int emeraldTextX() {
+            return panelX + 12;
+        }
+
+        private int emeraldControlX() {
+            return panelX + Math.max(12, (panelWidth - (sliderWidth + fieldWidth)) / 2 - 20);
+        }
+
+        private int emeraldControlsY() {
+            return panelBottom - 36;
+        }
+
+        private int emeraldButtonsY() {
+            return panelBottom - 18;
+        }
+
+        private int emeraldButtonWidth() {
+            return Math.max(42, Math.min(64, (panelWidth - 24) / 3));
+        }
+
+        private int emeraldBuyX() {
+            return panelX + panelWidth / 2 - emeraldButtonWidth() - 3;
+        }
+
+        private int emeraldSellX() {
+            return panelX + panelWidth / 2 + 3;
         }
     }
 }

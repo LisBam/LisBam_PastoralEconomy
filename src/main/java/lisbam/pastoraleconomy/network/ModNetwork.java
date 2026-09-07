@@ -11,6 +11,7 @@ import lisbam.pastoraleconomy.network.handler.SyncMerchantTradeMessageHandler;
 import lisbam.pastoraleconomy.network.handler.SyncTransportStateMessageHandler;
 import lisbam.pastoraleconomy.network.handler.TransportStationActionMessageHandler;
 import lisbam.pastoraleconomy.network.handler.RequestOpenBackpackMessageHandler;
+import lisbam.pastoraleconomy.network.handler.EmeraldTradeRequestMessageHandler;
 import lisbam.pastoraleconomy.network.message.RequestMarketHistoryMessage;
 import lisbam.pastoraleconomy.network.message.RequestMarketTooltipPriceMessage;
 import lisbam.pastoraleconomy.network.message.SyncCoinsMessage;
@@ -22,6 +23,7 @@ import lisbam.pastoraleconomy.network.message.SyncMerchantTradeMessage;
 import lisbam.pastoraleconomy.network.message.SyncTransportStateMessage;
 import lisbam.pastoraleconomy.network.message.TransportStationActionMessage;
 import lisbam.pastoraleconomy.network.message.RequestOpenBackpackMessage;
+import lisbam.pastoraleconomy.network.message.EmeraldTradeRequestMessage;
 import net.minecraftforge.fml.common.network.NetworkRegistry;
 import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
 import net.minecraftforge.fml.common.network.simpleimpl.IMessageHandler;
@@ -52,6 +54,7 @@ public final class ModNetwork {
     public static final int PACKET_SYNC_MARKET_TOOLTIP_PRICE = 8;
     public static final int PACKET_SYNC_SHOULDER_EQUIPMENT = 9;
     public static final int PACKET_REQUEST_OPEN_BACKPACK = 10;
+    public static final int PACKET_REQUEST_EMERALD_TRADE = 11;
     public static final SimpleNetworkWrapper CHANNEL =
             NetworkRegistry.INSTANCE.newSimpleChannel(CHANNEL_NAME);
 
@@ -97,6 +100,8 @@ public final class ModNetwork {
                 SyncShoulderEquipmentMessage.class);
         registerServerbound(PACKET_REQUEST_OPEN_BACKPACK, RequestOpenBackpackMessageHandler.class,
                 RequestOpenBackpackMessage.class);
+        registerServerbound(PACKET_REQUEST_EMERALD_TRADE, EmeraldTradeRequestMessageHandler.class,
+                EmeraldTradeRequestMessage.class);
     }
 
     public static <REQUEST extends IMessage, REPLY extends IMessage> void registerServerbound(

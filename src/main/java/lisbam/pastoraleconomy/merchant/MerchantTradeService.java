@@ -28,7 +28,7 @@ import java.util.UUID;
 
 /** Server-authoritative, atomic merchant transactions and GUI snapshots. */
 public final class MerchantTradeService {
-    private static final int MAX_REQUEST_QUANTITY = 4096;
+    public static final int MAX_REQUEST_QUANTITY = 4096;
 
     private MerchantTradeService() {
     }
@@ -104,6 +104,69 @@ public final class MerchantTradeService {
             boolean success = request.isBuy()
                     ? buy(player, record, offers.getBuyOffer(request.getSlot()), request.getQuantity())
                     : sell(player, record, offers.getSellOffer(request.getSlot()), request.getQuantity());
+            if (success) {
+                data.markDirty();
+                syncPlayerInventory(player);
+                syncOpenMerchantViews(player.world, merchant.getMerchantId());
+            } else {
+                sendSnapshot(player);
+            }
+        } finally {
+            container.endCommit();
+        }
+    }
+
+    /**
+     * Server-authoritative emerald/coin settlement.  The C2S packet carries
+     * only the action, amount, and existing merchant-window session proof;
+     * price, fee, balance, inventory capacity, and ownership are all read on
+     * this scheduled logical-server path.
+     */
+    public static void handleEmeraldTransaction(EntityPlayerMP player, EmeraldTradeRequest request) {
+        if (player == null || request == null || request.getAction() == null || player.world.isRemote
+                || !(player.openContainer instanceof ContainerMerchantTrade)) {
+            return;
+        }
+        ContainerMerchantTrade container = (ContainerMerchantTrade) player.openContainer;
+        if (!container.getMerchantId().equals(request.getMerchantId()) || request.getWindowId() != container.windowId
+                || !container.acceptRequestId(request.getRequestId()) || container.isCommitting()) {
+            sendSnapshot(player);
+            return;
+        }
+        container.beginCommit();
+        try {
+            if (request.getExpectedWorldDay() < 0L || request.getQuantity() <= 0
+                    || request.getQuantity() > MAX_REQUEST_QUANTITY) {
+                sendSnapshot(player);
+                return;
+            }
+            Entity entity = player.world.getEntityByID(container.getEntityId());
+            if (!(entity instanceof EntityMerchant) || entity.isDead || !container.canInteractWith(player)) {
+                player.closeScreen();
+                return;
+            }
+            EntityMerchant merchant = (EntityMerchant) entity;
+            if (!merchant.getMerchantId().equals(request.getMerchantId()) || !ensureMerchantRecord(player.world, merchant)) {
+                player.closeScreen();
+                return;
+            }
+            PastoralWorldData data = PastoralWorldData.get(player.world);
+            MerchantRecord record = data.getMerchantWorldState().getMerchant(merchant.getMerchantId());
+            if (record == null || !record.isActive()) {
+                player.closeScreen();
+                return;
+            }
+            if (MerchantOfferService.ensureOffers(player.world, record)) {
+                data.markDirty();
+            }
+            DailyOfferState offers = record.getDailyOfferState();
+            if (offers == null || offers.getWorldDay() != request.getExpectedWorldDay()) {
+                sendSnapshot(player);
+                return;
+            }
+            boolean success = request.getAction() == EmeraldTradeAction.BUY
+                    ? buyEmeralds(player, request.getQuantity())
+                    : sellEmeralds(player, request.getQuantity());
             if (success) {
                 data.markDirty();
                 syncPlayerInventory(player);
@@ -219,6 +282,47 @@ public final class MerchantTradeService {
         return true;
     }
 
+    private static boolean buyEmeralds(EntityPlayerMP player, int quantity) {
+        long price = MarketService.getEmeraldCurrentPrice(player.world);
+        long totalCost = EmeraldTradeRules.calculateBuyCost(price, quantity);
+        if (totalCost < 0L || !canSpend(player, totalCost)
+                || getEmeraldCapacity(player.inventory) < quantity) {
+            return false;
+        }
+        List<ItemStack> before = snapshotInventory(player.inventory);
+        if (!CoinService.trySpend(player, totalCost)) {
+            return false;
+        }
+        if (!insert(player.inventory, new ItemStack(Items.EMERALD, quantity, 0))) {
+            restoreInventory(player.inventory, before);
+            CoinService.addCoins(player, totalCost);
+            return false;
+        }
+        player.inventory.markDirty();
+        return true;
+    }
+
+    private static boolean sellEmeralds(EntityPlayerMP player, int quantity) {
+        if (countEmeralds(player.inventory) < quantity) {
+            return false;
+        }
+        long income = EmeraldTradeRules.calculateSellIncome(MarketService.getEmeraldCurrentPrice(player.world), quantity);
+        if (income < 0L || !canCredit(player, income)) {
+            return false;
+        }
+        List<ItemStack> before = snapshotInventory(player.inventory);
+        if (removeEmeralds(player.inventory, quantity) != quantity) {
+            restoreInventory(player.inventory, before);
+            return false;
+        }
+        if (!CoinService.addCoins(player, income)) {
+            restoreInventory(player.inventory, before);
+            return false;
+        }
+        player.inventory.markDirty();
+        return true;
+    }
+
     private static long multiply(long left, long right) {
         if (left <= 0L || right <= 0L || left > Long.MAX_VALUE / right) {
             return -1L;
@@ -304,6 +408,53 @@ public final class MerchantTradeService {
         return remaining.isEmpty();
     }
 
+    private static int countEmeralds(InventoryPlayer inventory) {
+        int total = 0;
+        for (ItemStack stack : inventory.mainInventory) {
+            if (stack != null && !stack.isEmpty() && stack.getItem() == Items.EMERALD) {
+                total = addAvailableCounts(total, stack.getCount());
+            }
+        }
+        return total;
+    }
+
+    /** Number of additional blank emerald items the actual player inventory can accept. */
+    private static int getEmeraldCapacity(InventoryPlayer inventory) {
+        ItemStack emerald = new ItemStack(Items.EMERALD, 1, 0);
+        int maxStack = Math.min(emerald.getMaxStackSize(), inventory.getInventoryStackLimit());
+        int capacity = 0;
+        for (ItemStack existing : inventory.mainInventory) {
+            if (existing != null && !existing.isEmpty() && existing.isItemEqual(emerald)
+                    && ItemStack.areItemStackTagsEqual(existing, emerald)) {
+                capacity = addAvailableCounts(capacity, Math.max(0, maxStack - existing.getCount()));
+            } else if (existing == null || existing.isEmpty()) {
+                capacity = addAvailableCounts(capacity, maxStack);
+            }
+        }
+        return capacity;
+    }
+
+    private static int removeEmeralds(InventoryPlayer inventory, int amount) {
+        int remaining = amount;
+        for (int index = 0; index < inventory.mainInventory.size() && remaining > 0; index++) {
+            ItemStack stack = inventory.mainInventory.get(index);
+            if (stack == null || stack.isEmpty() || stack.getItem() != Items.EMERALD) {
+                continue;
+            }
+            int removed = Math.min(remaining, stack.getCount());
+            stack.shrink(removed);
+            if (stack.isEmpty()) {
+                inventory.setInventorySlotContents(index, ItemStack.EMPTY);
+            }
+            remaining -= removed;
+        }
+        return amount - remaining;
+    }
+
+    private static int addAvailableCounts(int left, int right) {
+        return left > Integer.MAX_VALUE - right ? Integer.MAX_VALUE : left + right;
+    }
+
     private static void sendSnapshot(EntityPlayerMP player) {
         if (player.openContainer instanceof ContainerMerchantTrade) {
             MerchantTradeSnapshot snapshot = createSnapshot(player, (ContainerMerchantTrade) player.openContainer);
@@ -355,8 +506,18 @@ public final class MerchantTradeService {
         MarketPriceSnapshot prices = MarketService.getPriceSnapshot(player.world);
         TradeVoucherStorageService.SaleInventory saleInventory =
                 TradeVoucherStorageService.findSaleInventory(player);
+        long emeraldCurrentPrice = MarketService.getEmeraldCurrentPrice(player.world);
+        long emeraldPreviousPrice = MarketService.getEmeraldPreviousPrice(player.world);
+        int emeraldHoldings = countEmeralds(player.inventory);
+        int emeraldMaxBuy = Math.min(MAX_REQUEST_QUANTITY, Math.min(
+                EmeraldTradeRules.getMaximumAffordableAmount(CoinService.getBalance(player), emeraldCurrentPrice,
+                        MAX_REQUEST_QUANTITY),
+                getEmeraldCapacity(player.inventory)
+        ));
+        int emeraldMaxSell = Math.min(MAX_REQUEST_QUANTITY, emeraldHoldings);
         return new MerchantTradeSnapshot(record.getMerchantId(), container.windowId, state.getWorldDay(),
-                CoinService.getBalance(player), createViews(state.getSellOffers(), prices, saleInventory),
+                CoinService.getBalance(player), emeraldCurrentPrice, emeraldPreviousPrice, emeraldHoldings,
+                emeraldMaxBuy, emeraldMaxSell, createViews(state.getSellOffers(), prices, saleInventory),
                 createViews(state.getBuyOffers(), prices, null));
     }
 
@@ -419,6 +580,33 @@ public final class MerchantTradeService {
         public long getExpectedWorldDay() { return expectedWorldDay; }
         public boolean isBuy() { return buy; }
         public int getSlot() { return slot; }
+        public int getQuantity() { return quantity; }
+        public int getRequestId() { return requestId; }
+    }
+
+    /** Packet-safe emerald spot-market request value object. */
+    public static final class EmeraldTradeRequest {
+        private final UUID merchantId;
+        private final int windowId;
+        private final long expectedWorldDay;
+        private final EmeraldTradeAction action;
+        private final int quantity;
+        private final int requestId;
+
+        public EmeraldTradeRequest(UUID merchantId, int windowId, long expectedWorldDay, EmeraldTradeAction action,
+                                   int quantity, int requestId) {
+            this.merchantId = merchantId;
+            this.windowId = windowId;
+            this.expectedWorldDay = expectedWorldDay;
+            this.action = action;
+            this.quantity = quantity;
+            this.requestId = requestId;
+        }
+
+        public UUID getMerchantId() { return merchantId; }
+        public int getWindowId() { return windowId; }
+        public long getExpectedWorldDay() { return expectedWorldDay; }
+        public EmeraldTradeAction getAction() { return action; }
         public int getQuantity() { return quantity; }
         public int getRequestId() { return requestId; }
     }

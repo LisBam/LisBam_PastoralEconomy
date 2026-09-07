@@ -1,5 +1,15 @@
 # 实施决策
 
+## DEC-065 绿宝石现货行情与服务端原子结算（2026-09-07）
+
+决定：绿宝石只作为商人第三个“炒币”分页上的实物现货，不加入普通 `MarketCatalog`、行情书曲线或常规商人购买池；珍宝 `绿宝石矿石` 仍保留。`PastoralWorldData` 从 v8 升至 v9，在既有 `marketSeed` 下持久化独立的绿宝石初始化标记、当前价、昨日价和最后更新世界日。首次值固定为 1,000，后续每一世界日只生成一次并 clamp 在 300～3,000；多日跳跃逐日补算，时间回拨不重抽。v8 缺字段时只写入首次价格，绝不覆盖同日普通市场快照。
+
+商人快照携带展示用行情、持仓和上限；新增追加式 Packet 11 只请求商人会话、方向、数量与递增 requestId。逻辑服务端必须再次确认真实 `ContainerMerchantTrade`、窗口/商人 UUID、距离、世界日、锁、余额、主物品栏容量和实际绿宝石数，买入才按 `ceil(price * amount * 1.04)` 扣金币并放入物品，卖出才按 `floor(price * amount * 0.96)` 移除物品并加金币。两边均以完整库存与余额快照回滚异常，任何失败都不会掉落绿宝石或信任客户端估算。
+
+原因：普通日常商品的市场回归和 30 天行情历史不适合高波动、无均值回归的现货价格；独立小状态既保证同一世界共享和可重启复现，也不污染既有商品曲线。把价格、余额与库存留在服务器可消除伪造金额、超额交易、过期会话和重复包的入口。
+
+影响：没有新增 registry ID、Capability 或 TileEntity NBT。旧世界首次加载保持现有普通行情，并添加 v9 字段；保留 Packet 0～10 discriminator，但 Packet 4 追加字段及 Packet 11 使商人交易客户端与服务端必须同时使用 1.6。旧持久常规绿宝石 Offer 会在读入时失效并依当前目录重建。
+
 ## DEC-064 本模组根包绕过全局 Coremod 转换链（2026-09-07）
 
 决定：随发行 JAR 加载的 `EnchantingTableCorePlugin` 将 `@TransformerExclusions` 从 `lisbam.pastoraleconomy.core` 扩大为完整稳定根包 `lisbam.pastoraleconomy`。本模组普通 class 与 Coremod helper 均由 LaunchClassLoader 直接定义；自有两个 `IClassTransformer` 仍只按转换后的原版类名处理 `Item`、`ContainerPlayer`、`EntityLivingBase`、`EntityPlayerSP`、`NetHandlerPlayServer` 和 `LayerElytra`。`build` 在 `reobfJar`/`exportReleaseJar` 后自动执行 `verifyReleaseJar`，逐个确认全部编译生产 class 已进入成品且为 Java 8 字节码。

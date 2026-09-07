@@ -40,7 +40,7 @@ public final class MerchantCatalogSelfTest {
         check(TradeCatalog.getPool(TradePool.SELL_SECONDARY).size() == 20, "secondary sell pool");
         check(TradeCatalog.getPool(TradePool.BUY_COMMON).size() == 56, "common buy pool");
         check(TradeCatalog.getPool(TradePool.BUY_UNCOMMON).size() == 42, "uncommon buy pool");
-        check(TradeCatalog.getPool(TradePool.BUY_RARE).size() == 28, "rare buy pool");
+        check(TradeCatalog.getPool(TradePool.BUY_RARE).size() == 27, "rare buy pool without emerald");
         check(TradeCatalog.getPool(TradePool.BUY_TREASURE).size() == 39, "treasure buy pool");
         check(DailyOfferState.BUY_OFFER_COUNT == 8, "eight daily purchase slots");
         check(MerchantOfferService.selectPurchasePool(new FixedRandom(0)) == TradePool.BUY_COMMON,
@@ -66,9 +66,17 @@ public final class MerchantCatalogSelfTest {
         check(find(TradePool.SELL_SECONDARY, "rabbit_sell").getBasePrice() == 140L, "rabbit sell price");
         check(find(TradePool.SELL_SECONDARY, "fish_sell").getBasePrice() == 80L, "cod sell price");
         check(find(TradePool.SELL_SECONDARY, "salmon_sell").getBasePrice() == 100L, "salmon sell price");
+        check(find(TradePool.SELL_CORE, "carrot").getBasePrice() == 60L, "carrot sell price");
+        check(find(TradePool.SELL_CORE, "potato").getBasePrice() == 60L, "potato sell price");
+        check(MarketCatalog.get("lisbam_pastoral_economy:buy/rare/emerald") == null,
+                "ordinary market has no emerald price");
+        check(TradeCatalog.get("lisbam_pastoral_economy:merchant/emerald") == null,
+                "ordinary merchant has no emerald offer");
+        check(MarketCatalog.get("lisbam_pastoral_economy:buy/treasure/emerald_ore") != null,
+                "emerald ore remains a merchant market product");
 
         String[][] rareStocks = {
-                {"diamond", "256"}, {"emerald", "256"}, {"slime_ball", "32"}, {"blaze_rod", "256"}, {"ghast_tear", "256"},
+                {"diamond", "256"}, {"slime_ball", "32"}, {"blaze_rod", "256"}, {"ghast_tear", "256"},
                 {"ender_pearl", "64"}, {"wither_skeleton_skull", "64"}, {"shulker_shell", "128"},
                 {"dragon_breath", "256"}, {"sponge", "128"}, {"chainmail_helmet", "2"},
                 {"chainmail_chestplate", "2"}, {"chainmail_leggings", "2"}, {"chainmail_boots", "2"},
@@ -227,6 +235,11 @@ public final class MerchantCatalogSelfTest {
         legacyTenSlotState.getTagList("buyOffers", 10).appendTag(uniqueBuys.get(0).writeToNBT());
         check(DailyOfferState.readFromNBT(legacyTenSlotState) == null,
                 "legacy ten-slot purchase state regenerates");
+        NBTTagCompound oldEmeraldOfferState = currentState.writeToNBT();
+        oldEmeraldOfferState.getTagList("buyOffers", 10).getCompoundTagAt(0)
+                .setString("catalog", LisBamPastoralEconomy.MODID + ":merchant/emerald");
+        check(DailyOfferState.readFromNBT(oldEmeraldOfferState) == null,
+                "a persisted ordinary emerald offer is rejected and regenerated");
 
         List<DailyOffer> unorderedQualities = new java.util.ArrayList<DailyOffer>();
         unorderedQualities.add(new DailyOffer(find(TradePool.BUY_TREASURE, "nether_star").getCatalogKey(), true, 1));
@@ -266,7 +279,8 @@ public final class MerchantCatalogSelfTest {
         TradeCatalogEntry wheat = find(TradePool.SELL_CORE, "wheat");
         sells.set(0, new MerchantTradeOfferView(true, wheat.getCatalogKey(), wheat.getItemStackLimit(),
                 wheat.getBasePrice(), null, 37, 0));
-        MerchantTradeSnapshot snapshot = new MerchantTradeSnapshot(java.util.UUID.randomUUID(), 3, 0L, 0L, sells, buys);
+        MerchantTradeSnapshot snapshot = new MerchantTradeSnapshot(java.util.UUID.randomUUID(), 3, 0L, 0L,
+                1230L, 1000L, 17, 3, 17, sells, buys);
         ByteBuf buffer = Unpooled.buffer();
         new SyncMerchantTradeMessage(snapshot).toBytes(buffer);
         SyncMerchantTradeMessage decodedMessage = new SyncMerchantTradeMessage();
@@ -277,6 +291,10 @@ public final class MerchantCatalogSelfTest {
                 "merchant snapshot uses the current 6 + 8 protocol counts");
         check(decoded.getSellOffers().get(0).getRemainingItems() == 37,
                 "sell snapshot carries voucher-linked chest stock in the existing field");
+        check(decoded.getEmeraldCurrentPrice() == 1230L && decoded.getEmeraldPreviousPrice() == 1000L
+                        && decoded.getEmeraldHoldings() == 17 && decoded.getEmeraldMaxBuy() == 3
+                        && decoded.getEmeraldMaxSell() == 17,
+                "merchant snapshot carries the server-derived emerald market state");
     }
 
     private static List<MerchantTradeOfferView> disabledViews(int count) {
