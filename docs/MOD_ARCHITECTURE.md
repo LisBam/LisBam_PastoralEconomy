@@ -9,7 +9,7 @@
 ### 2026-09-07 新内容：出货箱
 
 - 新增稳定 `shipping_box` Block/ItemBlock/TileEntity ID、GUI ID `5` 与 `TileShippingBox` 27 格库存。它使用标准 `IInventory`/`ISidedInventory`：玩家和箱子一样可自由放取，所有面均可由漏斗输入，但 `canExtractItem` 恒为 `false`，故无法被漏斗抽出。破坏时按通常容器规则掉落内部物品。
-- `ShippingBoxService` 仅在逻辑服务端的主世界每日市场刷新后执行一次。它扫描所有已加载维度中的已加载出货箱，不强制加载玩家未加载的区块；每箱只要存在至少一张已绑定的交易凭证，就把其中 `TradeCatalog` 可收购的商品按同一日全局价格售给商人，整箱总价统一按 `floor(70%)` 折算。牛奶桶售出后原槽留下空桶，无法收购的物品和凭证不变。
+- `ShippingBoxService` 仅在逻辑服务端主世界每个世界日的晨间窗口（`World#getWorldTime() % 24000` 为 `0～1000`）并在市场刷新后执行一次。它扫描所有已加载维度中的已加载出货箱，不强制加载玩家未加载的区块；夜间的首次服务端 tick 不会再抢占当天派发标记。每箱只要存在至少一张已绑定的交易凭证，就把其中 `TradeCatalog` 可收购的商品按同一日全局价格售给商人，整箱总价统一按 `floor(70%)` 折算。牛奶桶售出后原槽留下空桶，无法收购的物品和凭证不变。
 - 已绑定凭证的 UUID 是收益资格，重复同一 UUID 不重复分份；同箱唯一持证玩家均分折后总额，余数按 UUID 稳定顺序补 1 金币。`PastoralWorldData` schema 升至 `v10`，新增有界 `shippingBoxPayouts`，持久化最后派发世界日和离线/金币余额溢出时的待领收益。每个玩家在所有出货箱完成统一核算后至多收到一次绿色聊天消息 `【出货箱】今日收益+xxx金币！`；上线和随后服务端轮询也会安全发放其待领余额。
 - 配方为任意六种原版木板围绕一张 `trade_voucher`，配方不限制凭证 NBT，因此空白和已绑定凭证均可作为中心材料。方块使用 AI 生成像素源图后固定采样的 16×16 RGBA 木箱贴图；`ClientModelRegistry` 只在物理客户端注册其 inventory model。
 
@@ -18,13 +18,13 @@
 - `PastoralWorldData` 升至 schema `v9`。既有 `market` 段追加 `emeraldInitialized`、`emeraldCurrentPrice`、`emeraldPreviousPrice` 与 `emeraldLastUpdateDay`，以同一持久 `marketSeed` 独立生成绿宝石每个世界日的现货价：首次严格为 1,000 金币，范围固定 300～3,000，之后按 `25% ±5`、`45% ±15`、`20% -30～+30`、`8% -50～+60`、`2% -70～+100` 的离散分布逐日变化，不向 1,000 自动回归。时间跳跃逐日补算、同日和时间回拨绝不重抽；旧 v8 存档第一次读取只补写 1,000 的当前/昨日价，不改变普通市场当日快照。
 - `MarketCatalog` 与 `TradeCatalog` 将胡萝卜、马铃薯的基础收购价由 40 调为 60；已保存的当天/昨日普通行情仍按原有不重写规则保持，次日才从旧保存价继续演进。羊毛通用 JSON 配方改为任意颜色羊毛 ×1 → 线 ×1。`Items.EMERALD` 已从常规商人购买目录及其未来每日 Offer 池删除，历史持久 Offer 读入时会失效并按当前目录重建；`Blocks.EMERALD_ORE` 的珍宝商品保持不变。
 - 商人交易新增独立的“炒币”分页。`MerchantTradeSnapshot`/Packet 4 同步当前/昨日价、持仓和服务器计算的买入/卖出上限；追加的 Packet 11 C2S 请求只含商人会话、方向、数量和 requestId，绝不信任客户端价格、余额或持仓。服务端重新验证窗口、实体、距离、世界日、递增请求号、金币、主物品栏容量与绿宝石数量后，按买入 `ceil(price × amount × 1.04)`、卖出 `floor(price × amount × 0.96)` 原子结算并同步所有正在与同一商人交易的玩家。Packet 0～10 discriminator 保持不变；Packet 4 的追加字段与 Packet 11 要求客户端和服务端一同升级到 1.6。
-- `GuiMerchantTrade` 的第三页只复用一个原版 `GuiSlider` 和一个原版 `GuiTextField` 控制数量，显示 `EMR/金币`、今日/昨日与涨跌、4% 手续费、持仓、方向上限和预计金额。预览仅用于显示，买卖按钮仍只是向服务端提交数量。
+- `GuiMerchantTrade` 的第三页使用左右独立的原版 `GuiSlider`/`GuiTextField` 组分别控制买入与卖出数量，显示 `EMR/金币`、今日/昨日与涨跌、4% 手续费、各方向上限和预计金额。预览仅用于显示，买卖按钮仍只是向服务端提交数量。
 
 ### 2026-09-07 维护：每日挤奶、伐木耐久附魔核验与区块加载器
 
 - `MilkingCooldownEventHandler` 不再按每头牛的最近 tick 计算五分钟倒计时；它只保存该牛最近成功挤奶的世界日，并以当前 `World#getWorldTime() / 24000` 在逻辑服务端比较。成年牛（含哞菇）在同一世界日只能成功一次；进入下一世界日后，所有牛统一恢复可挤奶状态。客户端仍不预测物品栏，`disableMilkingCooldown` 仍完整旁路为原版连续挤奶。
 - `TreeFellingEventHandler` 的每个二级原木继续调用原版 `EntityPlayerMP#interactionManager.tryHarvestBlock`。Forge 1.12.2 在该路径中逐格调用主手 `ItemStack#onBlockDestroyed`，而斧头随后经原版 `damageItem` 执行耐久附魔判定；因此每个原木已经独立进行耐久附魔掷骰，不需另造一套耐久损耗逻辑。连锁树叶仍在成功采掘后恢复这一次工具损伤，故不计伐木耐久。
-- 新增稳定 Block/Item/TileEntity ID `chunk_loader`。`BlockChunkLoader` 的 `powered` 方块状态决定 AI 绘制的 16×16 未充能/充能贴图和 0/7 光照；`TileChunkLoader` 只保存其激活状态。逻辑服务端的 `ChunkLoaderService` 为有红石信号的方块申请一张 Forge `NORMAL` ticket、只强制加载自身 `ChunkPos`；断电、方块破坏或加载后检测无信号即释放。它复用模组唯一的票据加载回调，以 ticket modData 恢复已激活实例；没有新增 `PastoralWorldData` 或网络协议。
+- 新增稳定 Block/Item/TileEntity ID `chunk_loader`。`BlockChunkLoader` 的 `powered` 方块状态决定同一深色石质/紫色框架的 16×16 未充能/充能贴图和 0/7 光照；`TileChunkLoader` 只保存其激活状态。逻辑服务端的 `ChunkLoaderService` 为有红石信号的方块申请一张 Forge `NORMAL` ticket、只强制加载自身 `ChunkPos`，并在每个逻辑服务端世界 END tick 复核每张现存票据的方块、TileEntity 和红石信号；断电、方块破坏、无效 ticket 或重载后无信号都释放。它复用模组唯一的票据加载回调，以 ticket modData 恢复已激活实例；没有新增 `PastoralWorldData` 或网络协议。`ItemChunkLoader` 与方块均使用显式 `tile...chunk_loader` 显示键，不会显示多余的 `.name`。
 
 ### 2026-09-07 维护：Coremod 类加载隔离与发行完整性
 

@@ -11,4 +11,9 @@ public final class ChunkLoaderRules {
     public static boolean shouldBeActive(boolean receivingRedstonePower) {
         return receivingRedstonePower;
     }
+
+    /** A ticket may remain only while its original block instance still has redstone power. */
+    public static boolean shouldKeepForcedChunk(boolean validChunkLoader, boolean receivingRedstonePower) {
+        return validChunkLoader && receivingRedstonePower;
+    }
 }

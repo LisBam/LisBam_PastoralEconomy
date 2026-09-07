@@ -81,6 +81,9 @@ public final class PersistenceEventHandler {
     /** Merchant reconciliation is global and runs on the logical-server overworld only. */
     @SubscribeEvent
     public static void updateMarket(TickEvent.WorldTickEvent event) {
+        if (event.phase == TickEvent.Phase.END && !event.world.isRemote && event.world instanceof WorldServer) {
+            ChunkLoaderService.tick((WorldServer) event.world);
+        }
         if (event.phase == TickEvent.Phase.END && !event.world.isRemote && event.world instanceof WorldServer
                 && event.world.provider.getDimension() == 0) {
             VillageService.tick((WorldServer) event.world);

@@ -11,8 +11,16 @@ import java.util.UUID;
 /** Pure integer arithmetic for the shipping-box daily settlement. */
 public final class ShippingBoxRules {
     public static final int INCOME_PERCENT = 70;
+    /** Vanilla `/time set day` selects tick 1000, so include the whole early-morning window. */
+    public static final long MORNING_SETTLEMENT_LAST_TICK = 1000L;
+    private static final long WORLD_DAY_TICKS = 24000L;
 
     private ShippingBoxRules() {
+    }
+
+    /** Settlement is deliberately deferred until morning instead of claiming a day on a late-night server tick. */
+    public static boolean isMorningSettlementWindow(long worldTime) {
+        return worldTime >= 0L && worldTime % WORLD_DAY_TICKS <= MORNING_SETTLEMENT_LAST_TICK;
     }
 
     /** Returns -1 when the non-negative unit-price multiplication would overflow. */
