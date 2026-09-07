@@ -6,6 +6,7 @@ import lisbam.pastoraleconomy.client.ClientMarketTooltipSyncExecutor;
 import lisbam.pastoraleconomy.client.ClientTransportStateSyncExecutor;
 import lisbam.pastoraleconomy.client.ClientShoulderEquipmentSyncExecutor;
 import lisbam.pastoraleconomy.client.gui.GuiCrabTrap;
+import lisbam.pastoraleconomy.client.gui.GuiShippingBox;
 import lisbam.pastoraleconomy.client.gui.GuiMarketBook;
 import lisbam.pastoraleconomy.client.gui.GuiTransportStation;
 import lisbam.pastoraleconomy.gui.GuiIds;
@@ -22,6 +23,7 @@ import net.minecraftforge.fml.client.registry.IRenderFactory;
 import net.minecraftforge.fml.client.registry.RenderingRegistry;
 import lisbam.pastoraleconomy.entity.EntityMerchant;
 import lisbam.pastoraleconomy.tile.TileCrabTrap;
+import lisbam.pastoraleconomy.tile.TileShippingBox;
 import lisbam.pastoraleconomy.transport.TransportStateSnapshot;
 
 public final class ClientProxy extends CommonProxy {
@@ -58,6 +60,11 @@ public final class ClientProxy extends CommonProxy {
                 && world.getTileEntity(new net.minecraft.util.math.BlockPos(x, y, z)) instanceof TileCrabTrap) {
             return new GuiCrabTrap(player.inventory,
                     (TileCrabTrap) world.getTileEntity(new net.minecraft.util.math.BlockPos(x, y, z)));
+        }
+        if (guiId == GuiIds.SHIPPING_BOX
+                && world.getTileEntity(new net.minecraft.util.math.BlockPos(x, y, z)) instanceof TileShippingBox) {
+            return new GuiShippingBox(player.inventory,
+                    (TileShippingBox) world.getTileEntity(new net.minecraft.util.math.BlockPos(x, y, z)));
         }
         if (guiId == GuiIds.TRANSPORT_STATION) {
             return new GuiTransportStation(new net.minecraft.util.math.BlockPos(x, y, z));

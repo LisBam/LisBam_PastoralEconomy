@@ -60,6 +60,22 @@ public final class TradeCatalog {
         return entries == null ? Collections.<TradeCatalogEntry>emptyList() : entries;
     }
 
+    /** Finds one of the 29 globally priced player-to-merchant purchase goods. */
+    @Nullable
+    public static TradeCatalogEntry findSellEntry(ItemStack stack) {
+        for (TradeCatalogEntry entry : getPool(TradePool.SELL_CORE)) {
+            if (entry.matches(stack)) {
+                return entry;
+            }
+        }
+        for (TradeCatalogEntry entry : getPool(TradePool.SELL_SECONDARY)) {
+            if (entry.matches(stack)) {
+                return entry;
+            }
+        }
+        return null;
+    }
+
     /** Recreates the native enchanted-book NBT for one market catalogue key. */
     @Nullable
     public static ItemStack createEnchantedBookStackForMarketKey(String marketKey) {

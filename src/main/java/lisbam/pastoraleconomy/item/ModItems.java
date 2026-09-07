@@ -15,6 +15,7 @@ public final class ModItems {
     public static final ItemGoldenBoneMeal GOLDEN_BONE_MEAL = new ItemGoldenBoneMeal();
     public static final ItemMerchantSpawnEgg MERCHANT_SPAWN_EGG = new ItemMerchantSpawnEgg();
     public static final ItemBlock CRAB_TRAP_ITEM = createCrabTrapItem();
+    public static final ItemBlock SHIPPING_BOX_ITEM = createShippingBoxItem();
     public static final ItemBlock TRANSPORT_STATION_ITEM = createTransportStationItem();
     public static final ItemBlock CHUNK_LOADER_ITEM = createChunkLoaderItem();
 
@@ -24,6 +25,12 @@ public final class ModItems {
     private static ItemBlock createCrabTrapItem() {
         ItemBlock item = new ItemBlock(ModBlocks.CRAB_TRAP);
         item.setRegistryName(ModBlocks.CRAB_TRAP.getRegistryName());
+        return item;
+    }
+
+    private static ItemBlock createShippingBoxItem() {
+        ItemBlock item = new ItemBlock(ModBlocks.SHIPPING_BOX);
+        item.setRegistryName(ModBlocks.SHIPPING_BOX.getRegistryName());
         return item;
     }
 

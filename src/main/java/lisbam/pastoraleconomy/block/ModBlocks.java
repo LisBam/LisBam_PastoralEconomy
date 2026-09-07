@@ -7,6 +7,7 @@ import net.minecraft.block.Block;
 public final class ModBlocks {
     public static final BlockVillageStation VILLAGE_STATION = new BlockVillageStation();
     public static final BlockCrabTrap CRAB_TRAP = new BlockCrabTrap();
+    public static final BlockShippingBox SHIPPING_BOX = new BlockShippingBox();
     public static final BlockTransportStation TRANSPORT_STATION = new BlockTransportStation();
     public static final BlockChunkLoader CHUNK_LOADER = new BlockChunkLoader();
 

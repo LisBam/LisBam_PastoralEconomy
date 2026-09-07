@@ -1,5 +1,16 @@
 # 测试清单
 
+## 出货箱（2026-09-07）
+
+- [x] `shippingBoxSelfTest`：27 格库存 NBT、任面漏斗输入/禁止输出、两个唯一凭证均分、重复凭证去重、70% 向下取整、不可收购品保留、long 边界、每日标记、待发收益读写和 16×16 贴图可读均通过。PASS（Temurin Java 8 `1.8.0_504`）。
+- [x] `pastoralWorldDataSelfTest`：v10 `shippingBoxPayouts` 的每日标记、待发余额和旧数据读取回归通过。PASS（Temurin Java 8 `1.8.0_504`）。
+- [x] Forge 1.12.2 常规 audit：0 ERROR、7 条既有客户端同步 handler 的 `packet-thread` 保守 WARNING；出货箱没有网络 handler，所有库存、市场和金币改动均保持在逻辑服务端。PASS（常规模式）。
+- [x] `check_toolchain.py`：Forge `14.23.5.2859`、Gradle 4.9、snapshot `20171003-1.12`、Java `1.8.0_504`，0 error/0 warning。PASS。
+- [x] 最终 Java 8 `./gradlew build --no-daemon --console=plain`：PASS（含 `test`、`reobfJar`、`exportReleaseJar`、`verifyReleaseJar`）；核验 266 个生产 class 均存在且为 Java 8。`release/LisBam_PastoralEconomy-1.7.jar` 为 554,356 bytes，SHA-256 `f6e07c2cfe5d2c0dc33be901d8b1d8c37e4afde4d36c97e2aefc627566a12dfe`，`unzip -t` PASS，并确认含出货箱 service、TileEntity 与 16×16 贴图。该 1.7 目标在构建前不存在，所以未产生覆盖备份。
+- [ ] 游戏内单人：放入空白/已绑定凭证、可售物、不可售物和牛奶桶，跨到新世界日验证仅绑定凭证触发、70%总价、均分/余数、空桶返还及每人仅一条绿色合并聊天消息。NOT RUN：当前环境没有可操作 Forge 客户端世界。
+- [ ] 漏斗：从各面向出货箱输入物品均成功；从各面连接漏斗均无法抽出；玩家 GUI 仍可自由取放。NOT RUN：当前环境没有可操作 Forge 客户端世界。
+- [ ] Dedicated Server：多个已加载出货箱、多人凭证、玩家离线后重登、同日反复 tick/重启和金币接近 long 上限，确认服务端只结算一次、收益不丢失/重复且不产生多条消息。NOT RUN：当前环境没有可进入的 Dedicated Server 世界，且现有开发服务器 EULA 未接受。
+
 ## 绿宝石现货市场与经济调整（2026-09-07）
 
 - [x] `emeraldTradeRulesSelfTest`：4% 买入向上取整、卖出向下取整、最大可买数量和 long 边界均通过。PASS（Temurin Java 8 `1.8.0_504`）。

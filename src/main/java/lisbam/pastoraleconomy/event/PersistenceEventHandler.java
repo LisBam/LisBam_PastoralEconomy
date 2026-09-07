@@ -10,6 +10,7 @@ import lisbam.pastoraleconomy.chunkloader.ChunkLoaderService;
 import lisbam.pastoraleconomy.equipment.ShoulderEquipmentService;
 import lisbam.pastoraleconomy.merchant.VillageService;
 import lisbam.pastoraleconomy.merchant.TradeVoucherStorageService;
+import lisbam.pastoraleconomy.shipping.ShippingBoxService;
 import lisbam.pastoraleconomy.transport.TransportService;
 import net.minecraft.entity.Entity;
 import net.minecraft.enchantment.EnchantmentHelper;
@@ -83,6 +84,7 @@ public final class PersistenceEventHandler {
         if (event.phase == TickEvent.Phase.END && !event.world.isRemote && event.world instanceof WorldServer
                 && event.world.provider.getDimension() == 0) {
             VillageService.tick((WorldServer) event.world);
+            ShippingBoxService.tick((WorldServer) event.world);
             if (event.world.getTotalWorldTime() % 20L == 0L) {
                 TradeVoucherStorageService.reconcile((WorldServer) event.world);
             }
@@ -135,6 +137,7 @@ public final class PersistenceEventHandler {
             ShoulderEquipmentService.syncNow((EntityPlayerMP) player);
             TransportService.grantStarterTransportIfNeeded((EntityPlayerMP) player);
             CoinService.syncToClient((EntityPlayerMP) player);
+            ShippingBoxService.flushPayoutForPlayer((EntityPlayerMP) player);
         }
     }
 }

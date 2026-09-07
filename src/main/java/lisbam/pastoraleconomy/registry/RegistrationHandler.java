@@ -26,8 +26,8 @@ public final class RegistrationHandler {
 
     @SubscribeEvent
     public static void registerBlocks(RegistryEvent.Register<Block> event) {
-        event.getRegistry().registerAll(ModBlocks.VILLAGE_STATION, ModBlocks.CRAB_TRAP, ModBlocks.TRANSPORT_STATION,
-                ModBlocks.CHUNK_LOADER);
+        event.getRegistry().registerAll(ModBlocks.VILLAGE_STATION, ModBlocks.CRAB_TRAP, ModBlocks.SHIPPING_BOX,
+                ModBlocks.TRANSPORT_STATION, ModBlocks.CHUNK_LOADER);
     }
 
     @SubscribeEvent
@@ -36,7 +36,8 @@ public final class RegistrationHandler {
                 ModItems.FEATHER_WINGS,
                 ModItems.MARKET_BOOK, ModItems.TRADE_VOUCHER,
                 ModItems.GOLDEN_BONE_MEAL, ModItems.MERCHANT_SPAWN_EGG,
-                ModItems.CRAB_TRAP_ITEM, ModItems.TRANSPORT_STATION_ITEM, ModItems.CHUNK_LOADER_ITEM);
+                ModItems.CRAB_TRAP_ITEM, ModItems.SHIPPING_BOX_ITEM, ModItems.TRANSPORT_STATION_ITEM,
+                ModItems.CHUNK_LOADER_ITEM);
     }
 
     @SubscribeEvent

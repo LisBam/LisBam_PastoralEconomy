@@ -557,3 +557,13 @@ Reforged 对有右输入的修理、合并和附魔书操作通过 `AnvilUpdateE
 决定：区块加载器使用新的稳定 `chunk_loader` Block/Item/TileEntity 注册 ID。方块实例的激活布尔值归 `TileChunkLoader` NBT 所有；显示和光照用 `powered` 方块状态同步，激活光照固定为 7。`ChunkLoaderService` 只在逻辑服务端为有红石信号的有效 TileEntity 申请一张 Forge 1.12.2 `NORMAL` ticket 并 `forceChunk(new ChunkPos(pos))`，因此每台只加载自身一个区块。票据 modData 以独立 kind 和 `BlockPos` 标识，通过既有的模组唯一回调恢复；断电、破坏、无效 ticket 或区块加载后发现无信号均释放 ticket。没有为静态 ticket map 伪造持久化：活跃 ticket 由 Forge `forcedchunks.dat` 保存，方块状态由 TileEntity NBT 保存。
 
 兼容性与影响：新增一个方块 ID、一个 ItemBlock ID、一个 TileEntity ID、两个方块贴图、一个方块状态/模型组和一个配方；现有 WorldSavedData schema、玩家 Capability、packet discriminator、既有票据和 registry ID 不变。新的挤奶日 key 与旧 tick key 并存但互不冲突，旧实体和世界不需迁移。
+
+## DEC-065 出货箱的每日结算、权限与离线收益（2026-09-07）
+
+决定：出货箱仅以已绑定交易凭证的 UUID 确定收益资格；空白凭证不能触发出货，因为不存在可授权玩家。重复同一 UUID 的凭证只保留一份分成资格。符合既有商人收购目录的物品先按当天统一市场快照累加，再对整箱总额执行整数向下取整的 70% 折算，随后在唯一 UUID 间均分；这样不会因逐物品截断或重复凭证产生额外金币。牛奶桶遵守既有商人出售语义：货物消耗、同槽生成空桶。
+
+决定：每日结算由已有 `PersistenceEventHandler` 的逻辑服务端 Overworld END tick 在市场刷新之后调用。`ShippingBoxService` 只枚举已加载 TileEntity，不为出货箱额外申请 Forge ticket 或强制加载区块；这既避免新方块在玩家离开后隐性占用服务器资源，也符合既有“未加载容器不参与即时扫描”的边界。所有箱子先生成和应用销售计划，之后才按玩家合并待发金额，因此一个玩家不会因多个箱子收到多条消息。
+
+决定：世界数据 v10 的 `shippingBoxPayouts` 同时持有最后成功派发世界日及有界 UUID→金币待发映射。发放始终走既有 `CoinService`；玩家离线或当前余额加款会溢出时保留金额，登录和定时服务端轮询再尝试。这样不新增 Capability、Packet 或客户端权威状态，也不会因重启、同日多 tick 或临时离线丢失/重复结算。
+
+兼容性与影响：稳定新增 `shipping_box`、GUI ID 5、TileEntity ID 和世界数据可选段；Packet discriminator、既有 Item/Block ID、玩家 Capability 与 WorldSavedData 名称不变。v1--v9 读入为空状态，首个可用世界日正常开始；新的客户端和服务端应使用同一 1.7 构建以获得方块 GUI/资源。
