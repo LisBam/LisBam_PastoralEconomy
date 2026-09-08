@@ -93,12 +93,13 @@ public final class EnchantmentSelfTest {
 
     private static void verifyDefinitions() {
         Enchantment[] all = ModEnchantments.getAll();
-        require(all.length == 12, "exactly twelve active enchantments must be registered");
+        require(all.length == 13, "exactly thirteen active enchantments must be registered");
         for (Enchantment enchantment : all) {
             require(enchantment.isAllowedOnBooks(), "all batch enchantments must allow enchanted books");
         }
         require(ModEnchantments.ATTACK_SPEED.getRarity() == Rarity.RARE, "Attack Speed rarity");
         require(ModEnchantments.RANGE.getRarity() == Rarity.RARE, "Range rarity");
+        require(ModEnchantments.DROP_ATTRACTION.getRarity() == Rarity.RARE, "Drop Attraction rarity");
         require(ModEnchantments.REFORGED.getRarity() == Rarity.RARE, "Reforged Mending rarity");
         require(ModEnchantments.BLUNTNESS_CURSE.getRarity() == Rarity.VERY_RARE
                         && ModEnchantments.BLUNTNESS_CURSE.isTreasureEnchantment()
@@ -114,6 +115,7 @@ public final class EnchantmentSelfTest {
         require(ModEnchantments.NIGHT_VISION.getMaxLevel() == 1, "Night Vision maximum level");
         require(ModEnchantments.ATTACK_SPEED.getMaxLevel() == 5, "Attack Speed maximum level");
         require(ModEnchantments.RANGE.getMaxLevel() == 5, "Range maximum level");
+        require(ModEnchantments.DROP_ATTRACTION.getMaxLevel() == 1, "Drop Attraction maximum level");
         require(ModEnchantments.REFORGED.getMaxLevel() == 1, "Reforged maximum level");
         require(ModEnchantments.BLUNTNESS_CURSE.getMaxLevel() == 1, "Bluntness Curse maximum level");
         require(ModEnchantments.HARVEST.canApplyAtEnchantingTable(new ItemStack(Items.DIAMOND_HOE)),
@@ -152,6 +154,13 @@ public final class EnchantmentSelfTest {
                 "Attack Speed must apply to tools");
         require(ModEnchantments.RANGE.canApplyAtEnchantingTable(new ItemStack(Items.SHEARS)),
                 "Range must apply to shears");
+        require(ModEnchantments.DROP_ATTRACTION.canApplyAtEnchantingTable(new ItemStack(Items.DIAMOND_HOE))
+                        && ModEnchantments.DROP_ATTRACTION.canApplyAtEnchantingTable(new ItemStack(Items.DIAMOND_AXE))
+                        && ModEnchantments.DROP_ATTRACTION.canApplyAtEnchantingTable(new ItemStack(Items.DIAMOND_PICKAXE))
+                        && ModEnchantments.DROP_ATTRACTION.canApplyAtEnchantingTable(new ItemStack(Items.SHEARS)),
+                "Drop Attraction must cover every vanilla tool class including shears");
+        require(!ModEnchantments.DROP_ATTRACTION.canApplyAtEnchantingTable(new ItemStack(Items.DIAMOND_SWORD)),
+                "Drop Attraction must not expand from tools to swords");
         require(!ModEnchantments.ATTACK_SPEED.canApplyAtEnchantingTable(new ItemStack(Items.SHEARS)),
                 "Attack Speed must not extend beyond the stated shears enchantment list");
         require(ModEnchantments.REFORGED.canApplyAtEnchantingTable(new ItemStack(Items.DIAMOND_AXE)),

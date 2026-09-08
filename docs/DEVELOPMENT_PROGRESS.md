@@ -2,6 +2,12 @@
 
 当前发行版本：`1.7`；既有第 15 批功能完成，当前仅进行明确的新内容、平衡与维护更新。
 
+## 维护：萤石粉基础价、掉落吸附与背包不透明像素规则（2026-09-08）
+
+实现：萤石粉的稳定市场 key `buy/rare/glowstone_dust` 基础买价从 200 调为 400，商人目录保留同一 key，现有存档已保存的当前价、历史和当日 Offer 都不重写，后续日价继续依既有市场机制回归。新增 I 级稀有附魔 `drop_attraction`，范围为斧/镐/锹/锄/剪刀，商人珍宝书的 I 级基础价 120,000 与经验修补一致。服务器确认方块收获后才重新生成追踪 `EntityItem`，原版成功剪羊毛/哞菇及丰收补发栈也加入相同追踪；实体飞向使用者，抵达后的原版拾取流程决定入包，背包满则在玩家当时位置停止。三张背包图标均为 16×16 RGBA，全部 256 个像素 alpha 均为 255，不含透明或半透明像素。
+
+兼容性与验证：没有变更既有 registry ID、Packet discriminator、Player Capability、WorldSavedData 或 TileEntity NBT；只新增附魔 registry ID，旧存档无需迁移。项目本地 `.local-jdk8/` 的 Temurin Java 8 `1.8.0_504` 下，`enchantmentSelfTest`、`marketCoreSelfTest`、`merchantCatalogSelfTest` 与 `backpackSelfTest` 均 PASS。期间发现并修复掉落吸附错误沿用包含剑的 Range 白名单，以及附魔书缺少市场 key/珍宝池数量断言未更新两项根因。常规 Forge 1.12.2 audit 为 0 ERROR、7 条既有 packet-thread WARNING。最终 `./gradlew build --no-daemon --console=plain` PASS，含 `reobfJar`、`exportReleaseJar`、`verifyReleaseJar` 和 276 个 Java 8 生产 class；新 release JAR 为 572,281 bytes，SHA-256 `dc4cb6352ce492e961cadbf3b5335d25442d0ebc40afa0f08e9a5339f74a2f68`，`unzip -t` PASS。覆盖前的中间成品已备份为 `release/backup/backup_20260908-163044.jar`（572,183 bytes）。游戏内与 Dedicated Server 验收仍为 NOT RUN。
+
 ## 维护：肩部背包快捷操作、原版槽位与翅膀调值（2026-09-08）
 
 实现：行情书“炒币”页删除“价格范围”和“商人买卖手续费”显示，仅保留绿宝石今日/昨日现货价、涨跌和独立 30 日曲线；商人页的 4% 服务端结算不变。肩部槽修正为原版 `inventory.png` 盔甲格 `(7,7)` 的完整 18×18 裁取，取代错误的合成格素材；背包 GUI 显式调用原版 Tooltip 渲染。三种背包图标替换为简约、清晰、16×16 RGBA 且全部像素不透明的版本。

@@ -32,9 +32,11 @@ public final class MarketCoreSelfTest {
         require(base("lisbam_pastoral_economy:buy/common/iron_ingot") == 900L,
                 "iron ingot base buy price must be 900 per item");
         require(base("lisbam_pastoral_economy:buy/common/lapis_lazuli") == 800L
-                        && base("lisbam_pastoral_economy:buy/rare/glowstone_dust") == 200L
+                        && base("lisbam_pastoral_economy:buy/rare/glowstone_dust") == 400L
                         && base("lisbam_pastoral_economy:buy/rare/nether_quartz") == 1600L,
                 "manual-price sheet adjustments must update the frozen catalog bases");
+        require(base("lisbam_pastoral_economy:buy/treasure/enchanted_book/drop_attraction_1") == 120000L,
+                "Drop Attraction book must have a stable 120000 market key");
         require(base("lisbam_pastoral_economy:buy/common/cobblestone") == 240L
                         && base("lisbam_pastoral_economy:buy/common/sand") == 200L
                         && base("lisbam_pastoral_economy:buy/common/glass") == 400L

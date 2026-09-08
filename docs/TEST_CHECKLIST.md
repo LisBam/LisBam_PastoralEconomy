@@ -1,5 +1,14 @@
 # 测试清单
 
+## 2026-09-08 萤石粉、掉落吸附与背包不透明像素维护
+
+- [x] 静态目录：`buy/rare/glowstone_dust` 的市场与商人目录基础价均为 400，现有市场持久化代码未改写。PASS：`marketCoreSelfTest`。
+- [x] 静态附魔：`drop_attraction` 为 I 级稀有，限定斧/镐/锹/锄/剪刀，排除剑；珍宝书 I 级基础价为 120,000，并有稳定市场 key。PASS：`enchantmentSelfTest`、`merchantCatalogSelfTest`。
+- [x] Forge 1.12.2 常规 audit：方块与剪毛掉落均在逻辑服务端追踪，库存只由 `EntityItem` 的原版拾取流程写入；没有 common 客户端引用、Packet 或持久化状态。PASS：实际命令 `python3 /home/lisbam/.codex/skills/minecraft-forge-1-12-2/scripts/audit_forge1122.py .`，0 ERROR、7 条既有 packet-thread WARNING。
+- [x] 资源：三张背包图标均为 16×16 RGBA，全部 256 个像素 alpha=255，无透明或半透明值。PASS：`backpackSelfTest`。
+- [x] Temurin Java 8 `1.8.0_504`：`compileJava`、`processResources`、`enchantmentSelfTest`、`marketCoreSelfTest`、`merchantCatalogSelfTest`、`backpackSelfTest` 与最终 `build` 均 PASS。最终 release 为 572,281 bytes、SHA-256 `dc4cb6352ce492e961cadbf3b5335d25442d0ebc40afa0f08e9a5339f74a2f68`，`unzip -t` PASS；覆盖前的 572,183-byte JAR 已备份为 `release/backup/backup_20260908-163044.jar`。
+- [ ] 游戏内/多人：锄、斧、镐、锹、剪刀的方块/作物/剪毛掉落都会飞向实际使用者；背包有空间时正常入包，满时落在到达位置而不继续飞行。NOT RUN：需要可进入的 Forge 客户端与 Dedicated Server。
+
 ## 维护：肩部背包快捷操作、原版槽位与翅膀调值（2026-09-08）
 
 - [x] Temurin Java 8 `1.8.0_504`：`check_toolchain.py` 为 0 error/0 warning；`compileJava`、`compileTestJava`、`processResources` 均 PASS。

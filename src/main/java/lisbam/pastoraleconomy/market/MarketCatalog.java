@@ -211,7 +211,7 @@ public final class MarketCatalog {
         Object[][] resources = {
                 {"gold_ingot", Items.GOLD_INGOT, 0, 3200}, {"lava_bucket", Items.LAVA_BUCKET, 0, 6000},
                 {"gunpowder", Items.GUNPOWDER, 0, 1600}, {"slime_ball", Items.SLIME_BALL, 0, 2000},
-                {"magma_cream", Items.MAGMA_CREAM, 0, 6400}, {"glowstone_dust", Items.GLOWSTONE_DUST, 0, 200},
+                {"magma_cream", Items.MAGMA_CREAM, 0, 6400}, {"glowstone_dust", Items.GLOWSTONE_DUST, 0, 400},
                 {"nether_quartz", Items.QUARTZ, 0, 1600}, {"end_stone", block(Blocks.END_STONE), 0, 3200},
                 {"prismarine_shard", Items.PRISMARINE_SHARD, 0, 2000}, {"prismarine_crystals", Items.PRISMARINE_CRYSTALS, 0, 2000},
                 {"leather", Items.LEATHER, 0, 2000}, {"rabbit_hide", Items.RABBIT_HIDE, 0, 1600},
@@ -295,6 +295,7 @@ public final class MarketCatalog {
         book(definitions, "night_vision_1", 120000);
         book(definitions, "attack_speed_1", 50000); book(definitions, "attack_speed_2", 80000); book(definitions, "attack_speed_3", 120000); book(definitions, "attack_speed_4", 180000); book(definitions, "attack_speed_5", 250000);
         book(definitions, "range_1", 60000); book(definitions, "range_2", 100000); book(definitions, "range_3", 150000); book(definitions, "range_4", 210000); book(definitions, "range_5", 280000);
+        book(definitions, "drop_attraction_1", 120000);
         book(definitions, "reforged_1", 120000);
         book(definitions, "bluntness_curse_1", 20000);
     }

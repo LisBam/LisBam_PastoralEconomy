@@ -14,6 +14,7 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 import net.minecraftforge.common.IShearable;
+import net.minecraftforge.event.entity.EntityJoinWorldEvent;
 import net.minecraftforge.event.entity.player.PlayerInteractEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.common.eventhandler.EventPriority;
@@ -42,7 +43,9 @@ public final class ShearingHarvestEnchantmentEventHandler {
         Entity target = event.getTarget();
         int level = shears.getItem() == Items.SHEARS
                 ? EnchantmentHelper.getEnchantmentLevel(ModEnchantments.HARVEST, shears) : 0;
-        if (level <= 0 || !(target instanceof EntitySheep || target instanceof EntityMooshroom)) {
+        int attractionLevel = shears.getItem() == Items.SHEARS
+                ? EnchantmentHelper.getEnchantmentLevel(ModEnchantments.DROP_ATTRACTION, shears) : 0;
+        if ((level <= 0 && attractionLevel <= 0) || !(target instanceof EntitySheep || target instanceof EntityMooshroom)) {
             return;
         }
         if (target instanceof EntitySheep && ((EntitySheep) target).getSheared()) {
@@ -52,7 +55,23 @@ public final class ShearingHarvestEnchantmentEventHandler {
         if (!(target instanceof IShearable) || !((IShearable) target).isShearable(shears, event.getWorld(), pos)) {
             return;
         }
-        PENDING_SHEARS.put(target.getUniqueID(), new PendingShear(event.getWorld(), target, level));
+        PENDING_SHEARS.put(target.getUniqueID(), new PendingShear(event.getWorld(), target, event.getEntityPlayer(),
+                level, attractionLevel));
+    }
+
+    /** Native shearing spawns one entity per returned stack, so tag those exact server-side entities as they join. */
+    @SubscribeEvent
+    public static void attractConfirmedShearingDrops(EntityJoinWorldEvent event) {
+        if (event.getWorld().isRemote || !(event.getEntity() instanceof EntityItem)) {
+            return;
+        }
+        EntityItem item = (EntityItem) event.getEntity();
+        for (PendingShear action : PENDING_SHEARS.values()) {
+            if (action.shouldAttract(item)) {
+                DropAttractionService.attract(item, action.player);
+                return;
+            }
+        }
     }
 
     @SubscribeEvent
@@ -76,27 +95,44 @@ public final class ShearingHarvestEnchantmentEventHandler {
             entityItem.motionY += action.world.rand.nextFloat() * 0.05F;
             entityItem.motionX += (action.world.rand.nextFloat() - action.world.rand.nextFloat()) * 0.1F;
             entityItem.motionZ += (action.world.rand.nextFloat() - action.world.rand.nextFloat()) * 0.1F;
-            action.world.spawnEntity(entityItem);
+            if (action.world.spawnEntity(entityItem) && action.attractionLevel > 0) {
+                DropAttractionService.attract(entityItem, action.player);
+            }
         }
     }
 
     private static final class PendingShear {
         private final World world;
         private final Entity target;
+        private final net.minecraft.entity.player.EntityPlayer player;
         private final int level;
+        private final int attractionLevel;
         private final boolean sheep;
         private final int woolMetadata;
 
-        private PendingShear(World world, Entity target, int level) {
+        private PendingShear(World world, Entity target, net.minecraft.entity.player.EntityPlayer player,
+                             int level, int attractionLevel) {
             this.world = world;
             this.target = target;
+            this.player = player;
             this.level = level;
+            this.attractionLevel = attractionLevel;
             this.sheep = target instanceof EntitySheep;
             this.woolMetadata = sheep ? ((EntitySheep) target).getFleeceColor().getMetadata() : 0;
         }
 
         private boolean wasSuccessful() {
             return sheep ? target instanceof EntitySheep && ((EntitySheep) target).getSheared() : target.isDead;
+        }
+
+        private boolean shouldAttract(EntityItem item) {
+            if (attractionLevel <= 0 || !wasSuccessful() || item.world != world || player == null || player.isDead) {
+                return false;
+            }
+            double x = item.posX - target.posX;
+            double y = item.posY - target.posY;
+            double z = item.posZ - target.posZ;
+            return x * x + y * y + z * z <= 9.0D;
         }
 
         private ItemStack createBonusStack(int amount) {

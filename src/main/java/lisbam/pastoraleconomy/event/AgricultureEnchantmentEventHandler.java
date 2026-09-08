@@ -71,7 +71,8 @@ public final class AgricultureEnchantmentEventHandler {
         }
     }
 
-    @SubscribeEvent(priority = EventPriority.LOWEST)
+    // Drop attraction runs at LOWEST and must see Harvest's final bonus stack too.
+    @SubscribeEvent(priority = EventPriority.LOW)
     public static void applyHarvestPipeline(BlockEvent.HarvestDropsEvent event) {
         if (event.getWorld().isRemote) {
             return;
