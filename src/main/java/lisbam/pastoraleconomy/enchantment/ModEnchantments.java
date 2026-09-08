@@ -99,7 +99,7 @@ public final class ModEnchantments {
             new Enchantment[0]
     );
     public static final Enchantment DROP_ATTRACTION = new EnchantmentPastoral(
-            "drop_attraction", 1, new EntityEquipmentSlot[]{EntityEquipmentSlot.MAINHAND}, TOOLS_AND_SHEARS,
+            "drop_attraction", 1, new EntityEquipmentSlot[]{EntityEquipmentSlot.MAINHAND}, RANGE_ITEMS,
             new Enchantment[0]
     );
     public static final Enchantment REFORGED = new EnchantmentPastoral(
@@ -155,9 +155,9 @@ public final class ModEnchantments {
         return hasItem(RANGE_ITEMS, stack);
     }
 
-    /** The attraction effect applies to tools and shears, deliberately excluding swords. */
-    public static boolean isDropAttractionTool(ItemStack stack) {
-        return hasItem(TOOLS_AND_SHEARS, stack);
+    /** The attraction effect applies to the full Range weapon/tool/shears scope, including swords. */
+    public static boolean isDropAttractionItem(ItemStack stack) {
+        return hasItem(RANGE_ITEMS, stack);
     }
 
     private static boolean hasItem(Item[] choices, ItemStack stack) {

@@ -4,9 +4,9 @@
 
 ## 维护：萤石粉基础价、掉落吸附与背包不透明像素规则（2026-09-08）
 
-实现：萤石粉的稳定市场 key `buy/rare/glowstone_dust` 基础买价从 200 调为 400，商人目录保留同一 key，现有存档已保存的当前价、历史和当日 Offer 都不重写，后续日价继续依既有市场机制回归。新增 I 级稀有附魔 `drop_attraction`，范围为斧/镐/锹/锄/剪刀，商人珍宝书的 I 级基础价 120,000 与经验修补一致。服务器确认方块收获后才重新生成追踪 `EntityItem`，原版成功剪羊毛/哞菇及丰收补发栈也加入相同追踪；实体飞向使用者，抵达后的原版拾取流程决定入包，背包满则在玩家当时位置停止。三张背包图标均为 16×16 RGBA，全部 256 个像素 alpha 均为 255，不含透明或半透明像素。
+实现：萤石粉的稳定市场 key `buy/rare/glowstone_dust` 基础买价从 200 调为 400，商人目录保留同一 key，现有存档已保存的当前价、历史和当日 Offer 都不重写，后续日价继续依既有市场机制回归。新增 I 级稀有附魔 `drop_attraction`，范围为剑/斧/镐/锹/锄/剪刀，商人珍宝书的 I 级基础价 120,000 与经验修补一致。服务器确认方块收获后才重新生成追踪 `EntityItem`，原版成功剪羊毛/哞菇及丰收补发栈也加入相同追踪；持附魔主手直接近战击杀非玩家生物时，既有死亡掉落实体也加入同一追踪。实体飞向使用者，抵达后的原版拾取流程决定入包，背包满则在玩家当时位置停止。三张背包图标均为 16×16 RGBA，全部 256 个像素 alpha 均为 255，不含透明或半透明像素。
 
-兼容性与验证：没有变更既有 registry ID、Packet discriminator、Player Capability、WorldSavedData 或 TileEntity NBT；只新增附魔 registry ID，旧存档无需迁移。项目本地 `.local-jdk8/` 的 Temurin Java 8 `1.8.0_504` 下，`enchantmentSelfTest`、`marketCoreSelfTest`、`merchantCatalogSelfTest` 与 `backpackSelfTest` 均 PASS。期间发现并修复掉落吸附错误沿用包含剑的 Range 白名单，以及附魔书缺少市场 key/珍宝池数量断言未更新两项根因。常规 Forge 1.12.2 audit 为 0 ERROR、7 条既有 packet-thread WARNING。最终 `./gradlew build --no-daemon --console=plain` PASS，含 `reobfJar`、`exportReleaseJar`、`verifyReleaseJar` 和 276 个 Java 8 生产 class；新 release JAR 为 572,281 bytes，SHA-256 `dc4cb6352ce492e961cadbf3b5335d25442d0ebc40afa0f08e9a5339f74a2f68`，`unzip -t` PASS。覆盖前的中间成品已备份为 `release/backup/backup_20260908-163044.jar`（572,183 bytes）。游戏内与 Dedicated Server 验收仍为 NOT RUN。
+兼容性与验证：没有变更既有 registry ID、Packet discriminator、Player Capability、WorldSavedData 或 TileEntity NBT；只新增附魔 registry ID，旧存档无需迁移。附魔范围按维护要求扩展到剑，并复用 Range 白名单；直接近战掉落复用既有追踪服务且不改写原版死亡掉落。Temurin Java 8 `1.8.0_504` 下 `check_toolchain.py` 为 0 error/0 warning，`enchantmentSelfTest` 和最终 `./gradlew build --no-daemon --console=plain` 均 PASS；常规 Forge audit 为 0 ERROR、7 条既有 packet-thread WARNING。新 release JAR 为 572,797 bytes，SHA-256 `ab9d4d5cc3749d19b85e5aa9152f4d2629bde7d37191a2fcb96706916a74dcf7`，`unzip -t` PASS，276 个生产 class 均为 Java 8；覆盖前 JAR 已备份为 `release/backup/backup_20260908-165633.jar`（572,281 bytes）。55 秒 `runServer` 已进入 Forge/FML/Coremod 加载，但超时前未到模组生命周期，游戏内与完整 Dedicated Server 验收仍为 NOT RUN。
 
 ## 维护：肩部背包快捷操作、原版槽位与翅膀调值（2026-09-08）
 

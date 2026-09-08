@@ -157,10 +157,11 @@ public final class EnchantmentSelfTest {
         require(ModEnchantments.DROP_ATTRACTION.canApplyAtEnchantingTable(new ItemStack(Items.DIAMOND_HOE))
                         && ModEnchantments.DROP_ATTRACTION.canApplyAtEnchantingTable(new ItemStack(Items.DIAMOND_AXE))
                         && ModEnchantments.DROP_ATTRACTION.canApplyAtEnchantingTable(new ItemStack(Items.DIAMOND_PICKAXE))
-                        && ModEnchantments.DROP_ATTRACTION.canApplyAtEnchantingTable(new ItemStack(Items.SHEARS)),
-                "Drop Attraction must cover every vanilla tool class including shears");
-        require(!ModEnchantments.DROP_ATTRACTION.canApplyAtEnchantingTable(new ItemStack(Items.DIAMOND_SWORD)),
-                "Drop Attraction must not expand from tools to swords");
+                        && ModEnchantments.DROP_ATTRACTION.canApplyAtEnchantingTable(new ItemStack(Items.SHEARS))
+                        && ModEnchantments.DROP_ATTRACTION.canApplyAtEnchantingTable(new ItemStack(Items.DIAMOND_SWORD)),
+                "Drop Attraction must cover swords, every vanilla tool class and shears");
+        require(ModEnchantments.isDropAttractionItem(new ItemStack(Items.DIAMOND_SWORD)),
+                "Drop Attraction combat handling must recognize an enchanted sword");
         require(!ModEnchantments.ATTACK_SPEED.canApplyAtEnchantingTable(new ItemStack(Items.SHEARS)),
                 "Attack Speed must not extend beyond the stated shears enchantment list");
         require(ModEnchantments.REFORGED.canApplyAtEnchantingTable(new ItemStack(Items.DIAMOND_AXE)),
