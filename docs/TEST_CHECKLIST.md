@@ -1,5 +1,20 @@
 # 测试清单
 
+## 维护：肩部背包快捷操作、原版槽位与翅膀调值（2026-09-08）
+
+- [x] Temurin Java 8 `1.8.0_504`：`check_toolchain.py` 为 0 error/0 warning；`compileJava`、`compileTestJava`、`processResources` 均 PASS。
+- [x] `backpackSelfTest`：普通/高级/超级背包容量、NBT、反套娃与有界 Packet 10 回归通过；三张贴图均为 16×16 RGBA，全部 256 个像素 alpha 为 255。PASS。
+- [x] `featherWingsSelfTest`：翅膀最大耐久 500、肩部白名单、羽毛材料/5 点修理、附魔边界、双倍飞行 exhaustion，及每 **20 tick（1 秒）**尝试 1 点耐久均通过。PASS。
+- [x] `merchantCatalogSelfTest`：稳定 `feather_wings` 珍宝条目仍指向实际物品，基础价为 **2,888,888**、波动 8%、库存 1。PASS。
+- [x] `shoulderBackpackKeySelfTest`：B 只在允许的玩家界面状态且同步肩部背包存在时请求打开；其他按键、其他 Container、无背包都被客户端拦截。PASS。
+- [x] `shoulderEquipmentSelfTest`、`marketPacketSelfTest`：既有肩部 Coremod MCP/SRG/发行混淆注入、Packet 9 同步和绿宝石行情书有界协议回归通过。PASS。
+- [x] Forge 1.12.2 常规 static audit：0 ERROR、7 条既有 S2C/Proxy `packet-thread` 保守 WARNING；新增 B 键类位于 client 包、重用的 Packet 10 Handler 已在服务端主线程验证。PASS。
+- [x] `git diff --check`：当前 Java、lang、资源与文档改动无空白错误。PASS。
+- [x] 最终 JDK 8 `./gradlew build --no-daemon --console=plain`：PASS（含 `reobfJar`、`exportReleaseJar`、`verifyReleaseJar`）；实际核验 271 个生产 class 均为 Java 8。新 `release/LisBam_PastoralEconomy-1.7.jar` 为 563,556 bytes，SHA-256 `af1b1691ef89324b9b07b13e58f5e08952c641eb087ca0e0f3a6f9c531728008`，`unzip -t` PASS。
+- [x] Release 覆盖保护：构建前的 561,839-byte `release/LisBam_PastoralEconomy-1.7.jar` 已备份为 `release/backup/backup_20260908-145735.jar`，其 SHA-256 为 `52042dee6111049944b27d03878391651fe9878c849eac85c8b9d5ea8c80f3d1`。PASS。
+- [ ] 游戏内：320×240 与常规 GUI Scale 下确认肩部槽与原版盔甲槽尺寸/边框一致；三种背包图标清晰且无透明像素块；分别右键和按 B 打开 1/2/4 页背包，悬停所有背包/玩家槽验证原版 Tooltip；行情书“炒币”页不显示价格范围或手续费；翅膀显示名、1 秒耐久与商人新价均正确。NOT RUN：当前无可操作 Forge 客户端世界。
+- [ ] Dedicated Server：JDK 8 `runServer` 已进入 Forge 1.12.2/FML/Coremod 映射加载，但开发进程在模组生命周期前被环境断开；未接受 EULA。使用当前客户端连接，验证 B 键请求只能在真实肩部背包且无其他 Container 时打开，伪造 Packet 10 仍被拒绝；重启前后确认背包 NBT、翅膀耐久和价格兼容。NOT RUN：需要可进入的 Dedicated Server 世界。
+
 ## 维护：背包同步、行情书炒币与锄头铁砧修复（2026-09-08）
 
 - [x] JDK 8 `compileJava`、`compileTestJava`、`processResources`：PASS（Temurin Java 8 `1.8.0_504`）。
@@ -13,7 +28,7 @@
 - [ ] Forge 1.12.2 `--strict-warnings` audit：NOT PASS；同一 7 条既有 `packet-thread` WARNING 使命令返回 2，未掩盖结果。
 - [x] JDK 8 `./gradlew build --no-daemon --console=plain`：PASS（含 `test`、`reobfJar`、`exportReleaseJar`、`verifyReleaseJar`）；核验 270 个生产 class 均存在且为 Java 8。PASS（Temurin Java 8 `1.8.0_504`）。
 - [x] Release：覆盖前 `release/LisBam_PastoralEconomy-1.7.jar` 已备份为 `release/backup/backup_20260908-003216.jar`（556,164 bytes）。新重混淆 JAR 为 561,839 bytes，SHA-256 `52042dee6111049944b27d03878391651fe9878c849eac85c8b9d5ea8c80f3d1`，`unzip -t` PASS。
-- [ ] 游戏内：肩部背包装入/取出后不关闭 GUI 即确认槽位持续显示；行情书“炒币”页确认今日/昨日/曲线/费率；五档锄头以匹配材料和错误材料分别测试，且带 Reforged 的锄头仍可修。NOT RUN：当前无可操作 Forge 客户端世界。
+- [ ] 游戏内：肩部背包装入/取出后不关闭 GUI 即确认槽位持续显示；行情书“炒币”页确认今日/昨日/曲线；五档锄头以匹配材料和错误材料分别测试，且带 Reforged 的锄头仍可修。NOT RUN：当前无可操作 Forge 客户端世界。
 - [ ] Dedicated Server：受限 60 秒 Java 8 `runServer` 已进入 Forge/FML 启动与类加载，超时前未进入模组生命周期/世界；仍需以 v10 旧世界、多人背包同步和商人/行情书并发打开验证 v11 单点迁移、服务器权威曲线及 common 无客户端类加载。完整验收 NOT RUN。
 
 ## 维护：炒币双栏、出货晨间结算与区块加载器（2026-09-07）

@@ -226,6 +226,13 @@ task modGuiInputSelfTest(type: JavaExec) {
     main = 'lisbam.pastoraleconomy.client.gui.ModGuiInputSelfTest'
 }
 
+task shoulderBackpackKeySelfTest(type: JavaExec) {
+    group = 'verification'
+    description = 'Runs shoulder-backpack shortcut request-policy regression checks.'
+    classpath = sourceSets.test.runtimeClasspath
+    main = 'lisbam.pastoraleconomy.client.ShoulderBackpackKeySelfTest'
+}
+
 task enchantmentSelfTest(type: JavaExec) {
     group = 'verification'
     description = 'Runs deterministic batch 06/07 enchantment definition and formula checks.'

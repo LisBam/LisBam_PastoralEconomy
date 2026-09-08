@@ -2,11 +2,19 @@
 
 当前发行版本：`1.7`；既有第 15 批功能完成，当前仅进行明确的新内容、平衡与维护更新。
 
+## 维护：肩部背包快捷操作、原版槽位与翅膀调值（2026-09-08）
+
+实现：行情书“炒币”页删除“价格范围”和“商人买卖手续费”显示，仅保留绿宝石今日/昨日现货价、涨跌和独立 30 日曲线；商人页的 4% 服务端结算不变。肩部槽修正为原版 `inventory.png` 盔甲格 `(7,7)` 的完整 18×18 裁取，取代错误的合成格素材；背包 GUI 显式调用原版 Tooltip 渲染。三种背包图标替换为简约、清晰、16×16 RGBA 且全部像素不透明的版本。
+
+新增客户端可改键的默认 B：仅在无界面或原版玩家背包界面、且客户端已同步肩部背包时才发送既有 Packet 10。服务端仍要求真实 `inventoryContainer` 和肩部 `ItemBackpack`，故不存在客户端打开任意库存的路径。稳定 ID `feather_wings`、PlayerData、背包 NBT、WorldSavedData schema、GUI ID、Packet ID/编码均不改；显示名改为“翅膀”/“Wings”，飞行耐久改为每 20 tick 尝试 1 点，`MarketCatalog` 与 `TradeCatalog` 的珍宝基础价统一为 2,888,888，既有行情/Offer 不重写。
+
+验证：Temurin Java 8 `1.8.0_504` 下 `check_toolchain.py` 为 0 error/0 warning；常规 Forge 1.12.2 audit 为 0 ERROR、7 条既有 S2C/Proxy `packet-thread` 保守 WARNING。`compileJava`、`compileTestJava`、`processResources`、`backpackSelfTest`、`featherWingsSelfTest`、`merchantCatalogSelfTest`、新增 `shoulderBackpackKeySelfTest`、`shoulderEquipmentSelfTest` 和 `marketPacketSelfTest` 均 PASS。最终 `./gradlew build --no-daemon --console=plain` PASS，包含 `reobfJar`、`exportReleaseJar` 和 `verifyReleaseJar`，实际核验 271 个生产 class 均为 Java 8；新 release JAR 为 563,556 bytes，SHA-256 `af1b1691ef89324b9b07b13e58f5e08952c641eb087ca0e0f3a6f9c531728008`，`unzip -t` PASS。覆盖前 561,839-byte JAR 已备份为 `release/backup/backup_20260908-145735.jar`。`runServer` 已以 JDK 8 进入 Forge 1.12.2/FML/Coremod 映射加载，但开发进程在模组生命周期前被环境断开；实际游戏内 Tooltip、B 键、三种贴图和肩部槽视觉，以及完整 Dedicated Server 世界验收仍为 NOT RUN。
+
 ## 维护：背包同步、行情书炒币与锄头铁砧修复（2026-09-08）
 
 根因与修复：背包服务端 NBT 写入本身正确，但 `BackpackInventory` 把肩部 `ItemStack` 的对象引用当作身份。Capability 和所有者 Packet 9 同步均会复制该栈，首次放入/取出后的 S2C 副本替换客户端对象后，仍打开的 Container 因 `==` 失败显示全空，重开才从已写入 NBT 重新读到物品。现改为验证同一背包 Item tier；服务端 Container、物品私有 NBT、背包套娃拒绝和不同 tier/移除后的关闭边界不变。
 
-行情书新增“炒币”第三页。`PastoralWorldData` 升至 v11，在既有绿宝石当前/昨日价旁保存至多 30 个实际世界日 `emeraldHistory` 点；新世界从首次 1,000 价开始记录，跨日补算逐日追加。v10 旧世界第一次读取只由保存的当前价补一个当前日点，不重抽也不改变普通行情。显示复用既有 Packet 1/2 的受限只读快照 key，客户端只画绿宝石曲线、今日/昨日、涨跌、300～3,000 范围和商人 4% 费率；交易仍仅在服务器权威的商人“炒币”页进行。
+行情书新增“炒币”第三页。`PastoralWorldData` 升至 v11，在既有绿宝石当前/昨日价旁保存至多 30 个实际世界日 `emeraldHistory` 点；新世界从首次 1,000 价开始记录，跨日补算逐日追加。v10 旧世界第一次读取只由保存的当前价补一个当前日点，不重抽也不改变普通行情。显示复用既有 Packet 1/2 的受限只读快照 key，客户端只画绿宝石曲线、今日/昨日和涨跌；价格范围与商人费率不在行情书中显示，交易仍仅在服务器权威的商人“炒币”页进行。
 
 锄头铁砧问题经 Forge 1.12.2 映射源码/字节码核对，确认 `ItemHoe` 未覆写 `getIsRepairable`，继承的 `Item` 方法恒返回 false；近期作物耐久改动没有接管铁砧。新增受限 `AnvilUpdateEvent` 规则，只接受木板、圆石、铁锭、金锭、钻石分别修理木/石/铁/金/钻石锄，沿用每材料 25% 上限、消耗数、经验和后续 RepairCost；带 Reforged 的锄头继续按既有首次费用结果修理。
 

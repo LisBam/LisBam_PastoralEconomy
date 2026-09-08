@@ -270,7 +270,7 @@ public final class MarketCatalog {
                 {"dragon_egg", block(Blocks.DRAGON_EGG), 0, 2500000}, {"diamond_horse_armor", Items.DIAMOND_HORSE_ARMOR, 0, 60000},
                 {"diamond_ore", block(Blocks.DIAMOND_ORE), 0, 16667}, {"emerald_ore", block(Blocks.EMERALD_ORE), 0, 7334},
                 {"totem_of_undying", Items.TOTEM_OF_UNDYING, 0, 100000}, {"super_backpack", ModItems.SUPER_BACKPACK, 0, 200000},
-                {"feather_wings", ModItems.FEATHER_WINGS, 0, 1200000},
+                {"feather_wings", ModItems.FEATHER_WINGS, 0, 2888888},
                 {"record_13", Items.RECORD_13, 0, 50000},
                 {"record_cat", Items.RECORD_CAT, 0, 50000}, {"record_blocks", Items.RECORD_BLOCKS, 0, 50000},
                 {"record_chirp", Items.RECORD_CHIRP, 0, 50000}, {"record_far", Items.RECORD_FAR, 0, 50000},

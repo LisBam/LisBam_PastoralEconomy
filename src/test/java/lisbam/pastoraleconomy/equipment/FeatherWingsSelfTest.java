@@ -32,8 +32,8 @@ public final class FeatherWingsSelfTest {
         require(Enchantments.MENDING.canApply(wings) && Enchantments.BINDING_CURSE.canApply(wings)
                         && Enchantments.VANISHING_CURSE.canApply(wings),
                 "Mending and both curses must apply through vanilla books/anvils");
-        require(FeatherWingsRules.FLIGHT_TICKS_PER_DURABILITY == 40,
-                "one durability point must be consumed every two seconds");
+        require(FeatherWingsRules.FLIGHT_TICKS_PER_DURABILITY == 20,
+                "one durability point must be consumed every second");
         require(FeatherWingsRules.getFeathersRequired(500, 100) == 100
                         && FeatherWingsRules.getRepairedDamage(500, 100) == 500,
                 "100 feathers must fully repair 500 damage");

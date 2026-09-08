@@ -6,6 +6,14 @@
 
 ## 已实现
 
+### 2026-09-08 维护：肩部背包交互、原版槽位与翅膀调值
+
+- `GuiMarketBook` 的“炒币”页现只显示绿宝石今日/昨日现货价、涨跌和既有 30 日曲线；“价格范围”及“商人买卖手续费”两行和对应语言键均已删除，商人页的实际 4% 服务端结算不变。
+- `ShoulderEquipmentGuiHandler` 直接裁取原版 `inventory.png` 的盔甲格源区 `(7,7)`，而非原先的合成格 `(97,17)`；肩部格仍是原版尺寸 18×18，保留资源包兼容。`GuiBackpack` 现在沿用 `GuiChest` 的 `drawScreen`/`renderHoveredToolTip` 路径，为背包及玩家槽显示原版 Tooltip。
+- `ShoulderBackpackKeyHandler` 在物理客户端注册可改键的默认 **B**。它只在无界面或原版玩家背包界面、且本地同步肩部确为背包时发送既有 Packet 10；服务端继续要求 `inventoryContainer` 和真实肩部背包，未增加 Packet discriminator、NBT、Capability 或客户端权威状态。
+- 三张背包物品图标替换为简约清晰的 16×16 RGBA 像素贴图，256 个像素均为不透明；`BackpackSelfTest` 对每一像素验证该约束。
+- 稳定 registry ID `feather_wings` 不变，显示名改为“翅膀”/“Wings”；非创造飞行耐久频率为 20 tick（1 秒）/点，商人珍宝基础买价为 2,888,888。市场目录与实际商人目录同时使用该值，已存档当天价格和历史仍遵循既有“不重写”策略。
+
 ### 2026-09-08 维护：背包同步、行情书炒币与锄头铁砧修复
 
 - `BackpackInventory` 不再用 `ItemStack` 的 Java 对象身份判断肩部背包仍在装备。`PlayerData` 与 Packet 9 的所有者快照会按值复制肩部栈，原先客户端收到首次同步副本后会把开放 Container 的所有槽读为 `EMPTY`；现在只验证肩部仍是打开时相同的背包 Item tier，服务端的 NBT 库存和 Container 权威性不变。

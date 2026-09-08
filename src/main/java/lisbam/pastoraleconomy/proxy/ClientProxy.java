@@ -5,6 +5,7 @@ import lisbam.pastoraleconomy.client.ClientMarketSyncExecutor;
 import lisbam.pastoraleconomy.client.ClientMarketTooltipSyncExecutor;
 import lisbam.pastoraleconomy.client.ClientTransportStateSyncExecutor;
 import lisbam.pastoraleconomy.client.ClientShoulderEquipmentSyncExecutor;
+import lisbam.pastoraleconomy.client.ShoulderBackpackKeyHandler;
 import lisbam.pastoraleconomy.client.gui.GuiCrabTrap;
 import lisbam.pastoraleconomy.client.gui.GuiShippingBox;
 import lisbam.pastoraleconomy.client.gui.GuiMarketBook;
@@ -30,6 +31,7 @@ public final class ClientProxy extends CommonProxy {
     @Override
     public void preInit(net.minecraftforge.fml.common.event.FMLPreInitializationEvent event) {
         super.preInit(event);
+        ShoulderBackpackKeyHandler.registerKeyBinding();
         RenderingRegistry.registerEntityRenderingHandler(EntityMerchant.class, new IRenderFactory<EntityMerchant>() {
             @Override
             public net.minecraft.client.renderer.entity.Render<? super EntityMerchant> createRenderFor(
