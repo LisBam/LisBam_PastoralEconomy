@@ -79,6 +79,14 @@ public final class GuiBackpack extends GuiContainer {
         return false;
     }
 
+    /** GuiContainer leaves native item tooltip rendering to concrete inventory screens. */
+    @Override
+    public void drawScreen(int mouseX, int mouseY, float partialTicks) {
+        drawDefaultBackground();
+        super.drawScreen(mouseX, mouseY, partialTicks);
+        renderHoveredToolTip(mouseX, mouseY);
+    }
+
     @Override
     protected void drawGuiContainerForegroundLayer(int mouseX, int mouseY) {
         fontRenderer.drawString(backpackContainer.getBackpackName(), 8, 6, 0x404040);

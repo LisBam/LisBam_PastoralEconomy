@@ -1,5 +1,13 @@
 # 实施决策
 
+## DEC-068 肩部背包快捷打开、原版槽位素材与翅膀平衡（2026-09-08）
+
+决定：默认 B 仅在物理客户端没有其他界面、或正打开原版玩家背包时，且客户端已同步到肩部 `ItemBackpack` 时才发送既有无载荷 Packet 10；服务端仍以 `player.openContainer == player.inventoryContainer` 和真实肩部栈复核后打开背包。肩部槽从原版 `inventory.png` 的盔甲格源区 `(7,7)` 裁取完整 18×18 UI，不再误用合成格源区。背包 GUI 明确沿用原版容器的 `renderHoveredToolTip` 路径。三张背包图标维持 RGBA 编码但要求 16×16 的所有 alpha 均为 255。稳定 Item ID `feather_wings` 不改，只更新显示名为“翅膀”/“Wings”，飞行耐久为 20 tick/点、珍宝基础买价为 2,888,888；`MarketCatalog` 与 `TradeCatalog` 同时更新。
+
+原因：B 键应减少打开肩部仓储的鼠标操作，但不能让客户端绕过正在打开的服务端容器或指定任意背包。截图揭示原槽视觉不一致来自错误的原版素材坐标，直接使用同一盔甲格才会随资源包保持原版尺寸和 UI。背包是 `GuiContainer`，需要具体界面调用 Tooltip 渲染；只依赖父类不会显示槽位物品的悬停说明。商品目录和实际商人目录必须采用同一基础价，否则行情书与成交价会分叉。
+
+兼容性与影响：不修改 registry ID、WorldSavedData schema、Capability/NBT key、Packet discriminator 或 Packet 编码。历史商人 Offer 和当天/历史行情仍按既有规则保留；后续重建 Offer/新世界日采用新基础价。B 键为客户端可改键设置，服务端不会加载该类。
+
 ## DEC-067 背包值复制、绿宝石显示历史与锄头材料修理（2026-09-08）
 
 决定：`BackpackInventory` 的开放会话以肩部仍持有同一 `ItemBackpack` 实例类型为有效条件，而不比较 `ItemStack` 引用；`PlayerData#setShoulderStack` 和 Packet 9 的客户端接收都按设计复制栈。绿宝石历史归既有 `PastoralWorldData.market` 段的 v11 `emeraldHistory` 所有，最多保存 30 个 `(worldDay, price)`；行情书以稳定显示 key `lisbam_pastoral_economy:emerald/spot` 复用 Packet 1 请求和 Packet 2 快照。铁砧以 `AnvilUpdateEvent` 只接管五把原版锄头与其 `Item.ToolMaterial#getRepairItemStack()` 匹配的材料；Reforged 入口把同一材料匹配传给现有首用计算，避免该附魔锄头退回不可修理状态。

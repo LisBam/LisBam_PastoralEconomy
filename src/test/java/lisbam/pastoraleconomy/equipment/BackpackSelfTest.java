@@ -116,8 +116,13 @@ public final class BackpackSelfTest {
             BufferedImage image = ImageIO.read(file);
             check(image != null && image.getWidth() == 16 && image.getHeight() == 16,
                     name + " must be a readable 16x16 PNG");
-            check(image.getColorModel().hasAlpha() && (image.getRGB(0, 0) >>> 24) == 0,
-                    name + " must have transparent item padding");
+            check(image.getColorModel().hasAlpha(), name + " must preserve an RGBA item texture");
+            for (int y = 0; y < image.getHeight(); y++) {
+                for (int x = 0; x < image.getWidth(); x++) {
+                    check((image.getRGB(x, y) >>> 24) == 255,
+                            name + " must not contain transparent pixels");
+                }
+            }
         } catch (java.io.IOException exception) {
             throw new AssertionError("Cannot read " + name, exception);
         }

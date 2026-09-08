@@ -380,10 +380,6 @@ public final class GuiMarketBook extends GuiContainer {
                     : MarketTrend.compare(snapshot.getCurrentPrice(), previous.longValue());
             drawString(fontRenderer, I18n.format("gui.lisbam_pastoral_economy.market_book.trend",
                     trend.getSymbol(), getTrendName(trend)), textX, layout.detailsY + 51, getTrendColor(trend));
-            drawString(fontRenderer, I18n.format("gui.lisbam_pastoral_economy.market_book.emerald_range"),
-                    textX, layout.detailsY + 63, 0xFFF2E4B7);
-            drawString(fontRenderer, I18n.format("gui.lisbam_pastoral_economy.market_book.emerald_fee"),
-                    textX, layout.detailsY + 75, 0xFFE8D6A4);
             return;
         }
         drawString(fontRenderer, I18n.format("gui.lisbam_pastoral_economy.market_book.current_price",

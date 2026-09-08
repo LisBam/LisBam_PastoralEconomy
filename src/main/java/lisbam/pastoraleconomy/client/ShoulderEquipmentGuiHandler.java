@@ -28,8 +28,8 @@ public final class ShoulderEquipmentGuiHandler {
     private static final ResourceLocation INVENTORY_TEXTURE =
             new ResourceLocation("minecraft", "textures/gui/container/inventory.png");
     /** The original inventory screen's armor-cell source pixels. Resource packs replace this exact texture. */
-    private static final int ARMOR_SLOT_TEXTURE_X = 97;
-    private static final int ARMOR_SLOT_TEXTURE_Y = 17;
+    private static final int ARMOR_SLOT_TEXTURE_X = 7;
+    private static final int ARMOR_SLOT_TEXTURE_Y = 7;
 
     private ShoulderEquipmentGuiHandler() {
     }

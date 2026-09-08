@@ -2,7 +2,7 @@ package lisbam.pastoraleconomy.equipment;
 
 /** Fixed, deterministic balance values for the shoulder Feather Wings. */
 public final class FeatherWingsRules {
-    public static final int FLIGHT_TICKS_PER_DURABILITY = 40;
+    public static final int FLIGHT_TICKS_PER_DURABILITY = 20;
     public static final int MAX_DAMAGE = 500;
     public static final int DAMAGE_REPAIRED_PER_FEATHER = MAX_DAMAGE / 100;
     public static final int MAX_TRACKED_FLIGHT_DISTANCE_CM = 1000;

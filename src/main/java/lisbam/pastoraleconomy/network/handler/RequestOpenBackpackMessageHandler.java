@@ -10,7 +10,7 @@ import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
 import net.minecraftforge.fml.common.network.simpleimpl.IMessageHandler;
 import net.minecraftforge.fml.common.network.simpleimpl.MessageContext;
 
-/** Opens storage only from the player's real inventory screen and server-owned shoulder slot. */
+/** Opens storage only while no other server Container is open and the shoulder slot owns a backpack. */
 public final class RequestOpenBackpackMessageHandler
         implements IMessageHandler<RequestOpenBackpackMessage, IMessage> {
     @Override

@@ -104,7 +104,7 @@ public final class MerchantCatalogSelfTest {
                         && superBackpack.createStack(1, 0).getItem() == lisbam.pastoraleconomy.item.ModItems.SUPER_BACKPACK,
                 "super backpack treasure offer");
         TradeCatalogEntry featherWings = find(TradePool.BUY_TREASURE, "feather_wings");
-        check(featherWings.getBasePrice() == 1200000L
+        check(featherWings.getBasePrice() == 2888888L
                         && featherWings.createStack(1, 0).getItem()
                         == lisbam.pastoraleconomy.item.ModItems.FEATHER_WINGS,
                 "feather wings treasure offer");
