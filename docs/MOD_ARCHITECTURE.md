@@ -7,8 +7,8 @@
 ### 2026-09-08 维护：萤石粉与掉落吸附
 
 - `MarketCatalog` 与 `TradeCatalog` 的稳定 `buy/rare/glowstone_dust` key 基础价同步为 400；没有改写 `PastoralWorldData` 中已保存的当日价格、价格历史或 DailyOffer，旧世界会继续由既有链式价格机制向新基础价范围收敛。
-- 新增稳定 Enchantment registry ID `drop_attraction`。它为 I 级稀有、非宝藏的工具附魔，范围固定为五种材质的斧/镐/锹/锄和剪刀；商人珍宝书 key 为 `buy/treasure/enchanted_book/drop_attraction_1`，基础价 120,000，与经验修补相同。
-- `DropAttractionEnchantmentEventHandler` 只在逻辑服务端把确认的方块收获栈重新生成有追踪的 `EntityItem`；`ShearingHarvestEnchantmentEventHandler` 在原版剪毛实体加入世界时标记其掉落，并标记丰收的额外掉落。`DropAttractionService` 是非持久的实体→玩家运行时映射：飞行中关闭重力并同步速度，到达后停在玩家位置；原版拾取流程仍是唯一库存写入者，背包满时实体保持在抵达位置。未新增 Player Capability、WorldSavedData、TileEntity NBT、Packet 或客户端权威状态。
+- 新增稳定 Enchantment registry ID `drop_attraction`。它为 I 级稀有、非宝藏附魔，范围固定为五种材质的剑/斧/镐/锹/锄和剪刀；商人珍宝书 key 为 `buy/treasure/enchanted_book/drop_attraction_1`，基础价 120,000，与经验修补相同。
+- `DropAttractionEnchantmentEventHandler` 只在逻辑服务端把确认的方块收获栈重新生成有追踪的 `EntityItem`；它还在最低优先级的 `LivingDropsEvent` 中标记附魔主手直接近战击杀的非玩家生物既有掉落实体。`ShearingHarvestEnchantmentEventHandler` 在原版剪毛实体加入世界时标记其掉落，并标记丰收的额外掉落。`DropAttractionService` 是非持久的实体→玩家运行时映射：飞行中关闭重力并同步速度，到达后停在玩家位置；原版拾取流程仍是唯一库存写入者，背包满时实体保持在抵达位置。未新增 Player Capability、WorldSavedData、TileEntity NBT、Packet 或客户端权威状态。
 
 ## 已实现
 

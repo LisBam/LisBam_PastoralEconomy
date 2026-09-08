@@ -3,12 +3,16 @@ package lisbam.pastoraleconomy.event;
 import lisbam.pastoraleconomy.LisBamPastoralEconomy;
 import lisbam.pastoraleconomy.enchantment.ModEnchantments;
 import net.minecraft.enchantment.EnchantmentHelper;
+import net.minecraft.entity.Entity;
+import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.item.EntityItem;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.ItemStack;
+import net.minecraft.util.DamageSource;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 import net.minecraftforge.common.util.FakePlayer;
+import net.minecraftforge.event.entity.living.LivingDropsEvent;
 import net.minecraftforge.event.world.BlockEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.common.eventhandler.EventPriority;
@@ -21,7 +25,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
-/** Turns only server-confirmed tool harvest drops into item entities that fly to their actual player owner. */
+/** Makes confirmed harvest and direct-melee mob drops fly to the actual server-side player owner. */
 @Mod.EventBusSubscriber(modid = LisBamPastoralEconomy.MODID)
 public final class DropAttractionEnchantmentEventHandler {
     private static final Map<BreakKey, BreakAction> PENDING_BREAKS = new HashMap<BreakKey, BreakAction>();
@@ -40,7 +44,7 @@ public final class DropAttractionEnchantmentEventHandler {
             return;
         }
         ItemStack tool = player.getHeldItemMainhand();
-        if (!ModEnchantments.isDropAttractionTool(tool)
+        if (!ModEnchantments.isDropAttractionItem(tool)
                 || EnchantmentHelper.getEnchantmentLevel(ModEnchantments.DROP_ATTRACTION, tool) <= 0) {
             return;
         }
@@ -83,6 +87,30 @@ public final class DropAttractionEnchantmentEventHandler {
         }
     }
 
+    /**
+     * Existing death drops have already been assembled by vanilla and higher-priority Forge handlers. Marking
+     * those same entities preserves Looting, modded drops and the original pickup path without duplicating loot.
+     */
+    @SubscribeEvent(priority = EventPriority.LOWEST)
+    public static void attractDirectMeleeLivingDrops(LivingDropsEvent event) {
+        EntityLivingBase victim = event.getEntityLiving();
+        if (event.isCanceled() || victim.world.isRemote || victim instanceof EntityPlayer) {
+            return;
+        }
+        EntityPlayer player = getDirectPlayer(event.getSource());
+        if (player == null || player instanceof FakePlayer) {
+            return;
+        }
+        ItemStack weapon = player.getHeldItemMainhand();
+        if (!ModEnchantments.isDropAttractionItem(weapon)
+                || EnchantmentHelper.getEnchantmentLevel(ModEnchantments.DROP_ATTRACTION, weapon) <= 0) {
+            return;
+        }
+        for (EntityItem item : event.getDrops()) {
+            DropAttractionService.attract(item, player);
+        }
+    }
+
     /** Protection or another mod can cancel a break after capture; discard its one-tick intent without retaining player data. */
     @SubscribeEvent
     public static void discardExpiredBreaks(TickEvent.ServerTickEvent event) {
@@ -97,6 +125,15 @@ public final class DropAttractionEnchantmentEventHandler {
                 iterator.remove();
             }
         }
+    }
+
+    private static EntityPlayer getDirectPlayer(DamageSource source) {
+        if (source == null) {
+            return null;
+        }
+        Entity immediate = source.getImmediateSource();
+        Entity trueSource = source.getTrueSource();
+        return immediate == trueSource && immediate instanceof EntityPlayer ? (EntityPlayer) immediate : null;
     }
 
     private static final class BreakAction {
