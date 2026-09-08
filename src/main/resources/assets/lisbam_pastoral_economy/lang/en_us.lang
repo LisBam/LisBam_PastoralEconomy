@@ -13,6 +13,7 @@ item.lisbam_pastoral_economy.merchant_spawn_egg.name=Merchant Spawn Egg
 item.lisbam_pastoral_economy.backpack.name=Backpack
 item.lisbam_pastoral_economy.advanced_backpack.name=Advanced Backpack
 item.lisbam_pastoral_economy.super_backpack.name=Super Backpack
+enchantment.lisbam_pastoral_economy.drop_attraction=Drop Attraction
 item.lisbam_pastoral_economy.feather_wings.name=Wings
 tooltip.lisbam_pastoral_economy.backpack.capacity=Capacity: %s slots
 tooltip.lisbam_pastoral_economy.backpack.open=Equip on the shoulder, then right-click it in the inventory to open

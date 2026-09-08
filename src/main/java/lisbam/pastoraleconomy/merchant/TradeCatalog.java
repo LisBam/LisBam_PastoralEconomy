@@ -168,7 +168,7 @@ public final class TradeCatalog {
         String[][] rows = {
                 {"gold_ingot", "buy/rare/gold_ingot", "3200", "16"}, {"lava_bucket", "buy/rare/lava_bucket", "6000", "16"},
                 {"gunpowder", "buy/rare/gunpowder", "1600"},
-                {"magma_cream", "buy/rare/magma_cream", "6400", "16"}, {"glowstone_dust", "buy/rare/glowstone_dust", "200"},
+                {"magma_cream", "buy/rare/magma_cream", "6400", "16"}, {"glowstone_dust", "buy/rare/glowstone_dust", "400"},
                 {"nether_quartz", "buy/rare/nether_quartz", "1600"}, {"end_stone", "buy/rare/end_stone", "3200"},
                 {"prismarine_shard", "buy/rare/prismarine_shard", "2000"}, {"prismarine_crystals", "buy/rare/prismarine_crystals", "2000"},
                 {"leather_buy", "buy/rare/leather", "2000"}, {"rabbit_hide_buy", "buy/rare/rabbit_hide", "1600"},
@@ -281,6 +281,8 @@ public final class TradeCatalog {
                 new long[]{60000, 100000, 150000, 210000, 280000}, new String[]{"buy/treasure/enchanted_book/range_1",
                         "buy/treasure/enchanted_book/range_2", "buy/treasure/enchanted_book/range_3",
                         "buy/treasure/enchanted_book/range_4", "buy/treasure/enchanted_book/range_5"});
+        addEnchantment(definitions, "drop_attraction", ModEnchantments.DROP_ATTRACTION, new int[]{100},
+                new long[]{120000}, new String[]{"buy/treasure/enchanted_book/drop_attraction_1"});
         addEnchantment(definitions, "reforged", ModEnchantments.REFORGED, new int[]{100},
                 new long[]{120000}, new String[]{"buy/treasure/enchanted_book/reforged_1"});
         addEnchantment(definitions, "bluntness_curse", ModEnchantments.BLUNTNESS_CURSE, new int[]{100},

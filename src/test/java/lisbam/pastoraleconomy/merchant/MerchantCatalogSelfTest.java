@@ -41,7 +41,7 @@ public final class MerchantCatalogSelfTest {
         check(TradeCatalog.getPool(TradePool.BUY_COMMON).size() == 56, "common buy pool");
         check(TradeCatalog.getPool(TradePool.BUY_UNCOMMON).size() == 42, "uncommon buy pool");
         check(TradeCatalog.getPool(TradePool.BUY_RARE).size() == 27, "rare buy pool without emerald");
-        check(TradeCatalog.getPool(TradePool.BUY_TREASURE).size() == 39, "treasure buy pool");
+        check(TradeCatalog.getPool(TradePool.BUY_TREASURE).size() == 40, "treasure buy pool");
         check(DailyOfferState.BUY_OFFER_COUNT == 8, "eight daily purchase slots");
         check(MerchantOfferService.selectPurchasePool(new FixedRandom(0)) == TradePool.BUY_COMMON,
                 "common purchase quality lower boundary");
@@ -186,6 +186,10 @@ public final class MerchantCatalogSelfTest {
         check(attackSpeedDefinition.resolveLevel(new FixedRandom(95)) == 5, "attack speed level V boundary");
         check(find(TradePool.BUY_TREASURE, "treasure_enchant_reforged").getBasePrice() == 120000L,
                 "Reforged book price");
+        TradeCatalogEntry dropAttraction = find(TradePool.BUY_TREASURE, "treasure_enchant_drop_attraction");
+        check(dropAttraction.getBasePrice() == 120000L
+                        && dropAttraction.getEnchantmentDefinition().getMaxLevel() == 1,
+                "Drop Attraction book must match Mending's price and have only level I");
         check(find(TradePool.BUY_TREASURE, "treasure_enchant_bluntness_curse").getBasePrice() == 20000L,
                 "Bluntness Curse book price");
         ItemStack marketBookHarvest = TradeCatalog.createEnchantedBookStackForMarketKey(

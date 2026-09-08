@@ -17,6 +17,9 @@ out
 build
 .gradle
 
+# Project-local build toolchain (not part of the mod distribution)
+.local-jdk8/
+
 # other
 eclipse
 run
