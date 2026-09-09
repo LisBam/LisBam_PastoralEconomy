@@ -97,10 +97,18 @@ public final class EnchantmentSelfTest {
         for (Enchantment enchantment : all) {
             require(enchantment.isAllowedOnBooks(), "all batch enchantments must allow enchanted books");
         }
-        require(ModEnchantments.ATTACK_SPEED.getRarity() == Rarity.RARE, "Attack Speed rarity");
-        require(ModEnchantments.RANGE.getRarity() == Rarity.RARE, "Range rarity");
-        require(ModEnchantments.DROP_ATTRACTION.getRarity() == Rarity.RARE, "Drop Attraction rarity");
-        require(ModEnchantments.REFORGED.getRarity() == Rarity.RARE, "Reforged Mending rarity");
+        require(ModEnchantments.HARVEST.getRarity() == Rarity.RARE, "Harvest rarity");
+        require(ModEnchantments.FARMLAND_WALKER.getRarity() == Rarity.UNCOMMON, "Farmland Walker rarity");
+        require(ModEnchantments.PASTORAL_FAVOR.getRarity() == Rarity.UNCOMMON, "Pastoral Favor rarity");
+        require(ModEnchantments.FINE_CULTIVATION.getRarity() == Rarity.RARE, "Fine Cultivation rarity");
+        require(ModEnchantments.FELLING.getRarity() == Rarity.VERY_RARE, "Felling rarity");
+        require(ModEnchantments.SLAUGHTER.getRarity() == Rarity.RARE, "Slaughter rarity");
+        require(ModEnchantments.FLEETFOOT.getRarity() == Rarity.UNCOMMON, "Fleetfoot rarity");
+        require(ModEnchantments.NIGHT_VISION.getRarity() == Rarity.RARE, "Night Vision rarity");
+        require(ModEnchantments.ATTACK_SPEED.getRarity() == Rarity.COMMON, "Attack Speed rarity");
+        require(ModEnchantments.RANGE.getRarity() == Rarity.COMMON, "Range rarity");
+        require(ModEnchantments.DROP_ATTRACTION.getRarity() == Rarity.VERY_RARE, "Drop Attraction rarity");
+        require(ModEnchantments.REFORGED.getRarity() == Rarity.VERY_RARE, "Reforged rarity");
         require(ModEnchantments.BLUNTNESS_CURSE.getRarity() == Rarity.VERY_RARE
                         && ModEnchantments.BLUNTNESS_CURSE.isTreasureEnchantment()
                         && ModEnchantments.BLUNTNESS_CURSE.isCurse(),

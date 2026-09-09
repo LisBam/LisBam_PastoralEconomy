@@ -58,52 +58,52 @@ public final class ModEnchantments {
     };
 
     public static final Enchantment HARVEST = new EnchantmentPastoral(
-            "harvest", 3, new EntityEquipmentSlot[]{EntityEquipmentSlot.MAINHAND}, HOES_SHEARS_AND_AXES,
+            "harvest", Enchantment.Rarity.RARE, 3, new EntityEquipmentSlot[]{EntityEquipmentSlot.MAINHAND}, HOES_SHEARS_AND_AXES,
             new Enchantment[]{Enchantments.FORTUNE}, AXES
     );
     public static final Enchantment FARMLAND_WALKER = new EnchantmentPastoral(
-            "farmland_walker", 3, new EntityEquipmentSlot[]{EntityEquipmentSlot.FEET}, BOOTS,
+            "farmland_walker", Enchantment.Rarity.UNCOMMON, 3, new EntityEquipmentSlot[]{EntityEquipmentSlot.FEET}, BOOTS,
             new Enchantment[0]
     );
     public static final Enchantment PASTORAL_FAVOR = new EnchantmentPastoral(
-            "pastoral_favor", 4, new EntityEquipmentSlot[]{EntityEquipmentSlot.HEAD}, HELMETS,
+            "pastoral_favor", Enchantment.Rarity.UNCOMMON, 4, new EntityEquipmentSlot[]{EntityEquipmentSlot.HEAD}, HELMETS,
             new Enchantment[0]
     );
     public static final Enchantment FINE_CULTIVATION = new EnchantmentPastoral(
-            "fine_cultivation", 4, new EntityEquipmentSlot[]{EntityEquipmentSlot.MAINHAND}, HOES,
+            "fine_cultivation", Enchantment.Rarity.RARE, 4, new EntityEquipmentSlot[]{EntityEquipmentSlot.MAINHAND}, HOES,
             new Enchantment[0]
     );
     public static final Enchantment FELLING = new EnchantmentPastoral(
-            "felling", 1, new EntityEquipmentSlot[]{EntityEquipmentSlot.MAINHAND}, AXES,
+            "felling", Enchantment.Rarity.VERY_RARE, 1, new EntityEquipmentSlot[]{EntityEquipmentSlot.MAINHAND}, AXES,
             new Enchantment[0]
     );
     public static final Enchantment SLAUGHTER = new EnchantmentPastoral(
-            "slaughter", 3, new EntityEquipmentSlot[]{EntityEquipmentSlot.MAINHAND}, SWORDS_AND_AXES,
+            "slaughter", Enchantment.Rarity.RARE, 3, new EntityEquipmentSlot[]{EntityEquipmentSlot.MAINHAND}, SWORDS_AND_AXES,
             new Enchantment[]{Enchantments.SHARPNESS, Enchantments.SMITE, Enchantments.BANE_OF_ARTHROPODS,
                     Enchantments.LOOTING}
     );
     public static final Enchantment FLEETFOOT = new EnchantmentPastoral(
-            "fleetfoot", 4, new EntityEquipmentSlot[]{EntityEquipmentSlot.LEGS}, LEGGINGS,
+            "fleetfoot", Enchantment.Rarity.UNCOMMON, 4, new EntityEquipmentSlot[]{EntityEquipmentSlot.LEGS}, LEGGINGS,
             new Enchantment[0]
     );
     public static final Enchantment NIGHT_VISION = new EnchantmentPastoral(
-            "night_vision", 1, new EntityEquipmentSlot[]{EntityEquipmentSlot.HEAD}, HELMETS,
+            "night_vision", Enchantment.Rarity.RARE, 1, new EntityEquipmentSlot[]{EntityEquipmentSlot.HEAD}, HELMETS,
             new Enchantment[0]
     );
     public static final Enchantment ATTACK_SPEED = new EnchantmentPastoral(
-            "attack_speed", 5, new EntityEquipmentSlot[]{EntityEquipmentSlot.MAINHAND}, WEAPONS_AND_TOOLS,
+            "attack_speed", Enchantment.Rarity.COMMON, 5, new EntityEquipmentSlot[]{EntityEquipmentSlot.MAINHAND}, WEAPONS_AND_TOOLS,
             new Enchantment[0]
     );
     public static final Enchantment RANGE = new EnchantmentPastoral(
-            "range", 5, new EntityEquipmentSlot[]{EntityEquipmentSlot.MAINHAND}, RANGE_ITEMS,
+            "range", Enchantment.Rarity.COMMON, 5, new EntityEquipmentSlot[]{EntityEquipmentSlot.MAINHAND}, RANGE_ITEMS,
             new Enchantment[0]
     );
     public static final Enchantment DROP_ATTRACTION = new EnchantmentPastoral(
-            "drop_attraction", 1, new EntityEquipmentSlot[]{EntityEquipmentSlot.MAINHAND}, RANGE_ITEMS,
+            "drop_attraction", Enchantment.Rarity.VERY_RARE, 1, new EntityEquipmentSlot[]{EntityEquipmentSlot.MAINHAND}, RANGE_ITEMS,
             new Enchantment[0]
     );
     public static final Enchantment REFORGED = new EnchantmentPastoral(
-            "reforged", Enchantment.Rarity.RARE, 1, new EntityEquipmentSlot[]{EntityEquipmentSlot.MAINHAND},
+            "reforged", Enchantment.Rarity.VERY_RARE, 1, new EntityEquipmentSlot[]{EntityEquipmentSlot.MAINHAND},
             WEAPONS_AND_TOOLS, new Enchantment[0], false, false, true
     );
     public static final Enchantment BLUNTNESS_CURSE = new EnchantmentPastoral(

@@ -1,5 +1,17 @@
 # 测试清单
 
+## 2026-09-09 附魔台稀有度与背包透明图标
+
+- [x] Java 8 工具链：项目内 Temurin `1.8.0_504`、ForgeGradle 3、Forge `14.23.5.2859`、Gradle wrapper `4.9` 与 snapshot mappings 均一致。PASS：`check_toolchain.py`，0 error/0 warning。
+- [x] 静态边界：十二种可进附魔台附魔的 `Rarity` 与冻结的 COMMON/UNCOMMON/RARE/VERY_RARE 分组一致；改动的 common 附魔定义不引用客户端类。PASS：源码审查及 `enchantmentSelfTest`。
+- [x] 资源：三个背包图标均为可读 16×16 RGBA PNG，只有 alpha 0 或 255，四角透明且同时存在透明背景和不透明图案。PASS：`backpackSelfTest`；固定采样后的透明像素数依次为普通 156、高级 138、超级 105。
+- [x] Forge 1.12.2 static audit：0 ERROR、7 条既有 `packet-thread` 保守 WARNING；本次没有新增 Packet、持久化或 common/client 引用。PASS：实际 `audit_forge1122.py .`。
+- [x] JDK 8 定向回归：`enchantmentSelfTest`、`backpackSelfTest` 均 PASS；前者覆盖十二项表内 rarity 和束锋诅咒边界，后者覆盖背包容量/NBT/配方/打开请求及透明贴图约束。
+- [x] JDK 8 release 构建：`./gradlew build --no-daemon --console=plain` PASS，含 `reobfJar`、`exportReleaseJar`、`verifyReleaseJar`；276 个生产 class 均为 Java 8。新 `release/LisBam_PastoralEconomy-1.7.jar` 为 572,429 bytes，SHA-256 `cd8465eb53c36d2e6b6565ff49c9566fba18014c57cb9df838d78f6950ec80a7`，`unzip -t` PASS。
+- [x] Release 覆盖保护：旧 572,797-byte 1.7 JAR 在构建前已复制为 `release/backup/backup_20260909-213717.jar`，SHA-256 `ab9d4d5cc3749d19b85e5aa9152f4d2629bde7d37191a2fcb96706916a74dcf7`。PASS。
+- [ ] 游戏内附魔台与物品栏：分别确认指定 twelve enchantments 的 table candidate rarity、束锋诅咒仍不出现，以及棕色/蓝绿色/紫金色背包图标在 GUI Scale 320×240 和常规缩放下边缘清晰、透明背景不显示方块。NOT RUN：当前无可操作 Forge 客户端世界。
+- [ ] Dedicated Server：JDK 8 `runServer` 已进入 Forge/FML/Coremod 引导和 FML 注入，但 55 秒超时前未到本模组生命周期、EULA 或世界。NOT RUN：没有可接受 EULA 的专用测试世界。
+
 ## 2026-09-08 萤石粉、掉落吸附与背包不透明像素维护
 
 - [x] 静态目录：`buy/rare/glowstone_dust` 的市场与商人目录基础价均为 400，现有市场持久化代码未改写。PASS：`marketCoreSelfTest`。

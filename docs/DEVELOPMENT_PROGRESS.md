@@ -2,6 +2,14 @@
 
 当前发行版本：`1.7`；既有第 15 批功能完成，当前仅进行明确的新内容、平衡与维护更新。
 
+## 平衡维护：附魔台稀有度与背包透明图标（2026-09-09）
+
+实现：十二种可进附魔台的模组附魔已按冻结分组设为：攻速、范围 COMMON；耕地行者、田园眷顾、捷足 UNCOMMON；精耕、屠宰、丰收、夜视 RARE；掉落吸附、百炼如新、伐木 VERY_RARE。束锋诅咒仍是唯一不进入附魔台的 VERY_RARE 宝藏诅咒。三张背包图标重绘为棕色、蓝绿色与紫金色的简约 16×16 RGBA 硬边像素图；图案不透明、背景和四角透明，不使用半透明像素。
+
+兼容性：没有改动 Enchantment/Item registry ID、附魔等级/适用范围/互斥/宝藏标记、商人书本价格、背包 NBT、Player Capability、WorldSavedData、GUI 或 Packet。附魔 rarity 同时维持既有铁砧费用按 rarity 档位计算的规则；旧存档无需迁移。
+
+验证：项目内 Temurin Java 8 `1.8.0_504` 下 `check_toolchain.py` 为 0 error/0 warning，Forge 1.12.2 static audit 为 0 ERROR、7 条既有 `packet-thread` WARNING；`enchantmentSelfTest`、`backpackSelfTest` 和最终 `./gradlew build --no-daemon --console=plain` 均 PASS。构建包含 `reobfJar`、`exportReleaseJar` 和 `verifyReleaseJar`，实际核验 276 个生产 class 均为 Java 8。新 `release/LisBam_PastoralEconomy-1.7.jar` 为 572,429 bytes、SHA-256 `cd8465eb53c36d2e6b6565ff49c9566fba18014c57cb9df838d78f6950ec80a7`，`unzip -t` PASS；覆盖前 JAR 已备份为 `release/backup/backup_20260909-213717.jar`（572,797 bytes，SHA-256 `ab9d4d5cc3749d19b85e5aa9152f4d2629bde7d37191a2fcb96706916a74dcf7`）。55 秒 JDK 8 `runServer` 已进入 Forge/FML/Coremod 引导，但超时前没有到达本模组生命周期或可交互世界，完整 Dedicated Server 和游戏内附魔台验收仍为 NOT RUN。
+
 ## 维护：萤石粉基础价、掉落吸附与背包不透明像素规则（2026-09-08）
 
 实现：萤石粉的稳定市场 key `buy/rare/glowstone_dust` 基础买价从 200 调为 400，商人目录保留同一 key，现有存档已保存的当前价、历史和当日 Offer 都不重写，后续日价继续依既有市场机制回归。新增 I 级稀有附魔 `drop_attraction`，范围为剑/斧/镐/锹/锄/剪刀，商人珍宝书的 I 级基础价 120,000 与经验修补一致。服务器确认方块收获后才重新生成追踪 `EntityItem`，原版成功剪羊毛/哞菇及丰收补发栈也加入相同追踪；持附魔主手直接近战击杀非玩家生物时，既有死亡掉落实体也加入同一追踪。实体飞向使用者，抵达后的原版拾取流程决定入包，背包满则在玩家当时位置停止。三张背包图标均为 16×16 RGBA，全部 256 个像素 alpha 均为 255，不含透明或半透明像素。

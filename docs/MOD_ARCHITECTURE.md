@@ -4,6 +4,11 @@
 
 当前发行版本：`1.7`（Minecraft Forge 1.12.2 / 14.23.5.2859，Java 8）。
 
+### 2026-09-09 平衡维护：附魔台稀有度与背包透明图标
+
+- `ModEnchantments` 对十二种可进附魔台的模组附魔显式保存 `Enchantment.Rarity`：攻速/范围为 COMMON，耕地行者/田园眷顾/捷足为 UNCOMMON，精耕/屠宰/丰收/夜视为 RARE，掉落吸附/百炼如新/伐木为 VERY_RARE。原有束锋诅咒仍为不进入附魔台的 VERY_RARE 宝藏诅咒。所有 registry ID、最大等级、物品白名单、互斥、宝藏/诅咒与商人书本目录不变；既有 `AnvilFirstUseRules` 继续自然使用同一 rarity 档位计算费用。
+- `backpack.png`、`advanced_backpack.png`、`super_backpack.png` 均保持同一 generated item model 路径，改为硬边 16×16 RGBA 像素图。图案像素为完全不透明，空白背景和四角为完全透明；`BackpackSelfTest` 检查尺寸、RGBA、无半透明值、可见主体和透明四角。资源调整不改变 Item ID、背包 NBT、玩家 Capability、GUI/Packet 或存档格式。
+
 ### 2026-09-08 维护：萤石粉与掉落吸附
 
 - `MarketCatalog` 与 `TradeCatalog` 的稳定 `buy/rare/glowstone_dust` key 基础价同步为 400；没有改写 `PastoralWorldData` 中已保存的当日价格、价格历史或 DailyOffer，旧世界会继续由既有链式价格机制向新基础价范围收敛。
@@ -17,7 +22,7 @@
 - `GuiMarketBook` 的“炒币”页现只显示绿宝石今日/昨日现货价、涨跌和既有 30 日曲线；“价格范围”及“商人买卖手续费”两行和对应语言键均已删除，商人页的实际 4% 服务端结算不变。
 - `ShoulderEquipmentGuiHandler` 直接裁取原版 `inventory.png` 的盔甲格源区 `(7,7)`，而非原先的合成格 `(97,17)`；肩部格仍是原版尺寸 18×18，保留资源包兼容。`GuiBackpack` 现在沿用 `GuiChest` 的 `drawScreen`/`renderHoveredToolTip` 路径，为背包及玩家槽显示原版 Tooltip。
 - `ShoulderBackpackKeyHandler` 在物理客户端注册可改键的默认 **B**。它只在无界面或原版玩家背包界面、且本地同步肩部确为背包时发送既有 Packet 10；服务端继续要求 `inventoryContainer` 和真实肩部背包，未增加 Packet discriminator、NBT、Capability 或客户端权威状态。
-- 三张背包物品图标替换为简约清晰的 16×16 RGBA 像素贴图，256 个像素均为不透明；`BackpackSelfTest` 对每一像素验证该约束。
+- 三张背包物品图标替换为简约清晰的 16×16 RGBA 硬边像素贴图；图案像素不透明，画布背景与四角透明，`BackpackSelfTest` 验证没有半透明值、存在主体和透明背景。
 - 稳定 registry ID `feather_wings` 不变，显示名改为“翅膀”/“Wings”；非创造飞行耐久频率为 20 tick（1 秒）/点，商人珍宝基础买价为 2,888,888。市场目录与实际商人目录同时使用该值，已存档当天价格和历史仍遵循既有“不重写”策略。
 
 ### 2026-09-08 维护：背包同步、行情书炒币与锄头铁砧修复

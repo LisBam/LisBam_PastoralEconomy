@@ -35,11 +35,26 @@ public class EnchantmentPastoral extends Enchantment {
                 false, false, true, new Item[0]);
     }
 
+    /** Explicit rarity for ordinary enchanting-table entries without item exclusions. */
+    protected EnchantmentPastoral(String path, Rarity rarity, int maxLevel, EntityEquipmentSlot[] slots,
+                                  Item[] allowedItems, Enchantment[] incompatibleEnchantments) {
+        this(path, rarity, maxLevel, slots, allowedItems, incompatibleEnchantments,
+                false, false, true, new Item[0]);
+    }
+
     /** Allows books/anvils without adding a specific allowed item to table rolls. */
     protected EnchantmentPastoral(String path, int maxLevel, EntityEquipmentSlot[] slots,
                                   Item[] allowedItems, Enchantment[] incompatibleEnchantments,
                                   Item[] enchantingTableExcludedItems) {
         this(path, Rarity.RARE, maxLevel, slots, allowedItems, incompatibleEnchantments,
+                false, false, true, enchantingTableExcludedItems);
+    }
+
+    /** Keeps item-specific enchanting-table exclusions while making table weighting explicit. */
+    protected EnchantmentPastoral(String path, Rarity rarity, int maxLevel, EntityEquipmentSlot[] slots,
+                                  Item[] allowedItems, Enchantment[] incompatibleEnchantments,
+                                  Item[] enchantingTableExcludedItems) {
+        this(path, rarity, maxLevel, slots, allowedItems, incompatibleEnchantments,
                 false, false, true, enchantingTableExcludedItems);
     }
 
