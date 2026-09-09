@@ -1,5 +1,11 @@
 # 实施决策
 
+## DEC-070 附魔台候选权重与背包 alpha 边界（2026-09-09）
+
+决定：十二种可进附魔台的模组附魔直接使用其稳定 `Enchantment` 实例的 `Rarity`，不另建附魔台权重表。固定分组为 COMMON（Attack Speed、Range）、UNCOMMON（Farmland Walker、Pastoral Favor、Fleetfoot）、RARE（Fine Cultivation、Slaughter、Harvest、Night Vision）和 VERY_RARE（Drop Attraction、Reforged、Felling）。`bluntness_curse` 仍为 VERY_RARE 宝藏诅咒且不可出现在附魔台。三张背包图标继续使用既有 generated item model 和文件名，但像素 alpha 只允许 0 或 255：图案为 255，背景及四角为 0。
+
+原因与影响：Forge 1.12.2 附魔台直接读取 `Enchantment.Rarity`，显式设置既可调整候选权重，也不会改变 registry ID、最大等级、物品范围或兼容性。既有 `AnvilFirstUseRules` 同样读取该值，因此费用会遵循新稀有度而无需另写例外。透明背包背景只改变客户端资源显示；背包 ItemStack NBT、容器、同步、Capability、Packet 和旧存档完全不受影响。
+
 ## DEC-069 掉落吸附的实体归属与库存边界（2026-09-08）
 
 决定：`drop_attraction` 使用新 registry ID，不复用或改名既有附魔；它是稀有、I 级、非宝藏附魔，复用包含剑、斧、镐、锹、锄和剪刀的 Range 白名单。方块掉落在 `HarvestDropsEvent` 的最终堆栈表形成后才替换为受控 `EntityItem`，并保留事件给出的每栈掉落概率。直接近战击杀非玩家生物时，在最低优先级 `LivingDropsEvent` 标记已存在的掉落实体，故原版 Looting 与其他 Forge 处理器的数量/实体仍保持；投射物、假玩家和玩家死亡排除。库存不会由事件处理器直接插入；实体抵达后仍由 1.12.2 原版拾取逻辑结算，满背包时只冻结实体的飞行状态。剪羊毛没有通用的方块收获事件，因此在成功交互期间以目标羊/哞菇和同世界近距离实体加入事件关联原版掉落；丰收补发栈在生成时直接关联。所有关联均为服务端瞬态状态，重启时未抵达的物品恢复普通实体即可，无需 NBT 迁移。

@@ -117,12 +117,25 @@ public final class BackpackSelfTest {
             check(image != null && image.getWidth() == 16 && image.getHeight() == 16,
                     name + " must be a readable 16x16 PNG");
             check(image.getColorModel().hasAlpha(), name + " must preserve an RGBA item texture");
+            int transparentPixels = 0;
+            int opaquePixels = 0;
             for (int y = 0; y < image.getHeight(); y++) {
                 for (int x = 0; x < image.getWidth(); x++) {
-                    check((image.getRGB(x, y) >>> 24) == 255,
-                            name + " must not contain transparent pixels");
+                    int alpha = image.getRGB(x, y) >>> 24;
+                    check(alpha == 0 || alpha == 255,
+                            name + " must retain hard-edge pixel alpha");
+                    if (alpha == 0) {
+                        transparentPixels++;
+                    } else {
+                        opaquePixels++;
+                    }
                 }
             }
+            check(transparentPixels > 0 && opaquePixels > 0,
+                    name + " must have both a transparent background and a visible backpack");
+            check((image.getRGB(0, 0) >>> 24) == 0 && (image.getRGB(15, 0) >>> 24) == 0
+                            && (image.getRGB(0, 15) >>> 24) == 0 && (image.getRGB(15, 15) >>> 24) == 0,
+                    name + " must keep all four canvas corners transparent");
         } catch (java.io.IOException exception) {
             throw new AssertionError("Cannot read " + name, exception);
         }
