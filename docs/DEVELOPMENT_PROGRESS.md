@@ -8,6 +8,14 @@
 
 范围声明：本轮只新增文档，没有改动任何 Java 源码、资源、Gradle 脚本或配置，因此未重新执行 `./gradlew build`，`release/LisBam_PastoralEconomy-1.7.jar` 仍是上一次构建导出的成品（572,429 bytes、SHA-256 `cd8465eb53c36d2e6b6565ff49c9566fba18014c57cb9df838d78f6950ec80a7`，本次已再次核验大小与哈希一致、ZIP 条目可读）。GitHub Release 由用户在本仓库网页端创建，Tag 采用 `v1.7`，上传资源为该 JAR；自动化上传未执行。
 
+## 仓库：默认分支由 master 迁移至 main（2026-09-09）
+
+背景：远端此前同时存在 `master`（71 个提交，含 `release/`、`src/`、`docs/` 等 387 个文件）与 `main`（1 个提交，仅一个 GitHub 建仓时自动生成的 `README.md`），两者 `git merge-base` 无共同祖先，属于互不相关的独立历史。项目一直实际位于 `master`，而默认分支是空壳 `main`。
+
+处理：经用户确认后，以 `master` 强制覆盖 `main`（`git push --force origin master:main`，丢弃空壳 initial commit `087397c`），确认 `origin/main` 已包含全部 71 个提交与 387 个文件、且与 `master` 逐提交一致；随后删除远端 `master` 与本地 `master`，建立跟踪 `origin/main` 的本地 `main` 分支。远端 `HEAD` 现指向 `refs/heads/main`，默认分支已为 `main`。
+
+影响：仅分支布局变更，没有任何文件、提交内容、版本号或 release 成品变化；`release/LisBam_PastoralEconomy-1.7.jar` 与 `release/backup/` 备份均不受影响。此仓库只有一名开发者，不存在需要重新指向的其他克隆或协作者；`origin/copilot/fix-184941679-1376989725-41c0c5ff-ced2-424c-9bcc-a574897bbb89` 为与本模组无关的遗留分支，保留未动。后续所有提交与推送均以 `main` 为准。
+
 ## 平衡维护：附魔台稀有度与背包透明图标（2026-09-09）
 
 实现：十二种可进附魔台的模组附魔已按冻结分组设为：攻速、范围 COMMON；耕地行者、田园眷顾、捷足 UNCOMMON；精耕、屠宰、丰收、夜视 RARE；掉落吸附、百炼如新、伐木 VERY_RARE。束锋诅咒仍是唯一不进入附魔台的 VERY_RARE 宝藏诅咒。三张背包图标重绘为棕色、蓝绿色与紫金色的简约 16×16 RGBA 硬边像素图；图案不透明、背景和四角透明，不使用半透明像素。
