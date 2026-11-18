@@ -1,0 +1,41 @@
+
+
+# Local AI and IDE configuration; retained only on developer machines.
+/.agents/
+/.claude/
+/.codex/
+/.dsh/
+/.trellis/
+/.idea/
+/.vscode/
+/AGENTS.md
+/CLAUDE.md
+/项目专属AGENTS.md
+
+# Personal environment, credentials, logs, and temporary files.
+.env
+.env.*
+!.env.example
+!.env.template
+*.pem
+*.key
+*.p12
+*.pfx
+*.jks
+*.keystore
+*.log
+*.log.gz
+*.tmp
+*.bak
+~$*
+__pycache__/
+*.pyc
+/.repo-privacy-backup/
+/临时反馈文档.md
+
+# Runtime logs and generated release artifacts; keep the Gradle wrapper JAR.
+/logs/
+/release/
+/任务.txt
+/分批执行总览/
+/聆竹の休闲田园经济_Codex分阶段制作_16批/
